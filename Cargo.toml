@@ -1,20 +1,46 @@
-[package]
-name = "wasm"
-version = "1.0.0"
-license = "MIT OR Apache-2.0"
+# [PROJECT_DIR]/Cargo.toml
+[workspace]
+resolver = "2"
+members = ["crates/cli", "crates/store"]
+
+[workspace.package]
+version = "0.1.0"
+documentation = "https://github.com/yoshuawuyts/wasm"
 repository = "https://github.com/yoshuawuyts/wasm"
-documentation = "https://docs.rs/wasm"
-description = "Unified developer tools for WebAssembly"
-readme = "README.md"
-edition = "2018"
-keywords = []
+edition = "2024"
+license = "APACHE-2.0 OR MIT"
+authors = ["Yosh Wuyts <cargo@yosh.is>", "Josh Duffney <josh@duffney.io>"]
 categories = []
-authors = [
-    "Yoshua Wuyts <rust@yosh.is>"
-]
+keywords = []
 
-[features]
+[workspace.dependencies]
 
-[dependencies]
+# local dependencies
+wasm-oci-store = { path = "crates/store" }
 
-[dev-dependencies]
+# shared dependencies
+anyhow = "1.0.100"
+
+# cli dependencies
+bytesize = "2.3.1"
+clap = { version = "4.5.54", features = ["derive"] }
+comfy-table = "7.2.1"
+dirs = "6.0.0"
+insta = "1.44.3"
+serde_json = { version = "1.0.145", features = ["alloc"] }
+termcolor = "1.4.1"
+wasm-metadata = "0.243.0"
+wasmtime = "39.0.1"
+wasmtime-wasi = "39.0.1"
+
+# store dependencies
+cacache = { version = "13.1.0", features = [
+    "futures",
+    "libc",
+    "link_to",
+    "memmap2",
+    "mmap",
+    "tokio",
+    "tokio-runtime",
+    "tokio-stream",
+], default-features = false }

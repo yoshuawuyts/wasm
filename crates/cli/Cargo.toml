@@ -1,0 +1,28 @@
+[package]
+name = "wasm"
+description = "Unified WebAssembly developer tools"
+readme = "README.md"
+repository = { workspace = true }
+documentation = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+categories = { workspace = true }
+keywords = { workspace = true }
+
+[dependencies]
+clap = { workspace = true }
+wasm-oci-store = { workspace = true }
+dirs = { workspace = true }
+anyhow = { workspace = true }
+bytesize = { workspace = true }
+comfy-table = { workspace = true }
+serde_json = { workspace = true }
+termcolor = { workspace = true }
+wasm-metadata = { workspace = true }
+wasmtime = { workspace = true }
+wasmtime-wasi = { workspace = true }
+
+[dev-dependencies]
+insta = { workspace = true }
