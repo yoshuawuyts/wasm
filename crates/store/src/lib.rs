@@ -3,6 +3,7 @@ use std::path::{Path, PathBuf};
 /// A cache on disk
 #[derive(Debug)]
 pub struct Store {
+    #[allow(unused)]
     location: PathBuf,
 }
 
