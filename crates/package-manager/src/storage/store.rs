@@ -15,7 +15,7 @@ impl Store {
         let config = Config::new()?;
 
         // TODO: remove me once we're done testing
-        tokio::fs::remove_dir_all(config.data_dir()).await?;
+        // tokio::fs::remove_dir_all(config.data_dir()).await?;
 
         let a = tokio::fs::create_dir_all(config.data_dir());
         let b = tokio::fs::create_dir_all(config.layers_dir());
@@ -35,13 +35,14 @@ impl Store {
         reference: &Reference,
         image: ImageData,
     ) -> anyhow::Result<()> {
+        let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
         self.conn.execute(
             "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest) VALUES (?1, ?2, ?3, ?4, ?5)",
             (
                 reference.registry(),
                 reference.repository(),
                 reference.tag(),
-                reference.digest(),
+                digest,
                 &serde_json::to_string(&image.manifest)?,
             ),
         )?;
