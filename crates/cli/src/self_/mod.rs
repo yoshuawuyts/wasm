@@ -27,7 +27,7 @@ impl Opts {
                 );
                 println!(
                     "Image metadata: {}",
-                    store.config().metadata_dir().to_string_lossy()
+                    store.config().metadata_file().to_string_lossy()
                 );
                 Ok(())
             }

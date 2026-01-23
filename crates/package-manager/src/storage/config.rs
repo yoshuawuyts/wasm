@@ -20,7 +20,7 @@ impl Config {
     pub fn new_at(location: PathBuf) -> Self {
         Self {
             layers_dir: location.join("layers"),
-            metadata_dir: location.join("metadata"),
+            metadata_dir: location.join("metadata.db3"),
             location,
         }
     }
@@ -35,7 +35,7 @@ impl Config {
     }
 
     /// Get the location of the crate's metadata dir
-    pub fn metadata_dir(&self) -> &Path {
+    pub fn metadata_file(&self) -> &Path {
         &self.metadata_dir
     }
 }

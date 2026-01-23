@@ -69,4 +69,5 @@ cacache = { version = "13.1.0", features = [
     "tokio-runtime",
     "tokio-stream",
 ], default-features = false }
-sqlite = "0.37.0"
+rusqlite = "0.38.0"
+serde = "1.0.228"
