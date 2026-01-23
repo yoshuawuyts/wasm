@@ -1,0 +1,24 @@
+[package]
+name = "wasm-package-manager"
+description = "A stateful library to interact with OCI registries storing WebAssembly Components"
+readme = "README.md"
+repository = { workspace = true }
+documentation = { workspace = true }
+version = { workspace = true }
+license = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+categories = { workspace = true }
+keywords = { workspace = true }
+
+[dependencies]
+anyhow = { workspace = true }
+cacache = { workspace = true }
+dirs = { workspace = true }
+docker_credential = { workspace = true }
+futures-concurrency = { workspace = true }
+oci-client = { workspace = true }
+oci-wasm = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]

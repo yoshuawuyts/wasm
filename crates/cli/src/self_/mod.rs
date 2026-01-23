@@ -1,5 +1,7 @@
-use crate::core::dirs;
+use std::env;
+
 use anyhow::Result;
+use wasm_package_manager::Manager;
 
 /// Configure the `wasm(1)` tool, generate completions, & manage state
 #[derive(clap::Parser)]
@@ -9,15 +11,34 @@ pub(crate) enum Opts {
 }
 
 impl Opts {
-    pub(crate) fn run(&self) -> Result<()> {
+    pub(crate) async fn run(&self) -> Result<()> {
         match self {
             Opts::State => {
-                println!("[Locations]");
-                println!("Data: \t\t{}", dirs::data_dir().to_string_lossy());
-                println!("Artifacts: \t{}", dirs::artifact_dir().to_string_lossy());
-                println!("Executable: \t{}", dirs::executable_dir());
+                let store = Manager::open().await?;
+                println!("[Storage]");
+                println!("Executable: \t{}", executable_dir());
+                println!(
+                    "Data storage: \t{}",
+                    store.config().data_dir().to_string_lossy()
+                );
+                println!(
+                    "Image layers: \t{}",
+                    store.config().layers_dir().to_string_lossy()
+                );
+                println!(
+                    "Image metadata: {}",
+                    store.config().metadata_dir().to_string_lossy()
+                );
                 Ok(())
             }
         }
+    }
+}
+
+/// Get the location of the current executable
+fn executable_dir() -> String {
+    match env::current_exe() {
+        Ok(exe_path) => exe_path.display().to_string(),
+        Err(_) => String::from("unknown executable dir"),
     }
 }

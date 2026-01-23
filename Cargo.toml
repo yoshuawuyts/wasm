@@ -1,7 +1,7 @@
 # [PROJECT_DIR]/Cargo.toml
 [workspace]
 resolver = "2"
-members = ["crates/cli", "crates/store"]
+members = ["crates/cli", "crates/package-manager"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,13 +13,29 @@ authors = ["Yosh Wuyts <cargo@yosh.is>", "Josh Duffney <josh@duffney.io>"]
 categories = []
 keywords = []
 
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "deny"
+nonstandard_style = "deny"
+missing_docs = "warn"
+unreachable_pub = "warn"
+
+[workspace.lints.clippy]
+fallible_impl_from = "deny"
+fn_params_excessive_bools = "deny"
+indexing_slicing = "deny"
+must_use_candidate = "deny"
+unneeded_field_pattern = "deny"
+
 [workspace.dependencies]
 
 # local dependencies
-wasm-oci-store = { path = "crates/store" }
+wasm-package-manager = { path = "crates/package-manager" }
 
 # shared dependencies
 anyhow = "1.0.100"
+futures-concurrency = "7.7.1"
+tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
 
 # OCI dependencies
 docker_credential = "1.3.2"
@@ -53,4 +69,4 @@ cacache = { version = "13.1.0", features = [
     "tokio-runtime",
     "tokio-stream",
 ], default-features = false }
-tokio = { version = "1.49.0", features = ["macros", "rt-multi-thread"] }
+sqlite = "0.37.0"

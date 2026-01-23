@@ -16,14 +16,10 @@ anyhow = { workspace = true }
 bytesize = { workspace = true }
 clap = { workspace = true }
 comfy-table = { workspace = true }
-dirs = { workspace = true }
-docker_credential = { workspace = true }
-oci-client = { workspace = true }
-oci-wasm = { workspace = true }
 serde_json = { workspace = true }
 termcolor = { workspace = true }
 wasm-metadata = { workspace = true }
-wasm-oci-store = { workspace = true }
+wasm-package-manager = { workspace = true }
 wasmtime = { workspace = true }
 wasmtime-wasi = { workspace = true }
 tokio = { workspace = true }

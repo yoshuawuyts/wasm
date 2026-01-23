@@ -1,7 +1,6 @@
 //! Wasm CLI command
 //!
 
-mod core;
 mod inspect;
 mod package;
 mod self_;
@@ -38,7 +37,7 @@ impl Command {
             Command::Convert => todo!(),
             Command::Package(opts) => opts.run().await?,
             Command::Compose => todo!(),
-            Command::Self_(opts) => opts.run()?,
+            Command::Self_(opts) => opts.run().await?,
         }
         Ok(())
     }
