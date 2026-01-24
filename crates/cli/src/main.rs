@@ -4,8 +4,35 @@
 mod inspect;
 mod package;
 mod self_;
+mod tui;
 
-use clap::Parser;
+use std::io::IsTerminal;
+
+use clap::{CommandFactory, Parser};
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Command>,
+}
+
+impl Cli {
+    async fn run(self) -> Result<(), anyhow::Error> {
+        match self.command {
+            Some(Command::Run) => todo!(),
+            Some(Command::Inspect(opts)) => opts.run()?,
+            Some(Command::Convert) => todo!(),
+            Some(Command::Package(opts)) => opts.run().await?,
+            Some(Command::Compose) => todo!(),
+            Some(Command::Self_(opts)) => opts.run().await?,
+            None if std::io::stdin().is_terminal() => tui::run().await?,
+            None => Cli::command().print_help()?,
+        }
+        Ok(())
+    }
+}
 
 #[derive(clap::Parser)]
 enum Command {
@@ -29,23 +56,8 @@ enum Command {
     Self_(self_::Opts),
 }
 
-impl Command {
-    async fn run(self) -> Result<(), anyhow::Error> {
-        match self {
-            Command::Run => todo!(),
-            Command::Inspect(opts) => opts.run()?,
-            Command::Convert => todo!(),
-            Command::Package(opts) => opts.run().await?,
-            Command::Compose => todo!(),
-            Command::Self_(opts) => opts.run().await?,
-        }
-        Ok(())
-    }
-}
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let command = Command::parse();
-    command.run().await?;
+    Cli::parse().run().await?;
     Ok(())
 }

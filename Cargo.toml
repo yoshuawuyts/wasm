@@ -57,6 +57,8 @@ termcolor = "1.4.1"
 wasm-metadata = "0.243.0"
 wasmtime = "39.0.1"
 wasmtime-wasi = "39.0.1"
+ratatui = "0.30.0"
+crossterm = "0.29.0"
 
 # store dependencies
 cacache = { version = "13.1.0", features = [
