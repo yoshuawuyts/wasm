@@ -9,12 +9,26 @@ pub(crate) enum Opts {
     /// Pull a component from the registry
     Pull(PullOpts),
     Push,
+    /// List all available tags for a component
+    Tags(TagsOpts),
 }
 
 #[derive(clap::Args)]
 pub(crate) struct PullOpts {
     /// The reference to pull
     reference: Reference,
+}
+
+#[derive(clap::Args)]
+pub(crate) struct TagsOpts {
+    /// The reference to list tags for (e.g., ghcr.io/example/component)
+    reference: Reference,
+    /// Include signature tags (ending in .sig)
+    #[arg(long)]
+    signatures: bool,
+    /// Include attestation tags (ending in .att)
+    #[arg(long)]
+    attestations: bool,
 }
 
 impl Opts {
@@ -33,6 +47,36 @@ impl Opts {
                 Ok(())
             }
             Opts::Push => todo!(),
+            Opts::Tags(opts) => {
+                let all_tags = store.list_tags(&opts.reference).await?;
+
+                // Filter tags based on flags
+                let tags: Vec<_> = all_tags
+                    .into_iter()
+                    .filter(|tag| {
+                        let is_sig = tag.ends_with(".sig");
+                        let is_att = tag.ends_with(".att");
+
+                        if is_sig {
+                            opts.signatures
+                        } else if is_att {
+                            opts.attestations
+                        } else {
+                            true // Always include release tags
+                        }
+                    })
+                    .collect();
+
+                if tags.is_empty() {
+                    println!("No tags found for '{}'", opts.reference.whole());
+                } else {
+                    println!("Tags for '{}':", opts.reference.whole());
+                    for tag in tags {
+                        println!("  {}", tag);
+                    }
+                }
+                Ok(())
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 use docker_credential::DockerCredential;
 use oci_client::Reference;
-use oci_client::client::{ClientConfig, ClientProtocol, ImageData, TagResponse};
+use oci_client::client::{ClientConfig, ClientProtocol, ImageData};
 use oci_client::secrets::RegistryAuth;
 use oci_wasm::WasmClient;
 
@@ -40,10 +40,23 @@ impl Client {
         let mut last: Option<String> = None;
 
         loop {
-            let response: TagResponse = self
+            // Some registries return null for tags instead of an empty array,
+            // which causes deserialization to fail. We handle this gracefully.
+            let response = match self
                 .inner
                 .list_tags(reference, &auth, None, last.as_deref())
-                .await?;
+                .await
+            {
+                Ok(resp) => resp,
+                Err(_) if all_tags.is_empty() => {
+                    // First request failed, likely due to null tags - return empty
+                    return Ok(Vec::new());
+                }
+                Err(_) => {
+                    // Subsequent request failed, return what we have
+                    break;
+                }
+            };
 
             if response.tags.is_empty() {
                 break;
@@ -60,10 +73,14 @@ impl Client {
             }
 
             // Make another request to check if there are more tags
-            let next_response: TagResponse = self
+            let next_response = match self
                 .inner
                 .list_tags(reference, &auth, Some(1), last.as_deref())
-                .await?;
+                .await
+            {
+                Ok(resp) => resp,
+                Err(_) => break,
+            };
 
             if next_response.tags.is_empty() {
                 break;

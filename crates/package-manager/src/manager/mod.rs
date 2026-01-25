@@ -106,4 +106,9 @@ impl Manager {
         self.store
             .add_known_package(registry, repository, tag, description)
     }
+
+    /// List all tags for a given reference from the registry.
+    pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
+        self.client.list_tags(reference).await
+    }
 }

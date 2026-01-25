@@ -30,6 +30,11 @@ const MIGRATIONS: &[MigrationDef] = &[
         name: "image_size",
         sql: include_str!("../migrations/04_image_size.sql"),
     },
+    MigrationDef {
+        version: 5,
+        name: "tag_type",
+        sql: include_str!("../migrations/05_tag_type.sql"),
+    },
 ];
 
 /// Information about the current migration state.
