@@ -1,19 +1,14 @@
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
-    widgets::{Block, Cell, Paragraph, Row, Table, Tabs, Widget},
+    widgets::{Block, Tabs, Widget},
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
 use wasm_package_manager::ImageEntry;
 
+use super::views::{HomeView, PackagesView, SettingsView};
 use super::{AppEvent, ManagerEvent};
-
-const LOGO: &str = "
-▖  ▖       
-▌▞▖▌▀▌▛▘▛▛▌
-▛ ▝▌█▌▄▌▌▌▌
-";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Tab {
@@ -164,72 +159,9 @@ impl Widget for &App {
         content_block.render(layout[1], buf);
 
         match self.current_tab {
-            Tab::Home => {
-                Paragraph::new(LOGO.trim())
-                    .centered()
-                    .render(content_area, buf);
-            }
-            Tab::Packages => {
-                if self.packages.is_empty() {
-                    Paragraph::new("No packages stored.")
-                        .centered()
-                        .render(content_area, buf);
-                } else {
-                    // Create header row
-                    let header = Row::new(vec![
-                        Cell::from("Repository").style(Style::default().bold()),
-                        Cell::from("Registry").style(Style::default().bold()),
-                        Cell::from("Tag").style(Style::default().bold()),
-                        Cell::from("Digest").style(Style::default().bold()),
-                    ])
-                    .style(Style::default().fg(Color::Yellow));
-
-                    // Create data rows
-                    let rows: Vec<Row> = self
-                        .packages
-                        .iter()
-                        .map(|entry| {
-                            let tag = entry.ref_tag.as_deref().unwrap_or("-");
-                            let digest = entry
-                                .ref_digest
-                                .as_ref()
-                                .map(|d| {
-                                    if d.len() > 16 {
-                                        format!("{}...", &d[..16])
-                                    } else {
-                                        d.clone()
-                                    }
-                                })
-                                .unwrap_or_else(|| "-".to_string());
-                            Row::new(vec![
-                                Cell::from(entry.ref_repository.clone()),
-                                Cell::from(entry.ref_registry.clone()),
-                                Cell::from(tag.to_string()),
-                                Cell::from(digest),
-                            ])
-                        })
-                        .collect();
-
-                    let table = Table::new(
-                        rows,
-                        [
-                            Constraint::Percentage(35),
-                            Constraint::Percentage(25),
-                            Constraint::Percentage(15),
-                            Constraint::Percentage(25),
-                        ],
-                    )
-                    .header(header)
-                    .row_highlight_style(Style::default().bg(Color::DarkGray));
-
-                    Widget::render(table, content_area, buf);
-                }
-            }
-            Tab::Settings => {
-                Paragraph::new("Settings will be shown here...")
-                    .centered()
-                    .render(content_area, buf);
-            }
+            Tab::Home => HomeView.render(content_area, buf),
+            Tab::Packages => PackagesView::new(&self.packages).render(content_area, buf),
+            Tab::Settings => SettingsView.render(content_area, buf),
         }
     }
 }

@@ -1,4 +1,5 @@
 mod app;
+mod views;
 
 use app::App;
 use tokio::sync::mpsc;
