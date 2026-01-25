@@ -16,6 +16,8 @@ pub enum AppEvent {
     RequestStateInfo,
     /// Pull a package from a registry
     Pull(String),
+    /// Delete a package by its reference
+    Delete(String),
 }
 
 /// Events sent from the Manager to the TUI
@@ -29,6 +31,8 @@ pub enum ManagerEvent {
     StateInfo(StateInfo),
     /// Result of a pull operation
     PullResult(Result<(), String>),
+    /// Result of a delete operation
+    DeleteResult(Result<(), String>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -82,6 +86,17 @@ async fn run_manager(
                 };
                 sender.send(ManagerEvent::PullResult(result)).await.ok();
                 // Refresh the packages list after pull
+                if let Ok(packages) = manager.list_all() {
+                    sender.send(ManagerEvent::PackagesList(packages)).await.ok();
+                }
+            }
+            AppEvent::Delete(reference_str) => {
+                let result = match reference_str.parse::<Reference>() {
+                    Ok(reference) => manager.delete(reference).await.map(|_| ()).map_err(|e| e.to_string()),
+                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                };
+                sender.send(ManagerEvent::DeleteResult(result)).await.ok();
+                // Refresh the packages list after delete
                 if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
                 }

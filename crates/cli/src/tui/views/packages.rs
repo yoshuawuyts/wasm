@@ -118,6 +118,8 @@ impl StatefulWidget for PackagesView<'_> {
         let shortcuts = Line::from(vec![
             Span::styled(" p ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Pull  "),
+            Span::styled(" d ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Delete  "),
             Span::styled(
                 " Enter ",
                 Style::default().fg(Color::Black).bg(Color::Yellow),

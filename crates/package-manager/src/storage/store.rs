@@ -96,4 +96,20 @@ impl Store {
     pub(crate) fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
         ImageEntry::get_all(&self.conn)
     }
+
+    /// Deletes an image by its reference.
+    pub(crate) async fn delete(&self, reference: &Reference) -> anyhow::Result<bool> {
+        // Delete from cacache
+        let key = reference.whole().to_string();
+        let _ = cacache::remove(self.state_info.layers_dir(), &key).await;
+
+        // Delete from database
+        ImageEntry::delete_by_reference(
+            &self.conn,
+            reference.registry(),
+            reference.repository(),
+            reference.tag(),
+            reference.digest(),
+        )
+    }
 }

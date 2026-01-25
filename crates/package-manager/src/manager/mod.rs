@@ -51,4 +51,9 @@ impl Manager {
     pub fn state_info(&self) -> StateInfo {
         self.store.state_info.clone()
     }
+
+    /// Delete an image from the store by its reference.
+    pub async fn delete(&self, reference: Reference) -> anyhow::Result<bool> {
+        self.store.delete(&reference).await
+    }
 }

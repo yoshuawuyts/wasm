@@ -264,6 +264,9 @@ impl App {
                         }
                     }
                 }
+                ManagerEvent::DeleteResult(_result) => {
+                    // Delete completed, packages list will be refreshed automatically
+                }
             }
         }
     }
@@ -319,6 +322,22 @@ impl App {
                 if let Some(selected) = self.packages_view_state.selected() {
                     if selected < self.packages.len() {
                         self.viewing_package = Some(selected);
+                    }
+                }
+            }
+            // Delete selected package
+            (KeyCode::Char('d'), _)
+                if self.current_tab == Tab::Components && self.manager_ready =>
+            {
+                if let Some(selected) = self.packages_view_state.selected() {
+                    if let Some(package) = self.packages.get(selected) {
+                        let _ = self.app_sender.try_send(AppEvent::Delete(package.reference()));
+                        // Adjust selection if we're deleting the last item
+                        if selected > 0 && selected >= self.packages.len() - 1 {
+                            self.packages_view_state
+                                .table_state
+                                .select(Some(selected - 1));
+                        }
                     }
                 }
             }
