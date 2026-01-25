@@ -4,6 +4,8 @@ use ratatui::{
 };
 use wasm_package_manager::ImageEntry;
 
+use super::format_size;
+
 /// State for the packages list view
 #[derive(Debug, Default)]
 pub(crate) struct PackagesViewState {
@@ -69,6 +71,7 @@ impl StatefulWidget for PackagesView<'_> {
                 Cell::from("Repository").style(Style::default().bold()),
                 Cell::from("Registry").style(Style::default().bold()),
                 Cell::from("Tag").style(Style::default().bold()),
+                Cell::from("Size").style(Style::default().bold()),
                 Cell::from("Digest").style(Style::default().bold()),
             ])
             .style(Style::default().fg(Color::Yellow));
@@ -79,6 +82,7 @@ impl StatefulWidget for PackagesView<'_> {
                 .iter()
                 .map(|entry| {
                     let tag = entry.ref_tag.as_deref().unwrap_or("-");
+                    let size = format_size(entry.size_on_disk);
                     let digest = entry
                         .ref_digest
                         .as_ref()
@@ -94,6 +98,7 @@ impl StatefulWidget for PackagesView<'_> {
                         Cell::from(entry.ref_repository.clone()),
                         Cell::from(entry.ref_registry.clone()),
                         Cell::from(tag.to_string()),
+                        Cell::from(size),
                         Cell::from(digest),
                     ])
                 })
@@ -102,10 +107,11 @@ impl StatefulWidget for PackagesView<'_> {
             let table = Table::new(
                 rows,
                 [
-                    Constraint::Percentage(35),
-                    Constraint::Percentage(25),
+                    Constraint::Percentage(30),
+                    Constraint::Percentage(20),
                     Constraint::Percentage(15),
-                    Constraint::Percentage(25),
+                    Constraint::Percentage(12),
+                    Constraint::Percentage(23),
                 ],
             )
             .header(header)

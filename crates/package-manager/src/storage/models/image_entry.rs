@@ -21,6 +21,8 @@ pub struct ImageEntry {
     pub ref_tag: Option<String>,
     pub ref_digest: Option<String>,
     pub manifest: OciImageManifest,
+    /// Size of the image on disk in bytes
+    pub size_on_disk: u64,
 }
 
 impl ImageEntry {
@@ -80,6 +82,7 @@ impl ImageEntry {
         ref_tag: Option<&str>,
         ref_digest: Option<&str>,
         manifest: &str,
+        size_on_disk: u64,
     ) -> anyhow::Result<InsertResult> {
         // Check if entry already exists
         if Self::exists(conn, ref_registry, ref_repository, ref_tag, ref_digest)? {
@@ -87,8 +90,8 @@ impl ImageEntry {
         }
 
         conn.execute(
-            "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest) VALUES (?1, ?2, ?3, ?4, ?5)",
-            (ref_registry, ref_repository, ref_tag, ref_digest, manifest),
+            "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk as i64),
         )?;
         Ok(InsertResult::Inserted)
     }
@@ -96,7 +99,7 @@ impl ImageEntry {
     /// Returns all currently stored images and their metadata.
     pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<ImageEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, ref_registry, ref_repository, ref_mirror_registry, ref_tag, ref_digest, manifest FROM image",
+            "SELECT id, ref_registry, ref_repository, ref_mirror_registry, ref_tag, ref_digest, manifest, size_on_disk FROM image",
         )?;
 
         let rows = stmt.query_map([], |row| {
@@ -108,6 +111,7 @@ impl ImageEntry {
                     Box::new(e),
                 )
             })?;
+            let size_on_disk: i64 = row.get(7)?;
 
             Ok(ImageEntry {
                 id: row.get(0)?,
@@ -117,6 +121,7 @@ impl ImageEntry {
                 ref_tag: row.get(4)?,
                 ref_digest: row.get(5)?,
                 manifest,
+                size_on_disk: size_on_disk as u64,
             })
         })?;
 

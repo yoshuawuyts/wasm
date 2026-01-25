@@ -41,11 +41,11 @@ impl TabItem for Tab {
 
     fn title(&self) -> &'static str {
         match self {
-            Tab::Local => "Local",
-            Tab::Components => "Components",
-            Tab::Interfaces => "Interfaces",
-            Tab::Search => "Search",
-            Tab::Settings => "Settings",
+            Tab::Local => "Local [1]",
+            Tab::Components => "Components [2]",
+            Tab::Interfaces => "Interfaces [3]",
+            Tab::Search => "Search [4]",
+            Tab::Settings => "Settings [5]",
         }
     }
 }

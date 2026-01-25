@@ -71,6 +71,11 @@ impl Widget for PackageDetailView<'_> {
             ]));
         }
 
+        details.push(Line::from(vec![
+            Span::styled("Size: ", Style::default().bold()),
+            Span::raw(super::format_size(self.package.size_on_disk)),
+        ]));
+
         details.push(Line::raw("")); // Empty line
 
         // Manifest info

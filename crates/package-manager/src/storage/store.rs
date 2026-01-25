@@ -74,14 +74,19 @@ impl Store {
         image: ImageData,
     ) -> anyhow::Result<InsertResult> {
         let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
-        let manifest = serde_json::to_string(&image.manifest)?;
+        let manifest_str = serde_json::to_string(&image.manifest)?;
+
+        // Calculate total size on disk from all layers
+        let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
+
         let result = ImageEntry::insert(
             &self.conn,
             reference.registry(),
             reference.repository(),
             reference.tag(),
             digest.as_deref(),
-            &manifest,
+            &manifest_str,
+            size_on_disk,
         )?;
 
         // Only store layers if this is a new entry
