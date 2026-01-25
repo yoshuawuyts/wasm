@@ -62,6 +62,8 @@ pub(crate) enum InputMode {
     PullPrompt(PullPromptState),
     /// Search input is active
     SearchInput,
+    /// Filter input is active (for packages tab)
+    FilterInput,
 }
 
 /// State of the pull prompt
@@ -156,8 +158,12 @@ impl App {
                         frame.render_widget(PackageDetailView::new(package), content_area);
                     }
                 } else {
+                    // Sync filter_active state for rendering
+                    self.packages_view_state.filter_active =
+                        self.input_mode == InputMode::FilterInput;
+                    let filtered: Vec<_> = self.filtered_packages().into_iter().cloned().collect();
                     frame.render_stateful_widget(
-                        PackagesView::new(&self.packages),
+                        PackagesView::new(&filtered),
                         content_area,
                         &mut self.packages_view_state,
                     );
@@ -327,6 +333,7 @@ impl App {
         match &self.input_mode {
             InputMode::PullPrompt(_) => self.handle_pull_prompt_key(key, modifiers),
             InputMode::SearchInput => self.handle_search_key(key, modifiers),
+            InputMode::FilterInput => self.handle_filter_key(key, modifiers),
             InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
             InputMode::Normal => self.handle_normal_key(key, modifiers),
         }
@@ -365,32 +372,49 @@ impl App {
             {
                 self.input_mode = InputMode::PullPrompt(PullPromptState::default());
             }
+            // Activate filter input with '/' on Components tab
+            (KeyCode::Char('/'), _) if self.current_tab == Tab::Components => {
+                self.input_mode = InputMode::FilterInput;
+                self.packages_view_state.filter_active = true;
+            }
             // Package list navigation (when on Components tab)
             (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
-                self.packages_view_state.select_prev(self.packages.len());
+                self.packages_view_state
+                    .select_prev(self.filtered_packages().len());
             }
             (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Components => {
-                self.packages_view_state.select_next(self.packages.len());
+                self.packages_view_state
+                    .select_next(self.filtered_packages().len());
             }
             (KeyCode::Enter, _) if self.current_tab == Tab::Components => {
+                let filtered = self.filtered_packages();
                 if let Some(selected) = self.packages_view_state.selected()
-                    && selected < self.packages.len()
+                    && let Some(package) = filtered.get(selected)
                 {
-                    self.input_mode = InputMode::PackageDetail(selected);
+                    // Find the actual index in the unfiltered list for package detail view
+                    if let Some(actual_idx) = self.packages.iter().position(|p| {
+                        p.ref_repository == package.ref_repository
+                            && p.ref_registry == package.ref_registry
+                            && p.ref_tag == package.ref_tag
+                            && p.ref_digest == package.ref_digest
+                    }) {
+                        self.input_mode = InputMode::PackageDetail(actual_idx);
+                    }
                 }
             }
             // Delete selected package
             (KeyCode::Char('d'), _)
                 if self.current_tab == Tab::Components && self.is_manager_ready() =>
             {
+                let filtered = self.filtered_packages();
                 if let Some(selected) = self.packages_view_state.selected()
-                    && let Some(package) = self.packages.get(selected)
+                    && let Some(package) = filtered.get(selected)
                 {
                     let _ = self
                         .app_sender
                         .try_send(AppEvent::Delete(package.reference()));
                     // Adjust selection if we're deleting the last item
-                    if selected > 0 && selected >= self.packages.len() - 1 {
+                    if selected > 0 && selected >= filtered.len() - 1 {
                         self.packages_view_state
                             .table_state
                             .select(Some(selected - 1));
@@ -433,6 +457,35 @@ impl App {
                         package.registry.clone(),
                         package.repository.clone(),
                     ));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_filter_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match key {
+            KeyCode::Esc => {
+                self.input_mode = InputMode::Normal;
+                self.packages_view_state.filter_active = false;
+            }
+            KeyCode::Enter => {
+                // Just exit filter input mode, filter is applied live
+                self.input_mode = InputMode::Normal;
+                self.packages_view_state.filter_active = false;
+            }
+            KeyCode::Backspace => {
+                self.packages_view_state.filter_query.pop();
+                // Reset selection when filter changes
+                self.packages_view_state.table_state.select(Some(0));
+            }
+            KeyCode::Char(c) => {
+                if modifiers == KeyModifiers::CONTROL && c == 'c' {
+                    self.running = false;
+                } else {
+                    self.packages_view_state.filter_query.push(c);
+                    // Reset selection when filter changes
+                    self.packages_view_state.table_state.select(Some(0));
                 }
             }
             _ => {}
@@ -510,5 +563,24 @@ impl App {
 
     fn is_manager_ready(&self) -> bool {
         self.manager_state == ManagerState::Ready
+    }
+
+    fn filtered_packages(&self) -> Vec<&ImageEntry> {
+        let query = self.packages_view_state.filter_query.to_lowercase();
+        if query.is_empty() {
+            self.packages.iter().collect()
+        } else {
+            self.packages
+                .iter()
+                .filter(|p| {
+                    p.ref_repository.to_lowercase().contains(&query)
+                        || p.ref_registry.to_lowercase().contains(&query)
+                        || p.ref_tag
+                            .as_ref()
+                            .map(|t| t.to_lowercase().contains(&query))
+                            .unwrap_or(false)
+                })
+                .collect()
+        }
     }
 }

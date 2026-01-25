@@ -1,6 +1,6 @@
 use ratatui::{
     prelude::*,
-    widgets::{Cell, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
+    widgets::{Block, Cell, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
 };
 use wasm_package_manager::ImageEntry;
 
@@ -10,12 +10,16 @@ use super::format_size;
 #[derive(Debug, Default)]
 pub(crate) struct PackagesViewState {
     pub table_state: TableState,
+    pub filter_query: String,
+    pub filter_active: bool,
 }
 
 impl PackagesViewState {
     pub(crate) fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
+            filter_query: String::new(),
+            filter_active: false,
         }
     }
 
@@ -56,15 +60,47 @@ impl StatefulWidget for PackagesView<'_> {
     type State = PackagesViewState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        // Split area into content and shortcuts bar
-        let layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
-        let content_area = layout[0];
-        let shortcuts_area = layout[1];
+        // Split area into filter input, content, and shortcuts bar
+        let layout = Layout::vertical([
+            Constraint::Length(3),
+            Constraint::Min(0),
+            Constraint::Length(1),
+        ])
+        .split(area);
+        let filter_area = layout[0];
+        let content_area = layout[1];
+        let shortcuts_area = layout[2];
+
+        // Render filter input
+        let filter_style = if state.filter_active {
+            Style::default().fg(Color::Yellow)
+        } else {
+            Style::default().fg(Color::White)
+        };
+
+        let filter_text = if state.filter_active {
+            format!("{}_", state.filter_query)
+        } else if state.filter_query.is_empty() {
+            "Press / to filter...".to_string()
+        } else {
+            state.filter_query.clone()
+        };
+
+        let filter_block = Block::bordered()
+            .title(" Filter ")
+            .border_style(filter_style);
+        let filter_input = Paragraph::new(filter_text)
+            .style(filter_style)
+            .block(filter_block);
+        filter_input.render(filter_area, buf);
 
         if self.packages.is_empty() {
-            Paragraph::new("No packages stored.")
-                .centered()
-                .render(content_area, buf);
+            let message = if state.filter_query.is_empty() {
+                "No packages stored."
+            } else {
+                "No packages found matching your filter."
+            };
+            Paragraph::new(message).centered().render(content_area, buf);
         } else {
             // Create header row
             let header = Row::new(vec![
@@ -119,6 +155,8 @@ impl StatefulWidget for PackagesView<'_> {
 
         // Render shortcuts bar
         let shortcuts = Line::from(vec![
+            Span::styled(" / ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Filter  "),
             Span::styled(" p ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Pull  "),
             Span::styled(" d ", Style::default().fg(Color::Black).bg(Color::Yellow)),
@@ -127,7 +165,9 @@ impl StatefulWidget for PackagesView<'_> {
                 " Enter ",
                 Style::default().fg(Color::Black).bg(Color::Yellow),
             ),
-            Span::raw(" View details "),
+            Span::raw(" View details  "),
+            Span::styled(" Esc ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Clear "),
         ]);
         Paragraph::new(shortcuts)
             .style(Style::default().fg(Color::DarkGray))
