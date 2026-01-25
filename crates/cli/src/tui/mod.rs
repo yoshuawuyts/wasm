@@ -72,9 +72,8 @@ async fn run_manager(
                 }
             }
             AppEvent::RequestStateInfo => {
-                if let Ok(state_info) = manager.state_info() {
-                    sender.send(ManagerEvent::StateInfo(state_info)).await.ok();
-                }
+                let state_info = manager.state_info();
+                sender.send(ManagerEvent::StateInfo(state_info)).await.ok();
             }
             AppEvent::Pull(reference_str) => {
                 let result = match reference_str.parse::<Reference>() {

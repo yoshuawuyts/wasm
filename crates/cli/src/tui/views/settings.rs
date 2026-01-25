@@ -25,19 +25,19 @@ impl Widget for SettingsView<'_> {
                     )]),
                     Line::from(format!(
                         "  Current:  {}/{}",
-                        info.migration_current, info.migration_total
+                        info.migration_current(), info.migration_total()
                     )),
                     Line::from(""),
                     Line::from(vec![Span::styled(
                         "Storage",
                         Style::default().bold().fg(Color::Yellow),
                     )]),
-                    Line::from(format!("  Executable:     {}", info.executable.display())),
-                    Line::from(format!("  Data storage:   {}", info.data_dir.display())),
-                    Line::from(format!("  Image layers:   {}", info.layers_dir.display())),
+                    Line::from(format!("  Executable:     {}", info.executable().display())),
+                    Line::from(format!("  Data storage:   {}", info.data_dir().display())),
+                    Line::from(format!("  Image layers:   {}", info.layers_dir().display())),
                     Line::from(format!(
                         "  Image metadata: {}",
-                        info.metadata_file.display()
+                        info.metadata_file().display()
                     )),
                 ];
                 Text::from(lines)

@@ -13,19 +13,19 @@ impl Opts {
         match self {
             Opts::State => {
                 let store = Manager::open().await?;
-                let state_info = store.state_info()?;
+                let state_info = store.state_info();
 
                 println!("[Migrations]");
                 println!(
                     "Current: \t{}/{}",
-                    state_info.migration_current, state_info.migration_total
+                    state_info.migration_current(), state_info.migration_total()
                 );
                 println!();
                 println!("[Storage]");
-                println!("Executable: \t{}", state_info.executable.display());
-                println!("Data storage: \t{}", state_info.data_dir.display());
-                println!("Image layers: \t{}", state_info.layers_dir.display());
-                println!("Image metadata: {}", state_info.metadata_file.display());
+                println!("Executable: \t{}", state_info.executable().display());
+                println!("Data storage: \t{}", state_info.data_dir().display());
+                println!("Image layers: \t{}", state_info.layers_dir().display());
+                println!("Image metadata: {}", state_info.metadata_file().display());
                 Ok(())
             }
         }
