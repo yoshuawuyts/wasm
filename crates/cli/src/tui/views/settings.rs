@@ -25,7 +25,8 @@ impl Widget for SettingsView<'_> {
                     )]),
                     Line::from(format!(
                         "  Current:  {}/{}",
-                        info.migration_current(), info.migration_total()
+                        info.migration_current(),
+                        info.migration_total()
                     )),
                     Line::from(""),
                     Line::from(vec![Span::styled(
@@ -34,10 +35,15 @@ impl Widget for SettingsView<'_> {
                     )]),
                     Line::from(format!("  Executable:     {}", info.executable().display())),
                     Line::from(format!("  Data storage:   {}", info.data_dir().display())),
-                    Line::from(format!("  Image layers:   {}", info.layers_dir().display())),
                     Line::from(format!(
-                        "  Image metadata: {}",
-                        info.metadata_file().display()
+                        "  Image layers:   {} ({})",
+                        info.layers_dir().display(),
+                        super::format_size(info.layers_size())
+                    )),
+                    Line::from(format!(
+                        "  Image metadata: {} ({})",
+                        info.metadata_file().display(),
+                        super::format_size(info.metadata_size())
                     )),
                 ];
                 Text::from(lines)

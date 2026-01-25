@@ -97,7 +97,7 @@ impl Widget for PackageDetailView<'_> {
         ]));
         details.push(Line::from(vec![
             Span::styled("  Config Size: ", Style::default().bold()),
-            Span::raw(format_size(self.package.manifest.config.size)),
+            Span::raw(super::format_size(self.package.manifest.config.size as u64)),
         ]));
 
         details.push(Line::raw("")); // Empty line
@@ -110,7 +110,7 @@ impl Widget for PackageDetailView<'_> {
         ]));
 
         for (i, layer) in self.package.manifest.layers.iter().enumerate() {
-            let size_str = format_size(layer.size);
+            let size_str = super::format_size(layer.size as u64);
             details.push(Line::from(vec![
                 Span::styled(format!("  [{}] ", i + 1), Style::default().dim()),
                 Span::raw(&layer.media_type),
@@ -132,21 +132,5 @@ impl Widget for PackageDetailView<'_> {
         Paragraph::new(shortcuts)
             .style(Style::default().fg(Color::DarkGray))
             .render(shortcuts_area, buf);
-    }
-}
-
-fn format_size(bytes: i64) -> String {
-    const KB: i64 = 1024;
-    const MB: i64 = KB * 1024;
-    const GB: i64 = MB * 1024;
-
-    if bytes >= GB {
-        format!("{:.2} GB", bytes as f64 / GB as f64)
-    } else if bytes >= MB {
-        format!("{:.2} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.2} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} B", bytes)
     }
 }

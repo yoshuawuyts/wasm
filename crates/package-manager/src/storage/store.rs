@@ -1,10 +1,32 @@
 use anyhow::Context;
+use std::path::Path;
 
 use super::config::StateInfo;
 use super::models::{ImageEntry, Migrations};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
+
+/// Calculate the total size of a directory recursively
+async fn dir_size(path: &Path) -> u64 {
+    let mut total = 0u64;
+    let mut stack = vec![path.to_path_buf()];
+    
+    while let Some(dir) = stack.pop() {
+        if let Ok(mut entries) = tokio::fs::read_dir(&dir).await {
+            while let Ok(Some(entry)) = entries.next_entry().await {
+                if let Ok(metadata) = entry.metadata().await {
+                    if metadata.is_dir() {
+                        stack.push(entry.path());
+                    } else {
+                        total += metadata.len();
+                    }
+                }
+            }
+        }
+    }
+    total
+}
 
 #[derive(Debug)]
 pub(crate) struct Store {
@@ -33,9 +55,14 @@ impl Store {
 
         let conn = Connection::open(&metadata_file)?;
         Migrations::run_all(&conn)?;
-        
+
         let migration_info = Migrations::get(&conn)?;
-        let state_info = StateInfo::new_at(data_dir, migration_info);
+        let layers_size = dir_size(&layers_dir).await;
+        let metadata_size = tokio::fs::metadata(&metadata_file)
+            .await
+            .map(|m| m.len())
+            .unwrap_or(0);
+        let state_info = StateInfo::new_at(data_dir, migration_info, layers_size, metadata_size);
 
         Ok(Self { state_info, conn })
     }
