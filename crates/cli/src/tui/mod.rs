@@ -2,13 +2,15 @@ mod app;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::Manager;
+use wasm_package_manager::{ImageEntry, Manager};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
 pub enum AppEvent {
     /// Request to quit the application
     Quit,
+    /// Request the list of packages
+    RequestPackages,
 }
 
 /// Events sent from the Manager to the TUI
@@ -16,6 +18,8 @@ pub enum AppEvent {
 pub enum ManagerEvent {
     /// Manager has finished initializing
     Ready,
+    /// List of packages
+    PackagesList(Vec<ImageEntry>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -48,6 +52,11 @@ async fn run_manager(
     while let Some(event) = receiver.recv().await {
         match event {
             AppEvent::Quit => break,
+            AppEvent::RequestPackages => {
+                if let Ok(packages) = _manager.list_all() {
+                    sender.send(ManagerEvent::PackagesList(packages)).await.ok();
+                }
+            }
         }
     }
 

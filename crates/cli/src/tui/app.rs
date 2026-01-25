@@ -1,10 +1,11 @@
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
-    widgets::{Block, Paragraph, Tabs, Widget},
+    widgets::{Block, List, ListItem, Paragraph, Tabs, Widget},
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
+use wasm_package_manager::ImageEntry;
 
 use super::{AppEvent, ManagerEvent};
 
@@ -53,6 +54,7 @@ pub(crate) struct App {
     running: bool,
     manager_ready: bool,
     current_tab: Tab,
+    packages: Vec<ImageEntry>,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -66,6 +68,7 @@ impl App {
             running: true,
             manager_ready: false,
             current_tab: Tab::Home,
+            packages: Vec::new(),
             app_sender,
             manager_receiver,
         }
@@ -100,6 +103,11 @@ impl App {
             match event {
                 ManagerEvent::Ready => {
                     self.manager_ready = true;
+                    // Request packages list when manager is ready
+                    let _ = self.app_sender.try_send(AppEvent::RequestPackages);
+                }
+                ManagerEvent::PackagesList(packages) => {
+                    self.packages = packages;
                 }
             }
         }
@@ -162,9 +170,37 @@ impl Widget for &App {
                     .render(content_area, buf);
             }
             Tab::Packages => {
-                Paragraph::new("Packages will be listed here...")
-                    .centered()
-                    .render(content_area, buf);
+                if self.packages.is_empty() {
+                    Paragraph::new("No packages stored.")
+                        .centered()
+                        .render(content_area, buf);
+                } else {
+                    let items: Vec<ListItem> = self
+                        .packages
+                        .iter()
+                        .map(|entry| {
+                            let tag = entry.ref_tag.as_deref().unwrap_or("<none>");
+                            let digest = entry
+                                .ref_digest
+                                .as_ref()
+                                .map(|d| {
+                                    if d.len() > 16 {
+                                        format!("{}...", &d[..16])
+                                    } else {
+                                        d.clone()
+                                    }
+                                })
+                                .unwrap_or_else(|| "<none>".to_string());
+                            let text = format!(
+                                "{}/{}:{} ({})",
+                                entry.ref_registry, entry.ref_repository, tag, digest
+                            );
+                            ListItem::new(text)
+                        })
+                        .collect();
+                    let list = List::new(items);
+                    Widget::render(list, content_area, buf);
+                }
             }
             Tab::Settings => {
                 Paragraph::new("Settings will be shown here...")

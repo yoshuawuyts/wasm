@@ -3,7 +3,7 @@ use rusqlite::Connection;
 
 /// Metadata for a stored OCI image.
 #[derive(Debug, Clone)]
-pub(crate) struct ImageEntry {
+pub struct ImageEntry {
     pub id: i64,
     pub ref_registry: String,
     pub ref_repository: String,

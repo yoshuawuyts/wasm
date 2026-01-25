@@ -1,7 +1,7 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::Store;
+use crate::storage::{ImageEntry, Store};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -35,6 +35,11 @@ impl Manager {
         let image = self.client.pull(&reference).await?;
         self.store.insert(&reference, image).await?;
         Ok(())
+    }
+
+    /// List all stored images and their metadata.
+    pub fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
+        self.store.list_all()
     }
 
     /// Get data from the store
