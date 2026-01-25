@@ -140,7 +140,10 @@ impl Widget for &App {
 
         // Render tab bar
         let tab_titles: Vec<&str> = Tab::ALL.iter().map(|t| t.title()).collect();
-        let selected_index = Tab::ALL.iter().position(|&t| t == self.current_tab).unwrap_or(0);
+        let selected_index = Tab::ALL
+            .iter()
+            .position(|&t| t == self.current_tab)
+            .unwrap_or(0);
         let tabs = Tabs::new(tab_titles)
             .block(Block::bordered().title(format!(" wasm - {} ", status)))
             .highlight_style(Style::default().bold().fg(Color::Yellow))
