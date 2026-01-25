@@ -121,6 +121,7 @@ impl App {
 
         // Render tab bar
         let tab_bar = TabBar::new(format!("wasm - {}", status), self.current_tab);
+        let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
         frame.render_widget(tab_bar, layout[0]);
 
         // Render content based on current tab
