@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, Migrations};
+use super::models::{ImageEntry, KnownPackage, Migrations};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -159,5 +159,26 @@ impl Store {
             reference.tag(),
             reference.digest(),
         )
+    }
+
+    /// Search for known packages by query string.
+    pub(crate) fn search_known_packages(&self, query: &str) -> anyhow::Result<Vec<KnownPackage>> {
+        KnownPackage::search(&self.conn, query)
+    }
+
+    /// Get all known packages.
+    pub(crate) fn list_known_packages(&self) -> anyhow::Result<Vec<KnownPackage>> {
+        KnownPackage::get_all(&self.conn)
+    }
+
+    /// Add or update a known package.
+    pub(crate) fn add_known_package(
+        &self,
+        registry: &str,
+        repository: &str,
+        tag: Option<&str>,
+        description: Option<&str>,
+    ) -> anyhow::Result<()> {
+        KnownPackage::upsert(&self.conn, registry, repository, tag, description)
     }
 }

@@ -1,7 +1,7 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::{ImageEntry, StateInfo, Store};
+use crate::storage::{ImageEntry, KnownPackage, StateInfo, Store};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -32,6 +32,13 @@ impl Manager {
     // }
 
     pub async fn pull(&self, reference: Reference) -> anyhow::Result<()> {
+        // Add to known packages when pulling (with tag if present)
+        self.store.add_known_package(
+            reference.registry(),
+            reference.repository(),
+            reference.tag(),
+            None,
+        )?;
         let image = self.client.pull(&reference).await?;
         self.store.insert(&reference, image).await?;
         Ok(())
@@ -55,5 +62,28 @@ impl Manager {
     /// Delete an image from the store by its reference.
     pub async fn delete(&self, reference: Reference) -> anyhow::Result<bool> {
         self.store.delete(&reference).await
+    }
+
+    /// Search for known packages by query string.
+    /// Searches in both registry and repository fields.
+    pub fn search_packages(&self, query: &str) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.search_known_packages(query)
+    }
+
+    /// Get all known packages.
+    pub fn list_known_packages(&self) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.list_known_packages()
+    }
+
+    /// Add or update a known package entry.
+    pub fn add_known_package(
+        &self,
+        registry: &str,
+        repository: &str,
+        tag: Option<&str>,
+        description: Option<&str>,
+    ) -> anyhow::Result<()> {
+        self.store
+            .add_known_package(registry, repository, tag, description)
     }
 }

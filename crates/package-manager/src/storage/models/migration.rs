@@ -9,11 +9,23 @@ struct MigrationDef {
 }
 
 /// All migrations in order. Each migration is run exactly once.
-const MIGRATIONS: &[MigrationDef] = &[MigrationDef {
-    version: 1,
-    name: "init",
-    sql: include_str!("../migrations/01_init.sql"),
-}];
+const MIGRATIONS: &[MigrationDef] = &[
+    MigrationDef {
+        version: 1,
+        name: "init",
+        sql: include_str!("../migrations/01_init.sql"),
+    },
+    MigrationDef {
+        version: 2,
+        name: "known_packages",
+        sql: include_str!("../migrations/02_known_packages.sql"),
+    },
+    MigrationDef {
+        version: 3,
+        name: "known_package_tags",
+        sql: include_str!("../migrations/03_known_package_tags.sql"),
+    },
+];
 
 /// Information about the current migration state.
 #[derive(Debug, Clone)]

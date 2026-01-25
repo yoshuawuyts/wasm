@@ -5,10 +5,10 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, StateInfo};
+use wasm_package_manager::{ImageEntry, KnownPackage, StateInfo};
 
 use super::views::packages::PackagesViewState;
-use super::views::{HomeView, InterfacesView, PackageDetailView, PackagesView, SettingsView};
+use super::views::{HomeView, InterfacesView, PackageDetailView, PackagesView, SearchView, SearchViewState, SettingsView};
 use super::{AppEvent, ManagerEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -16,17 +16,19 @@ pub(crate) enum Tab {
     Home,
     Components,
     Interfaces,
+    Search,
     Settings,
 }
 
 impl Tab {
-    const ALL: [Tab; 4] = [Tab::Home, Tab::Components, Tab::Interfaces, Tab::Settings];
+    const ALL: [Tab; 5] = [Tab::Home, Tab::Components, Tab::Interfaces, Tab::Search, Tab::Settings];
 
     fn title(self) -> &'static str {
         match self {
             Tab::Home => "Home",
             Tab::Components => "Components",
             Tab::Interfaces => "Interfaces",
+            Tab::Search => "Search",
             Tab::Settings => "Settings",
         }
     }
@@ -35,7 +37,8 @@ impl Tab {
         match self {
             Tab::Home => Tab::Components,
             Tab::Components => Tab::Interfaces,
-            Tab::Interfaces => Tab::Settings,
+            Tab::Interfaces => Tab::Search,
+            Tab::Search => Tab::Settings,
             Tab::Settings => Tab::Home,
         }
     }
@@ -45,7 +48,8 @@ impl Tab {
             Tab::Home => Tab::Settings,
             Tab::Components => Tab::Home,
             Tab::Interfaces => Tab::Components,
-            Tab::Settings => Tab::Interfaces,
+            Tab::Search => Tab::Interfaces,
+            Tab::Settings => Tab::Search,
         }
     }
 }
@@ -65,6 +69,10 @@ pub(crate) struct App {
     pull_prompt_input: String,
     pull_prompt_error: Option<String>,
     pull_in_progress: bool,
+    /// Search view state
+    search_view_state: SearchViewState,
+    /// Known packages for search results
+    known_packages: Vec<KnownPackage>,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -86,6 +94,8 @@ impl App {
             pull_prompt_input: String::new(),
             pull_prompt_error: None,
             pull_in_progress: false,
+            search_view_state: SearchViewState::new(),
+            known_packages: Vec::new(),
             app_sender,
             manager_receiver,
         }
@@ -147,6 +157,13 @@ impl App {
                 }
             }
             Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
+            Tab::Search => {
+                frame.render_stateful_widget(
+                    SearchView::new(&self.known_packages),
+                    content_area,
+                    &mut self.search_view_state,
+                );
+            }
             Tab::Settings => {
                 frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
             }
@@ -243,6 +260,7 @@ impl App {
                     // Request packages list and state info when manager is ready
                     let _ = self.app_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
+                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
@@ -258,6 +276,8 @@ impl App {
                             self.pull_prompt_active = false;
                             self.pull_prompt_input.clear();
                             self.pull_prompt_error = None;
+                            // Refresh known packages
+                            let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
                         }
                         Err(e) => {
                             self.pull_prompt_error = Some(e);
@@ -267,6 +287,12 @@ impl App {
                 ManagerEvent::DeleteResult(_result) => {
                     // Delete completed, packages list will be refreshed automatically
                 }
+                ManagerEvent::SearchResults(packages) => {
+                    self.known_packages = packages;
+                }
+                ManagerEvent::KnownPackagesList(packages) => {
+                    self.known_packages = packages;
+                }
             }
         }
     }
@@ -275,6 +301,12 @@ impl App {
         // Handle pull prompt input first
         if self.pull_prompt_active {
             self.handle_pull_prompt_key(key, modifiers);
+            return;
+        }
+
+        // Handle search input mode
+        if self.current_tab == Tab::Search && self.search_view_state.search_active {
+            self.handle_search_key(key, modifiers);
             return;
         }
 
@@ -304,7 +336,8 @@ impl App {
             (KeyCode::Char('1'), _) => self.current_tab = Tab::Home,
             (KeyCode::Char('2'), _) => self.current_tab = Tab::Components,
             (KeyCode::Char('3'), _) => self.current_tab = Tab::Interfaces,
-            (KeyCode::Char('4'), _) => self.current_tab = Tab::Settings,
+            (KeyCode::Char('4'), _) => self.current_tab = Tab::Search,
+            (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
             // Pull prompt - 'p' to open
             (KeyCode::Char('p'), _) if self.manager_ready => {
                 self.pull_prompt_active = true;
@@ -339,6 +372,58 @@ impl App {
                                 .select(Some(selected - 1));
                         }
                     }
+                }
+            }
+            // Search tab navigation
+            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
+                self.search_view_state.select_prev(self.known_packages.len());
+            }
+            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
+                self.search_view_state.select_next(self.known_packages.len());
+            }
+            // Activate search input with '/'
+            (KeyCode::Char('/'), _) if self.current_tab == Tab::Search => {
+                self.search_view_state.search_active = true;
+            }
+            // Pull selected package from search results
+            (KeyCode::Enter, _) if self.current_tab == Tab::Search && self.manager_ready => {
+                if let Some(selected) = self.search_view_state.selected() {
+                    if let Some(package) = self.known_packages.get(selected) {
+                        // Pull the package with the most recent tag (or latest if none)
+                        let reference = package.reference_with_tag();
+                        let _ = self.app_sender.try_send(AppEvent::Pull(reference));
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    fn handle_search_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match key {
+            KeyCode::Esc => {
+                // Exit search mode
+                self.search_view_state.search_active = false;
+            }
+            KeyCode::Enter => {
+                // Execute search
+                self.search_view_state.search_active = false;
+                if self.search_view_state.search_query.is_empty() {
+                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                } else {
+                    let _ = self.app_sender.try_send(AppEvent::SearchPackages(
+                        self.search_view_state.search_query.clone(),
+                    ));
+                }
+            }
+            KeyCode::Backspace => {
+                self.search_view_state.search_query.pop();
+            }
+            KeyCode::Char(c) => {
+                if modifiers == KeyModifiers::CONTROL && c == 'c' {
+                    self.running = false;
+                } else {
+                    self.search_view_state.search_query.push(c);
                 }
             }
             _ => {}

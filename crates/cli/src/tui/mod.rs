@@ -3,7 +3,7 @@ mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, Manager, Reference, StateInfo};
+use wasm_package_manager::{ImageEntry, KnownPackage, Manager, Reference, StateInfo};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -18,6 +18,10 @@ pub enum AppEvent {
     Pull(String),
     /// Delete a package by its reference
     Delete(String),
+    /// Search for known packages
+    SearchPackages(String),
+    /// Request all known packages
+    RequestKnownPackages,
 }
 
 /// Events sent from the Manager to the TUI
@@ -33,6 +37,10 @@ pub enum ManagerEvent {
     PullResult(Result<(), String>),
     /// Result of a delete operation
     DeleteResult(Result<(), String>),
+    /// Search results for known packages
+    SearchResults(Vec<KnownPackage>),
+    /// All known packages
+    KnownPackagesList(Vec<KnownPackage>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -99,6 +107,16 @@ async fn run_manager(
                 // Refresh the packages list after delete
                 if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
+                }
+            }
+            AppEvent::SearchPackages(query) => {
+                if let Ok(packages) = manager.search_packages(&query) {
+                    sender.send(ManagerEvent::SearchResults(packages)).await.ok();
+                }
+            }
+            AppEvent::RequestKnownPackages => {
+                if let Ok(packages) = manager.list_known_packages() {
+                    sender.send(ManagerEvent::KnownPackagesList(packages)).await.ok();
                 }
             }
         }
