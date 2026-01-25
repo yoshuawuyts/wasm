@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_package_manager::Manager;
+use wasm_package_manager::{format_size, Manager};
 
 /// Configure the `wasm(1)` tool, generate completions, & manage state
 #[derive(clap::Parser)]
@@ -24,8 +24,16 @@ impl Opts {
                 println!("[Storage]");
                 println!("Executable: \t{}", state_info.executable().display());
                 println!("Data storage: \t{}", state_info.data_dir().display());
-                println!("Image layers: \t{}", state_info.layers_dir().display());
-                println!("Image metadata: {}", state_info.metadata_file().display());
+                println!(
+                    "Image layers: \t{} ({})",
+                    state_info.layers_dir().display(),
+                    format_size(state_info.layers_size())
+                );
+                println!(
+                    "Image metadata: {} ({})",
+                    state_info.metadata_file().display(),
+                    format_size(state_info.metadata_size())
+                );
                 Ok(())
             }
         }
