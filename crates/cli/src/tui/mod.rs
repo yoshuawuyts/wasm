@@ -101,7 +101,11 @@ async fn run_manager(
             }
             AppEvent::Delete(reference_str) => {
                 let result = match reference_str.parse::<Reference>() {
-                    Ok(reference) => manager.delete(reference).await.map(|_| ()).map_err(|e| e.to_string()),
+                    Ok(reference) => manager
+                        .delete(reference)
+                        .await
+                        .map(|_| ())
+                        .map_err(|e| e.to_string()),
                     Err(e) => Err(format!("Invalid reference: {}", e)),
                 };
                 sender.send(ManagerEvent::DeleteResult(result)).await.ok();
@@ -112,12 +116,18 @@ async fn run_manager(
             }
             AppEvent::SearchPackages(query) => {
                 if let Ok(packages) = manager.search_packages(&query) {
-                    sender.send(ManagerEvent::SearchResults(packages)).await.ok();
+                    sender
+                        .send(ManagerEvent::SearchResults(packages))
+                        .await
+                        .ok();
                 }
             }
             AppEvent::RequestKnownPackages => {
                 if let Ok(packages) = manager.list_known_packages() {
-                    sender.send(ManagerEvent::KnownPackagesList(packages)).await.ok();
+                    sender
+                        .send(ManagerEvent::KnownPackagesList(packages))
+                        .await
+                        .ok();
                 }
             }
         }

@@ -265,7 +265,9 @@ impl App {
                             self.pull_prompt_input.clear();
                             if insert_result == InsertResult::AlreadyExists {
                                 // Show a warning that the package already exists
-                                self.pull_prompt_error = Some("Warning: package already exists in local store".to_string());
+                                self.pull_prompt_error = Some(
+                                    "Warning: package already exists in local store".to_string(),
+                                );
                             } else {
                                 self.pull_prompt_error = None;
                             }
