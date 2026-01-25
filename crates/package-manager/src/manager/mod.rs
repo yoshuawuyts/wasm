@@ -34,7 +34,13 @@ impl Manager {
     /// Pull a package from the registry.
     /// Returns the insert result indicating whether the package was newly inserted
     /// or already existed in the database.
+    ///
+    /// This method also fetches all related tags for the package and stores them
+    /// as known packages for discovery purposes.
     pub async fn pull(&self, reference: Reference) -> anyhow::Result<InsertResult> {
+        let image = self.client.pull(&reference).await?;
+        let result = self.store.insert(&reference, image).await?;
+
         // Add to known packages when pulling (with tag if present)
         self.store.add_known_package(
             reference.registry(),
@@ -42,8 +48,19 @@ impl Manager {
             reference.tag(),
             None,
         )?;
-        let image = self.client.pull(&reference).await?;
-        let result = self.store.insert(&reference, image).await?;
+
+        // Fetch all related tags and store them as known packages
+        if let Ok(tags) = self.client.list_tags(&reference).await {
+            for tag in tags {
+                self.store.add_known_package(
+                    reference.registry(),
+                    reference.repository(),
+                    Some(&tag),
+                    None,
+                )?;
+            }
+        }
+
         Ok(result)
     }
 

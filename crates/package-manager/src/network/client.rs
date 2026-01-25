@@ -1,6 +1,6 @@
 use docker_credential::DockerCredential;
 use oci_client::Reference;
-use oci_client::client::{ClientConfig, ClientProtocol, ImageData};
+use oci_client::client::{ClientConfig, ClientProtocol, ImageData, TagResponse};
 use oci_client::secrets::RegistryAuth;
 use oci_wasm::WasmClient;
 
@@ -28,6 +28,49 @@ impl Client {
         let auth = resolve_auth(&reference)?;
         let image = self.inner.pull(&reference, &auth).await?;
         Ok(image)
+    }
+
+    /// Fetches all tags for a given reference from the registry.
+    ///
+    /// This method handles pagination automatically, fetching all available tags
+    /// by making multiple requests if necessary.
+    pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
+        let auth = resolve_auth(reference)?;
+        let mut all_tags = Vec::new();
+        let mut last: Option<String> = None;
+
+        loop {
+            let response: TagResponse = self
+                .inner
+                .list_tags(reference, &auth, None, last.as_deref())
+                .await?;
+
+            if response.tags.is_empty() {
+                break;
+            }
+
+            last = response.tags.last().cloned();
+            all_tags.extend(response.tags);
+
+            // If we got fewer tags than a typical page size, we're done
+            // The API doesn't provide a "next" link, so we detect the end
+            // by checking if the last tag changed
+            if last.is_none() {
+                break;
+            }
+
+            // Make another request to check if there are more tags
+            let next_response: TagResponse = self
+                .inner
+                .list_tags(reference, &auth, Some(1), last.as_deref())
+                .await?;
+
+            if next_response.tags.is_empty() {
+                break;
+            }
+        }
+
+        Ok(all_tags)
     }
 }
 
