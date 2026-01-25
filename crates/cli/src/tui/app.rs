@@ -1,7 +1,7 @@
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
-    widgets::{Block, Paragraph, Widget},
+    widgets::{Block, Paragraph, Tabs, Widget},
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -14,9 +14,45 @@ const LOGO: &str = "
 ▛ ▝▌█▌▄▌▌▌▌
 ";
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Tab {
+    Home,
+    Packages,
+    Settings,
+}
+
+impl Tab {
+    const ALL: [Tab; 3] = [Tab::Home, Tab::Packages, Tab::Settings];
+
+    fn title(self) -> &'static str {
+        match self {
+            Tab::Home => "Home",
+            Tab::Packages => "Packages",
+            Tab::Settings => "Settings",
+        }
+    }
+
+    fn next(self) -> Self {
+        match self {
+            Tab::Home => Tab::Packages,
+            Tab::Packages => Tab::Settings,
+            Tab::Settings => Tab::Home,
+        }
+    }
+
+    fn prev(self) -> Self {
+        match self {
+            Tab::Home => Tab::Settings,
+            Tab::Packages => Tab::Home,
+            Tab::Settings => Tab::Packages,
+        }
+    }
+}
+
 pub(crate) struct App {
     running: bool,
     manager_ready: bool,
+    current_tab: Tab,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -29,6 +65,7 @@ impl App {
         Self {
             running: true,
             manager_ready: false,
+            current_tab: Tab::Home,
             app_sender,
             manager_receiver,
         }
@@ -72,6 +109,16 @@ impl App {
         match (key, modifiers) {
             (KeyCode::Char('q'), _) | (KeyCode::Esc, _) => self.running = false,
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
+            // Tab navigation
+            (KeyCode::Tab, KeyModifiers::NONE) | (KeyCode::Right, _) => {
+                self.current_tab = self.current_tab.next();
+            }
+            (KeyCode::BackTab, _) | (KeyCode::Left, _) => {
+                self.current_tab = self.current_tab.prev();
+            }
+            (KeyCode::Char('1'), _) => self.current_tab = Tab::Home,
+            (KeyCode::Char('2'), _) => self.current_tab = Tab::Packages,
+            (KeyCode::Char('3'), _) => self.current_tab = Tab::Settings,
             _ => {}
         }
     }
@@ -87,10 +134,40 @@ impl Widget for &App {
         } else {
             "loading..."
         };
-        let block = Block::bordered().title(format!(" wasm - {} ", status));
-        Paragraph::new(LOGO.trim())
-            .centered()
-            .block(block)
-            .render(area, buf);
+
+        // Create main layout with tabs at top
+        let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
+
+        // Render tab bar
+        let tab_titles: Vec<&str> = Tab::ALL.iter().map(|t| t.title()).collect();
+        let selected_index = Tab::ALL.iter().position(|&t| t == self.current_tab).unwrap_or(0);
+        let tabs = Tabs::new(tab_titles)
+            .block(Block::bordered().title(format!(" wasm - {} ", status)))
+            .highlight_style(Style::default().bold().fg(Color::Yellow))
+            .select(selected_index);
+        tabs.render(layout[0], buf);
+
+        // Render content based on current tab
+        let content_block = Block::bordered();
+        let content_area = content_block.inner(layout[1]);
+        content_block.render(layout[1], buf);
+
+        match self.current_tab {
+            Tab::Home => {
+                Paragraph::new(LOGO.trim())
+                    .centered()
+                    .render(content_area, buf);
+            }
+            Tab::Packages => {
+                Paragraph::new("Packages will be listed here...")
+                    .centered()
+                    .render(content_area, buf);
+            }
+            Tab::Settings => {
+                Paragraph::new("Settings will be shown here...")
+                    .centered()
+                    .render(content_area, buf);
+            }
+        }
     }
 }
