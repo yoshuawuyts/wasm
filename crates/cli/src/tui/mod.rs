@@ -4,7 +4,7 @@ mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, KnownPackage, Manager, Reference, StateInfo};
+use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -34,8 +34,8 @@ pub enum ManagerEvent {
     PackagesList(Vec<ImageEntry>),
     /// State information
     StateInfo(StateInfo),
-    /// Result of a pull operation
-    PullResult(Result<(), String>),
+    /// Result of a pull operation (includes InsertResult to indicate if package was new or already existed)
+    PullResult(Result<InsertResult, String>),
     /// Result of a delete operation
     DeleteResult(Result<(), String>),
     /// Search results for known packages
@@ -94,7 +94,7 @@ async fn run_manager(
                     Err(e) => Err(format!("Invalid reference: {}", e)),
                 };
                 sender.send(ManagerEvent::PullResult(result)).await.ok();
-                // Refresh the packages list after pull
+                // Refresh the packages list after pull (only if it was newly inserted)
                 if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
                 }

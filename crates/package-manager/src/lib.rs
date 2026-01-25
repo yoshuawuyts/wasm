@@ -4,7 +4,7 @@ mod storage;
 
 pub use manager::Manager;
 pub use oci_client::Reference;
-pub use storage::{ImageEntry, KnownPackage, StateInfo};
+pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 
 /// Format a byte size as a human-readable string (B, KB, MB, GB).
 pub fn format_size(bytes: u64) -> String {

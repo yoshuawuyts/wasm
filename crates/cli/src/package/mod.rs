@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_package_manager::{Manager, Reference};
+use wasm_package_manager::{InsertResult, Manager, Reference};
 
 /// Package, push, and pull Wasm Components
 #[derive(clap::Parser)]
@@ -23,7 +23,13 @@ impl Opts {
         match self {
             Opts::Show => todo!(),
             Opts::Pull(opts) => {
-                store.pull(opts.reference).await?;
+                let result = store.pull(opts.reference.clone()).await?;
+                if result == InsertResult::AlreadyExists {
+                    eprintln!(
+                        "warning: package '{}' already exists in the local store",
+                        opts.reference.whole()
+                    );
+                }
                 Ok(())
             }
             Opts::Push => todo!(),

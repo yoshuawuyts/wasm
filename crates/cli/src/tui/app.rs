@@ -5,7 +5,7 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, KnownPackage, StateInfo};
+use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
@@ -259,11 +259,16 @@ impl App {
                 ManagerEvent::PullResult(result) => {
                     self.pull_in_progress = false;
                     match result {
-                        Ok(()) => {
+                        Ok(insert_result) => {
                             // Close the prompt on success
                             self.pull_prompt_active = false;
                             self.pull_prompt_input.clear();
-                            self.pull_prompt_error = None;
+                            if insert_result == InsertResult::AlreadyExists {
+                                // Show a warning that the package already exists
+                                self.pull_prompt_error = Some("Warning: package already exists in local store".to_string());
+                            } else {
+                                self.pull_prompt_error = None;
+                            }
                             // Refresh known packages
                             let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
                         }

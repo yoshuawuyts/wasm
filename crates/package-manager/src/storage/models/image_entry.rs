@@ -1,6 +1,15 @@
 use oci_client::manifest::OciImageManifest;
 use rusqlite::Connection;
 
+/// Result of an insert operation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InsertResult {
+    /// The entry was inserted successfully.
+    Inserted,
+    /// The entry already existed in the database.
+    AlreadyExists,
+}
+
 /// Metadata for a stored OCI image.
 #[derive(Debug, Clone)]
 pub struct ImageEntry {
@@ -28,7 +37,42 @@ impl ImageEntry {
         reference
     }
 
-    /// Inserts a new image entry into the database.
+    /// Checks if an image entry with the given reference already exists.
+    pub(crate) fn exists(
+        conn: &Connection,
+        ref_registry: &str,
+        ref_repository: &str,
+        ref_tag: Option<&str>,
+        ref_digest: Option<&str>,
+    ) -> anyhow::Result<bool> {
+        let count: i64 = match (ref_tag, ref_digest) {
+            (Some(tag), Some(digest)) => conn.query_row(
+                "SELECT COUNT(*) FROM image WHERE ref_registry = ?1 AND ref_repository = ?2 AND ref_tag = ?3 AND ref_digest = ?4",
+                (ref_registry, ref_repository, tag, digest),
+                |row| row.get(0),
+            )?,
+            (Some(tag), None) => conn.query_row(
+                "SELECT COUNT(*) FROM image WHERE ref_registry = ?1 AND ref_repository = ?2 AND ref_tag = ?3 AND ref_digest IS NULL",
+                (ref_registry, ref_repository, tag),
+                |row| row.get(0),
+            )?,
+            (None, Some(digest)) => conn.query_row(
+                "SELECT COUNT(*) FROM image WHERE ref_registry = ?1 AND ref_repository = ?2 AND ref_tag IS NULL AND ref_digest = ?3",
+                (ref_registry, ref_repository, digest),
+                |row| row.get(0),
+            )?,
+            (None, None) => conn.query_row(
+                "SELECT COUNT(*) FROM image WHERE ref_registry = ?1 AND ref_repository = ?2 AND ref_tag IS NULL AND ref_digest IS NULL",
+                (ref_registry, ref_repository),
+                |row| row.get(0),
+            )?,
+        };
+        Ok(count > 0)
+    }
+
+    /// Inserts a new image entry into the database if it doesn't already exist.
+    /// Returns `InsertResult::AlreadyExists` if the entry already exists,
+    /// or `InsertResult::Inserted` if it was successfully inserted.
     pub(crate) fn insert(
         conn: &Connection,
         ref_registry: &str,
@@ -36,12 +80,17 @@ impl ImageEntry {
         ref_tag: Option<&str>,
         ref_digest: Option<&str>,
         manifest: &str,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<InsertResult> {
+        // Check if entry already exists
+        if Self::exists(conn, ref_registry, ref_repository, ref_tag, ref_digest)? {
+            return Ok(InsertResult::AlreadyExists);
+        }
+
         conn.execute(
             "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest) VALUES (?1, ?2, ?3, ?4, ?5)",
             (ref_registry, ref_repository, ref_tag, ref_digest, manifest),
         )?;
-        Ok(())
+        Ok(InsertResult::Inserted)
     }
 
     /// Returns all currently stored images and their metadata.

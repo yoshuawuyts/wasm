@@ -1,7 +1,7 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::{ImageEntry, KnownPackage, StateInfo, Store};
+use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -31,7 +31,10 @@ impl Manager {
     //     Ok(Self { client, store })
     // }
 
-    pub async fn pull(&self, reference: Reference) -> anyhow::Result<()> {
+    /// Pull a package from the registry.
+    /// Returns the insert result indicating whether the package was newly inserted
+    /// or already existed in the database.
+    pub async fn pull(&self, reference: Reference) -> anyhow::Result<InsertResult> {
         // Add to known packages when pulling (with tag if present)
         self.store.add_known_package(
             reference.registry(),
@@ -40,8 +43,8 @@ impl Manager {
             None,
         )?;
         let image = self.client.pull(&reference).await?;
-        self.store.insert(&reference, image).await?;
-        Ok(())
+        let result = self.store.insert(&reference, image).await?;
+        Ok(result)
     }
 
     /// List all stored images and their metadata.

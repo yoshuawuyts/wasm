@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, KnownPackage, Migrations};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -72,10 +72,10 @@ impl Store {
         &self,
         reference: &Reference,
         image: ImageData,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<InsertResult> {
         let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
         let manifest = serde_json::to_string(&image.manifest)?;
-        ImageEntry::insert(
+        let result = ImageEntry::insert(
             &self.conn,
             reference.registry(),
             reference.repository(),
@@ -84,23 +84,26 @@ impl Store {
             &manifest,
         )?;
 
-        // Store layers by their content digest (content-addressable storage)
-        // The manifest.layers and image.layers should be in the same order
-        if let Some(ref manifest) = image.manifest {
-            for (idx, layer) in image.layers.iter().enumerate() {
-                let cache = self.state_info.layers_dir();
-                // Use the layer's content digest from the manifest as the key
-                let fallback_key = reference.whole().to_string();
-                let key = manifest
-                    .layers
-                    .get(idx)
-                    .map(|l| l.digest.as_str())
-                    .unwrap_or(&fallback_key);
-                let data = &layer.data;
-                let _integrity = cacache::write(&cache, key, data).await?;
+        // Only store layers if this is a new entry
+        if result == InsertResult::Inserted {
+            // Store layers by their content digest (content-addressable storage)
+            // The manifest.layers and image.layers should be in the same order
+            if let Some(ref manifest) = image.manifest {
+                for (idx, layer) in image.layers.iter().enumerate() {
+                    let cache = self.state_info.layers_dir();
+                    // Use the layer's content digest from the manifest as the key
+                    let fallback_key = reference.whole().to_string();
+                    let key = manifest
+                        .layers
+                        .get(idx)
+                        .map(|l| l.digest.as_str())
+                        .unwrap_or(&fallback_key);
+                    let data = &layer.data;
+                    let _integrity = cacache::write(&cache, key, data).await?;
+                }
             }
         }
-        Ok(())
+        Ok(result)
     }
 
     /// Returns all currently stored images and their metadata.
