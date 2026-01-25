@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_package_manager::{format_size, Manager};
+use wasm_package_manager::{Manager, format_size};
 
 /// Configure the `wasm(1)` tool, generate completions, & manage state
 #[derive(clap::Parser)]
@@ -18,7 +18,8 @@ impl Opts {
                 println!("[Migrations]");
                 println!(
                     "Current: \t{}/{}",
-                    state_info.migration_current(), state_info.migration_total()
+                    state_info.migration_current(),
+                    state_info.migration_total()
                 );
                 println!();
                 println!("[Storage]");

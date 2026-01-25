@@ -11,7 +11,7 @@ use rusqlite::Connection;
 async fn dir_size(path: &Path) -> u64 {
     let mut total = 0u64;
     let mut stack = vec![path.to_path_buf()];
-    
+
     while let Some(dir) = stack.pop() {
         if let Ok(mut entries) = tokio::fs::read_dir(&dir).await {
             while let Ok(Some(entry)) = entries.next_entry().await {
