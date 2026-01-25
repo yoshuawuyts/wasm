@@ -30,16 +30,6 @@ pub trait TabItem: Copy + PartialEq + 'static {
         };
         all[prev_idx]
     }
-
-    /// Returns the tab at the given 1-based index (for number key navigation).
-    fn from_index(index: usize) -> Option<Self> {
-        let all = Self::all();
-        if index > 0 && index <= all.len() {
-            Some(all[index - 1])
-        } else {
-            None
-        }
-    }
 }
 
 /// A reusable tab bar component.
@@ -59,12 +49,6 @@ impl<'a, T: TabItem> TabBar<'a, T> {
             highlight_style: Style::default().bold().fg(Color::Yellow),
             _marker: std::marker::PhantomData,
         }
-    }
-
-    /// Sets the highlight style for the selected tab.
-    pub fn highlight_style(mut self, style: Style) -> Self {
-        self.highlight_style = style;
-        self
     }
 }
 
