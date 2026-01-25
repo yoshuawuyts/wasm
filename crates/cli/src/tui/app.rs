@@ -1,19 +1,23 @@
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
-    widgets::{Block, Clear, Paragraph, Tabs},
+    widgets::{Block, Clear, Paragraph},
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
 use wasm_package_manager::{ImageEntry, KnownPackage, StateInfo};
 
+use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
-use super::views::{HomeView, InterfacesView, PackageDetailView, PackagesView, SearchView, SearchViewState, SettingsView};
+use super::views::{
+    InterfacesView, LocalView, PackageDetailView, PackagesView, SearchView, SearchViewState,
+    SettingsView,
+};
 use super::{AppEvent, ManagerEvent};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Tab {
-    Home,
+    Local,
     Components,
     Interfaces,
     Search,
@@ -21,35 +25,27 @@ pub(crate) enum Tab {
 }
 
 impl Tab {
-    const ALL: [Tab; 5] = [Tab::Home, Tab::Components, Tab::Interfaces, Tab::Search, Tab::Settings];
+    const ALL: [Tab; 5] = [
+        Tab::Local,
+        Tab::Components,
+        Tab::Interfaces,
+        Tab::Search,
+        Tab::Settings,
+    ];
+}
 
-    fn title(self) -> &'static str {
+impl TabItem for Tab {
+    fn all() -> &'static [Self] {
+        &Self::ALL
+    }
+
+    fn title(&self) -> &'static str {
         match self {
-            Tab::Home => "Home",
+            Tab::Local => "Local",
             Tab::Components => "Components",
             Tab::Interfaces => "Interfaces",
             Tab::Search => "Search",
             Tab::Settings => "Settings",
-        }
-    }
-
-    fn next(self) -> Self {
-        match self {
-            Tab::Home => Tab::Components,
-            Tab::Components => Tab::Interfaces,
-            Tab::Interfaces => Tab::Search,
-            Tab::Search => Tab::Settings,
-            Tab::Settings => Tab::Home,
-        }
-    }
-
-    fn prev(self) -> Self {
-        match self {
-            Tab::Home => Tab::Settings,
-            Tab::Components => Tab::Home,
-            Tab::Interfaces => Tab::Components,
-            Tab::Search => Tab::Interfaces,
-            Tab::Settings => Tab::Search,
         }
     }
 }
@@ -85,7 +81,7 @@ impl App {
         Self {
             running: true,
             manager_ready: false,
-            current_tab: Tab::Home,
+            current_tab: Tab::Local,
             packages: Vec::new(),
             packages_view_state: PackagesViewState::new(),
             viewing_package: None,
@@ -124,16 +120,8 @@ impl App {
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
 
         // Render tab bar
-        let tab_titles: Vec<&str> = Tab::ALL.iter().map(|t| t.title()).collect();
-        let selected_index = Tab::ALL
-            .iter()
-            .position(|&t| t == self.current_tab)
-            .unwrap_or(0);
-        let tabs = Tabs::new(tab_titles)
-            .block(Block::bordered().title(format!(" wasm - {} ", status)))
-            .highlight_style(Style::default().bold().fg(Color::Yellow))
-            .select(selected_index);
-        frame.render_widget(tabs, layout[0]);
+        let tab_bar = TabBar::new(format!("wasm - {}", status), self.current_tab);
+        frame.render_widget(tab_bar, layout[0]);
 
         // Render content based on current tab
         let content_block = Block::bordered();
@@ -141,7 +129,7 @@ impl App {
         frame.render_widget(content_block, layout[1]);
 
         match self.current_tab {
-            Tab::Home => frame.render_widget(HomeView, content_area),
+            Tab::Local => frame.render_widget(LocalView, content_area),
             Tab::Components => {
                 // Check if we're viewing a package detail
                 if let Some(idx) = self.viewing_package {
@@ -333,7 +321,7 @@ impl App {
             (KeyCode::BackTab, _) | (KeyCode::Left, _) => {
                 self.current_tab = self.current_tab.prev();
             }
-            (KeyCode::Char('1'), _) => self.current_tab = Tab::Home,
+            (KeyCode::Char('1'), _) => self.current_tab = Tab::Local,
             (KeyCode::Char('2'), _) => self.current_tab = Tab::Components,
             (KeyCode::Char('3'), _) => self.current_tab = Tab::Interfaces,
             (KeyCode::Char('4'), _) => self.current_tab = Tab::Search,
@@ -364,7 +352,9 @@ impl App {
             {
                 if let Some(selected) = self.packages_view_state.selected() {
                     if let Some(package) = self.packages.get(selected) {
-                        let _ = self.app_sender.try_send(AppEvent::Delete(package.reference()));
+                        let _ = self
+                            .app_sender
+                            .try_send(AppEvent::Delete(package.reference()));
                         // Adjust selection if we're deleting the last item
                         if selected > 0 && selected >= self.packages.len() - 1 {
                             self.packages_view_state
@@ -376,10 +366,12 @@ impl App {
             }
             // Search tab navigation
             (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
-                self.search_view_state.select_prev(self.known_packages.len());
+                self.search_view_state
+                    .select_prev(self.known_packages.len());
             }
             (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
-                self.search_view_state.select_next(self.known_packages.len());
+                self.search_view_state
+                    .select_next(self.known_packages.len());
             }
             // Activate search input with '/'
             (KeyCode::Char('/'), _) if self.current_tab == Tab::Search => {

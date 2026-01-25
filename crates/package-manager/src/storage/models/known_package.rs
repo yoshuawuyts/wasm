@@ -23,7 +23,7 @@ impl KnownPackage {
     /// Returns the full reference string with the most recent tag.
     pub fn reference_with_tag(&self) -> String {
         if let Some(tag) = self.tags.first() {
-            format!("{}:{}" , self.reference(), tag)
+            format!("{}:{}", self.reference(), tag)
         } else {
             format!("{}:latest", self.reference())
         }
