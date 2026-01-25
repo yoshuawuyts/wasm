@@ -1,23 +1,10 @@
-use super::config::Config;
-use super::models::ImageEntry;
 use anyhow::Context;
+
+use super::config::Config;
+use super::models::{ImageEntry, Migrations};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
-
-/// A migration that can be applied to the database.
-struct Migration {
-    version: u32,
-    name: &'static str,
-    sql: &'static str,
-}
-
-/// All migrations in order. Each migration is run exactly once.
-const MIGRATIONS: &[Migration] = &[Migration {
-    version: 1,
-    name: "init",
-    sql: include_str!("./migrations/01_init.sql"),
-}];
 
 #[derive(Debug)]
 pub(crate) struct Store {
@@ -41,43 +28,9 @@ impl Store {
             .context("Could not create config directories on disk")?;
 
         let conn = Connection::open(config.metadata_file())?;
-        Self::run_migrations(&conn)?;
+        Migrations::run_all(&conn)?;
 
         Ok(Self { config, conn })
-    }
-
-    /// Initialize the migrations table and run all pending migrations.
-    fn run_migrations(conn: &Connection) -> anyhow::Result<()> {
-        // Create the migrations table if it doesn't exist
-        conn.execute_batch(include_str!("./migrations/00_migrations.sql"))?;
-
-        // Get the current migration version
-        let current_version: u32 = conn
-            .query_row(
-                "SELECT COALESCE(MAX(version), 0) FROM migrations",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or(0);
-
-        // Run all migrations that haven't been applied yet
-        for migration in MIGRATIONS {
-            if migration.version > current_version {
-                conn.execute_batch(migration.sql).with_context(|| {
-                    format!(
-                        "Failed to run migration {}: {}",
-                        migration.version, migration.name
-                    )
-                })?;
-
-                conn.execute(
-                    "INSERT INTO migrations (version) VALUES (?1)",
-                    [migration.version],
-                )?;
-            }
-        }
-
-        Ok(())
     }
 
     pub(crate) async fn insert(
@@ -108,5 +61,10 @@ impl Store {
     /// Returns all currently stored images and their metadata.
     pub(crate) fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
         ImageEntry::get_all(&self.conn)
+    }
+
+    /// Returns information about the current migration state.
+    pub(crate) fn migration_info(&self) -> anyhow::Result<Migrations> {
+        Migrations::get(&self.conn)
     }
 }

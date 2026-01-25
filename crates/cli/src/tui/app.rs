@@ -5,7 +5,7 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::ImageEntry;
+use wasm_package_manager::{ImageEntry, StateInfo};
 
 use super::views::packages::PackagesViewState;
 use super::views::{HomeView, InterfacesView, PackageDetailView, PackagesView, SettingsView};
@@ -58,6 +58,8 @@ pub(crate) struct App {
     packages_view_state: PackagesViewState,
     /// When Some, we're viewing a package detail
     viewing_package: Option<usize>,
+    /// State info from the manager
+    state_info: Option<StateInfo>,
     /// Pull prompt state
     pull_prompt_active: bool,
     pull_prompt_input: String,
@@ -79,6 +81,7 @@ impl App {
             packages: Vec::new(),
             packages_view_state: PackagesViewState::new(),
             viewing_package: None,
+            state_info: None,
             pull_prompt_active: false,
             pull_prompt_input: String::new(),
             pull_prompt_error: None,
@@ -144,7 +147,9 @@ impl App {
                 }
             }
             Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
-            Tab::Settings => frame.render_widget(SettingsView, content_area),
+            Tab::Settings => {
+                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
+            }
         }
 
         // Render pull prompt overlay if active
@@ -235,11 +240,15 @@ impl App {
             match event {
                 ManagerEvent::Ready => {
                     self.manager_ready = true;
-                    // Request packages list when manager is ready
+                    // Request packages list and state info when manager is ready
                     let _ = self.app_sender.try_send(AppEvent::RequestPackages);
+                    let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
+                }
+                ManagerEvent::StateInfo(state_info) => {
+                    self.state_info = Some(state_info);
                 }
                 ManagerEvent::PullResult(result) => {
                     self.pull_in_progress = false;

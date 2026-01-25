@@ -1,5 +1,3 @@
-use std::env;
-
 use anyhow::Result;
 use wasm_package_manager::Manager;
 
@@ -15,30 +13,21 @@ impl Opts {
         match self {
             Opts::State => {
                 let store = Manager::open().await?;
+                let state_info = store.state_info()?;
+
+                println!("[Migrations]");
+                println!(
+                    "Current: \t{}/{}",
+                    state_info.migration_current, state_info.migration_total
+                );
+                println!();
                 println!("[Storage]");
-                println!("Executable: \t{}", executable_dir());
-                println!(
-                    "Data storage: \t{}",
-                    store.config().data_dir().to_string_lossy()
-                );
-                println!(
-                    "Image layers: \t{}",
-                    store.config().layers_dir().to_string_lossy()
-                );
-                println!(
-                    "Image metadata: {}",
-                    store.config().metadata_file().to_string_lossy()
-                );
+                println!("Executable: \t{}", state_info.executable.display());
+                println!("Data storage: \t{}", state_info.data_dir.display());
+                println!("Image layers: \t{}", state_info.layers_dir.display());
+                println!("Image metadata: {}", state_info.metadata_file.display());
                 Ok(())
             }
         }
-    }
-}
-
-/// Get the location of the current executable
-fn executable_dir() -> String {
-    match env::current_exe() {
-        Ok(exe_path) => exe_path.display().to_string(),
-        Err(_) => String::from("unknown executable dir"),
     }
 }

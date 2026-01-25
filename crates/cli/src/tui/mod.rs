@@ -3,7 +3,7 @@ mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, Manager, Reference};
+use wasm_package_manager::{ImageEntry, Manager, Reference, StateInfo};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -12,6 +12,8 @@ pub enum AppEvent {
     Quit,
     /// Request the list of packages
     RequestPackages,
+    /// Request state info
+    RequestStateInfo,
     /// Pull a package from a registry
     Pull(String),
 }
@@ -23,6 +25,8 @@ pub enum ManagerEvent {
     Ready,
     /// List of packages
     PackagesList(Vec<ImageEntry>),
+    /// State information
+    StateInfo(StateInfo),
     /// Result of a pull operation
     PullResult(Result<(), String>),
 }
@@ -65,6 +69,11 @@ async fn run_manager(
             AppEvent::RequestPackages => {
                 if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
+                }
+            }
+            AppEvent::RequestStateInfo => {
+                if let Ok(state_info) = manager.state_info() {
+                    sender.send(ManagerEvent::StateInfo(state_info)).await.ok();
                 }
             }
             AppEvent::Pull(reference_str) => {
