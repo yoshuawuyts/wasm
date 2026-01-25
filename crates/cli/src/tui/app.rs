@@ -1,7 +1,7 @@
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
-    widgets::{Block, List, ListItem, Paragraph, Tabs, Widget},
+    widgets::{Block, Cell, Paragraph, Row, Table, Tabs, Widget},
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
@@ -175,11 +175,21 @@ impl Widget for &App {
                         .centered()
                         .render(content_area, buf);
                 } else {
-                    let items: Vec<ListItem> = self
+                    // Create header row
+                    let header = Row::new(vec![
+                        Cell::from("Repository").style(Style::default().bold()),
+                        Cell::from("Registry").style(Style::default().bold()),
+                        Cell::from("Tag").style(Style::default().bold()),
+                        Cell::from("Digest").style(Style::default().bold()),
+                    ])
+                    .style(Style::default().fg(Color::Yellow));
+
+                    // Create data rows
+                    let rows: Vec<Row> = self
                         .packages
                         .iter()
                         .map(|entry| {
-                            let tag = entry.ref_tag.as_deref().unwrap_or("<none>");
+                            let tag = entry.ref_tag.as_deref().unwrap_or("-");
                             let digest = entry
                                 .ref_digest
                                 .as_ref()
@@ -190,16 +200,29 @@ impl Widget for &App {
                                         d.clone()
                                     }
                                 })
-                                .unwrap_or_else(|| "<none>".to_string());
-                            let text = format!(
-                                "{}/{}:{} ({})",
-                                entry.ref_registry, entry.ref_repository, tag, digest
-                            );
-                            ListItem::new(text)
+                                .unwrap_or_else(|| "-".to_string());
+                            Row::new(vec![
+                                Cell::from(entry.ref_repository.clone()),
+                                Cell::from(entry.ref_registry.clone()),
+                                Cell::from(tag.to_string()),
+                                Cell::from(digest),
+                            ])
                         })
                         .collect();
-                    let list = List::new(items);
-                    Widget::render(list, content_area, buf);
+
+                    let table = Table::new(
+                        rows,
+                        [
+                            Constraint::Percentage(35),
+                            Constraint::Percentage(25),
+                            Constraint::Percentage(15),
+                            Constraint::Percentage(25),
+                        ],
+                    )
+                    .header(header)
+                    .row_highlight_style(Style::default().bg(Color::DarkGray));
+
+                    Widget::render(table, content_area, buf);
                 }
             }
             Tab::Settings => {
