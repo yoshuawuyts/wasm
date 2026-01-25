@@ -1,4 +1,5 @@
 use anyhow::Context;
+use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
@@ -83,11 +84,21 @@ impl Store {
             &manifest,
         )?;
 
-        for layer in &image.layers {
-            let cache = self.state_info.layers_dir();
-            let key = reference.whole().to_string();
-            let data = &layer.data;
-            let _integrity = cacache::write(&cache, &key, data).await?;
+        // Store layers by their content digest (content-addressable storage)
+        // The manifest.layers and image.layers should be in the same order
+        if let Some(ref manifest) = image.manifest {
+            for (idx, layer) in image.layers.iter().enumerate() {
+                let cache = self.state_info.layers_dir();
+                // Use the layer's content digest from the manifest as the key
+                let fallback_key = reference.whole().to_string();
+                let key = manifest
+                    .layers
+                    .get(idx)
+                    .map(|l| l.digest.as_str())
+                    .unwrap_or(&fallback_key);
+                let data = &layer.data;
+                let _integrity = cacache::write(&cache, key, data).await?;
+            }
         }
         Ok(())
     }
@@ -98,10 +109,47 @@ impl Store {
     }
 
     /// Deletes an image by its reference.
+    /// Only removes cached layers if no other images reference them.
     pub(crate) async fn delete(&self, reference: &Reference) -> anyhow::Result<bool> {
-        // Delete from cacache
-        let key = reference.whole().to_string();
-        let _ = cacache::remove(self.state_info.layers_dir(), &key).await;
+        // Get all images to find which layers are still needed
+        let all_entries = ImageEntry::get_all(&self.conn)?;
+
+        // Find the entry we're deleting to get its layer digests
+        let entry_to_delete = all_entries.iter().find(|e| {
+            e.ref_registry == reference.registry()
+                && e.ref_repository == reference.repository()
+                && e.ref_tag.as_deref() == reference.tag()
+                && e.ref_digest.as_deref() == reference.digest()
+        });
+
+        if let Some(entry) = entry_to_delete {
+            // Collect all layer digests from the entry we're deleting
+            let layers_to_delete: HashSet<&str> = entry
+                .manifest
+                .layers
+                .iter()
+                .map(|l| l.digest.as_str())
+                .collect();
+
+            // Collect all layer digests from OTHER entries (excluding the one we're deleting)
+            let layers_still_needed: HashSet<&str> = all_entries
+                .iter()
+                .filter(|e| {
+                    !(e.ref_registry == reference.registry()
+                        && e.ref_repository == reference.repository()
+                        && e.ref_tag.as_deref() == reference.tag()
+                        && e.ref_digest.as_deref() == reference.digest())
+                })
+                .flat_map(|e| e.manifest.layers.iter().map(|l| l.digest.as_str()))
+                .collect();
+
+            // Only delete layers that are not needed by other entries
+            for layer_digest in layers_to_delete {
+                if !layers_still_needed.contains(layer_digest) {
+                    let _ = cacache::remove(self.state_info.layers_dir(), layer_digest).await;
+                }
+            }
+        }
 
         // Delete from database
         ImageEntry::delete_by_reference(
