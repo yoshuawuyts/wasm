@@ -87,13 +87,8 @@ impl StatefulWidget for PackagesView<'_> {
                         .ref_digest
                         .as_ref()
                         .map(|d| {
-                            // Strip "sha256:" prefix and show only first 7 chars
-                            let hash = d.strip_prefix("sha256:").unwrap_or(d);
-                            if hash.len() > 7 {
-                                hash[..7].to_string()
-                            } else {
-                                hash.to_string()
-                            }
+                            // Strip "sha256:" prefix
+                            d.strip_prefix("sha256:").unwrap_or(d).to_string()
                         })
                         .unwrap_or_else(|| "-".to_string());
                     Row::new(vec![
