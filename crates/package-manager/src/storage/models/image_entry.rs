@@ -96,10 +96,10 @@ impl ImageEntry {
         Ok(InsertResult::Inserted)
     }
 
-    /// Returns all currently stored images and their metadata.
+    /// Returns all currently stored images and their metadata, ordered alphabetically by repository.
     pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<ImageEntry>> {
         let mut stmt = conn.prepare(
-            "SELECT id, ref_registry, ref_repository, ref_mirror_registry, ref_tag, ref_digest, manifest, size_on_disk FROM image",
+            "SELECT id, ref_registry, ref_repository, ref_mirror_registry, ref_tag, ref_digest, manifest, size_on_disk FROM image ORDER BY ref_repository ASC, ref_registry ASC",
         )?;
 
         let rows = stmt.query_map([], |row| {

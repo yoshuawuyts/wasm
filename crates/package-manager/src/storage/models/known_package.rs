@@ -148,7 +148,7 @@ impl KnownPackage {
             "SELECT id, registry, repository, description, last_seen_at, created_at 
              FROM known_package 
              WHERE registry LIKE ?1 OR repository LIKE ?1
-             ORDER BY last_seen_at DESC
+             ORDER BY repository ASC, registry ASC
              LIMIT 100",
         )?;
 
@@ -183,12 +183,12 @@ impl KnownPackage {
         Ok(packages)
     }
 
-    /// Get all known packages, ordered by last seen.
+    /// Get all known packages, ordered alphabetically by repository.
     pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<KnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, description, last_seen_at, created_at 
              FROM known_package 
-             ORDER BY last_seen_at DESC
+             ORDER BY repository ASC, registry ASC
              LIMIT 100",
         )?;
 
