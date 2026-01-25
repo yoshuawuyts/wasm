@@ -50,21 +50,45 @@ impl TabItem for Tab {
     }
 }
 
+/// The current input mode of the application
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) enum InputMode {
+    /// Normal navigation mode
+    #[default]
+    Normal,
+    /// Viewing a package detail (with the package index)
+    PackageDetail(usize),
+    /// Pull prompt is active
+    PullPrompt(PullPromptState),
+    /// Search input is active
+    SearchInput,
+}
+
+/// State of the pull prompt
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub(crate) struct PullPromptState {
+    pub input: String,
+    pub error: Option<String>,
+    pub in_progress: bool,
+}
+
+/// Manager readiness state
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub(crate) enum ManagerState {
+    #[default]
+    Loading,
+    Ready,
+}
+
 pub(crate) struct App {
     running: bool,
-    manager_ready: bool,
+    manager_state: ManagerState,
     current_tab: Tab,
+    input_mode: InputMode,
     packages: Vec<ImageEntry>,
     packages_view_state: PackagesViewState,
-    /// When Some, we're viewing a package detail
-    viewing_package: Option<usize>,
     /// State info from the manager
     state_info: Option<StateInfo>,
-    /// Pull prompt state
-    pull_prompt_active: bool,
-    pull_prompt_input: String,
-    pull_prompt_error: Option<String>,
-    pull_in_progress: bool,
     /// Search view state
     search_view_state: SearchViewState,
     /// Known packages for search results
@@ -80,16 +104,12 @@ impl App {
     ) -> Self {
         Self {
             running: true,
-            manager_ready: false,
+            manager_state: ManagerState::default(),
             current_tab: Tab::Local,
+            input_mode: InputMode::default(),
             packages: Vec::new(),
             packages_view_state: PackagesViewState::new(),
-            viewing_package: None,
             state_info: None,
-            pull_prompt_active: false,
-            pull_prompt_input: String::new(),
-            pull_prompt_error: None,
-            pull_in_progress: false,
             search_view_state: SearchViewState::new(),
             known_packages: Vec::new(),
             app_sender,
@@ -110,17 +130,15 @@ impl App {
 
     fn render_frame(&mut self, frame: &mut ratatui::Frame) {
         let area = frame.area();
-        let status = if self.manager_ready {
-            "ready"
-        } else {
-            "loading..."
+        let status = match self.manager_state {
+            ManagerState::Ready => "ready",
+            ManagerState::Loading => "loading...",
         };
 
         // Create main layout with tabs at top
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
 
         // Render tab bar
-        let tab_bar = TabBar::new(format!("wasm - {}", status), self.current_tab);
         let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
         frame.render_widget(tab_bar, layout[0]);
 
@@ -133,7 +151,7 @@ impl App {
             Tab::Local => frame.render_widget(LocalView, content_area),
             Tab::Components => {
                 // Check if we're viewing a package detail
-                if let Some(idx) = self.viewing_package {
+                if let InputMode::PackageDetail(idx) = self.input_mode {
                     if let Some(package) = self.packages.get(idx) {
                         frame.render_widget(PackageDetailView::new(package), content_area);
                     }
@@ -147,6 +165,8 @@ impl App {
             }
             Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
             Tab::Search => {
+                // Sync search_active state for rendering
+                self.search_view_state.search_active = self.input_mode == InputMode::SearchInput;
                 frame.render_stateful_widget(
                     SearchView::new(&self.known_packages),
                     content_area,
@@ -159,19 +179,15 @@ impl App {
         }
 
         // Render pull prompt overlay if active
-        if self.pull_prompt_active {
-            self.render_pull_prompt(frame, area);
+        if let InputMode::PullPrompt(ref state) = self.input_mode {
+            self.render_pull_prompt(frame, area, state.clone());
         }
     }
 
-    fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect) {
+    fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect, state: PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));
-        let popup_height = if self.pull_prompt_error.is_some() {
-            7
-        } else {
-            5
-        };
+        let popup_height = if state.error.is_some() { 7 } else { 5 };
         let popup_area = Rect {
             x: (area.width.saturating_sub(popup_width)) / 2,
             y: (area.height.saturating_sub(popup_height)) / 2,
@@ -183,7 +199,7 @@ impl App {
         frame.render_widget(Clear, popup_area);
 
         // Build the prompt content
-        let title = if self.pull_in_progress {
+        let title = if state.in_progress {
             " Pull Package (pulling...) "
         } else {
             " Pull Package "
@@ -197,7 +213,7 @@ impl App {
         frame.render_widget(block, popup_area);
 
         // Layout for input and optional error
-        let chunks = if self.pull_prompt_error.is_some() {
+        let chunks = if state.error.is_some() {
             Layout::vertical([
                 Constraint::Length(1), // Label
                 Constraint::Length(1), // Input
@@ -217,12 +233,12 @@ impl App {
         frame.render_widget(label, chunks[0]);
 
         // Input field with cursor
-        let input_text = format!("{}_", self.pull_prompt_input);
+        let input_text = format!("{}_", state.input);
         let input = Paragraph::new(input_text).style(Style::default().fg(Color::Yellow));
         frame.render_widget(input, chunks[1]);
 
         // Error message if present
-        if let Some(ref error) = self.pull_prompt_error {
+        if let Some(ref error) = state.error {
             let error_msg = Paragraph::new(error.as_str()).style(Style::default().fg(Color::Red));
             frame.render_widget(error_msg, chunks[2]);
         }
@@ -245,7 +261,7 @@ impl App {
         while let Ok(event) = self.manager_receiver.try_recv() {
             match event {
                 ManagerEvent::Ready => {
-                    self.manager_ready = true;
+                    self.manager_state = ManagerState::Ready;
                     // Request packages list and state info when manager is ready
                     let _ = self.app_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
@@ -258,27 +274,7 @@ impl App {
                     self.state_info = Some(state_info);
                 }
                 ManagerEvent::PullResult(result) => {
-                    self.pull_in_progress = false;
-                    match result {
-                        Ok(insert_result) => {
-                            // Close the prompt on success
-                            self.pull_prompt_active = false;
-                            self.pull_prompt_input.clear();
-                            if insert_result == InsertResult::AlreadyExists {
-                                // Show a warning that the package already exists
-                                self.pull_prompt_error = Some(
-                                    "Warning: package already exists in local store".to_string(),
-                                );
-                            } else {
-                                self.pull_prompt_error = None;
-                            }
-                            // Refresh known packages
-                            let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
-                        }
-                        Err(e) => {
-                            self.pull_prompt_error = Some(e);
-                        }
-                    }
+                    self.handle_pull_result(result);
                 }
                 ManagerEvent::DeleteResult(_result) => {
                     // Delete completed, packages list will be refreshed automatically
@@ -293,32 +289,58 @@ impl App {
         }
     }
 
-    fn handle_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
-        // Handle pull prompt input first
-        if self.pull_prompt_active {
-            self.handle_pull_prompt_key(key, modifiers);
-            return;
-        }
-
-        // Handle search input mode
-        if self.current_tab == Tab::Search && self.search_view_state.search_active {
-            self.handle_search_key(key, modifiers);
-            return;
-        }
-
-        // If viewing a package detail, handle back navigation
-        if self.viewing_package.is_some() {
-            match key {
-                KeyCode::Esc | KeyCode::Backspace => {
-                    self.viewing_package = None;
-                }
-                KeyCode::Char('q') => self.running = false,
-                KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
-                _ => {}
+    fn handle_pull_result(&mut self, result: Result<InsertResult, String>) {
+        match result {
+            Ok(insert_result) => {
+                // Close the prompt on success, but show warning if already exists
+                let error = if insert_result == InsertResult::AlreadyExists {
+                    Some("Warning: package already exists in local store".to_string())
+                } else {
+                    None
+                };
+                self.input_mode = if let Some(e) = error {
+                    InputMode::PullPrompt(PullPromptState {
+                        input: String::new(),
+                        error: Some(e),
+                        in_progress: false,
+                    })
+                } else {
+                    InputMode::Normal
+                };
+                // Refresh known packages
+                let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
             }
-            return;
+            Err(e) => {
+                // Keep the prompt open with the error
+                if let InputMode::PullPrompt(ref mut state) = self.input_mode {
+                    state.error = Some(e);
+                    state.in_progress = false;
+                }
+            }
         }
+    }
 
+    fn handle_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match &self.input_mode {
+            InputMode::PullPrompt(_) => self.handle_pull_prompt_key(key, modifiers),
+            InputMode::SearchInput => self.handle_search_key(key, modifiers),
+            InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
+            InputMode::Normal => self.handle_normal_key(key, modifiers),
+        }
+    }
+
+    fn handle_package_detail_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match key {
+            KeyCode::Esc | KeyCode::Backspace => {
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('q') => self.running = false,
+            KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
+            _ => {}
+        }
+    }
+
+    fn handle_normal_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
         match (key, modifiers) {
             (KeyCode::Char('q'), _) | (KeyCode::Esc, _) => self.running = false,
             (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
@@ -334,11 +356,11 @@ impl App {
             (KeyCode::Char('3'), _) => self.current_tab = Tab::Interfaces,
             (KeyCode::Char('4'), _) => self.current_tab = Tab::Search,
             (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
-            // Pull prompt - 'p' to open
-            (KeyCode::Char('p'), _) if self.manager_ready => {
-                self.pull_prompt_active = true;
-                self.pull_prompt_input.clear();
-                self.pull_prompt_error = None;
+            // Pull prompt - 'p' to open (only on Components tab)
+            (KeyCode::Char('p'), _)
+                if self.current_tab == Tab::Components && self.is_manager_ready() =>
+            {
+                self.input_mode = InputMode::PullPrompt(PullPromptState::default());
             }
             // Package list navigation (when on Components tab)
             (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
@@ -348,27 +370,27 @@ impl App {
                 self.packages_view_state.select_next(self.packages.len());
             }
             (KeyCode::Enter, _) if self.current_tab == Tab::Components => {
-                if let Some(selected) = self.packages_view_state.selected() {
-                    if selected < self.packages.len() {
-                        self.viewing_package = Some(selected);
-                    }
+                if let Some(selected) = self.packages_view_state.selected()
+                    && selected < self.packages.len()
+                {
+                    self.input_mode = InputMode::PackageDetail(selected);
                 }
             }
             // Delete selected package
             (KeyCode::Char('d'), _)
-                if self.current_tab == Tab::Components && self.manager_ready =>
+                if self.current_tab == Tab::Components && self.is_manager_ready() =>
             {
-                if let Some(selected) = self.packages_view_state.selected() {
-                    if let Some(package) = self.packages.get(selected) {
-                        let _ = self
-                            .app_sender
-                            .try_send(AppEvent::Delete(package.reference()));
-                        // Adjust selection if we're deleting the last item
-                        if selected > 0 && selected >= self.packages.len() - 1 {
-                            self.packages_view_state
-                                .table_state
-                                .select(Some(selected - 1));
-                        }
+                if let Some(selected) = self.packages_view_state.selected()
+                    && let Some(package) = self.packages.get(selected)
+                {
+                    let _ = self
+                        .app_sender
+                        .try_send(AppEvent::Delete(package.reference()));
+                    // Adjust selection if we're deleting the last item
+                    if selected > 0 && selected >= self.packages.len() - 1 {
+                        self.packages_view_state
+                            .table_state
+                            .select(Some(selected - 1));
                     }
                 }
             }
@@ -383,16 +405,18 @@ impl App {
             }
             // Activate search input with '/'
             (KeyCode::Char('/'), _) if self.current_tab == Tab::Search => {
-                self.search_view_state.search_active = true;
+                self.input_mode = InputMode::SearchInput;
             }
             // Pull selected package from search results
-            (KeyCode::Enter, _) if self.current_tab == Tab::Search && self.manager_ready => {
-                if let Some(selected) = self.search_view_state.selected() {
-                    if let Some(package) = self.known_packages.get(selected) {
-                        // Pull the package with the most recent tag (or latest if none)
-                        let reference = package.reference_with_tag();
-                        let _ = self.app_sender.try_send(AppEvent::Pull(reference));
-                    }
+            (KeyCode::Char('p'), _)
+                if self.current_tab == Tab::Search && self.is_manager_ready() =>
+            {
+                if let Some(selected) = self.search_view_state.selected()
+                    && let Some(package) = self.known_packages.get(selected)
+                {
+                    // Pull the package with the most recent tag (or latest if none)
+                    let reference = package.reference_with_tag();
+                    let _ = self.app_sender.try_send(AppEvent::Pull(reference));
                 }
             }
             _ => {}
@@ -402,12 +426,11 @@ impl App {
     fn handle_search_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
         match key {
             KeyCode::Esc => {
-                // Exit search mode
-                self.search_view_state.search_active = false;
+                self.input_mode = InputMode::Normal;
             }
             KeyCode::Enter => {
                 // Execute search
-                self.search_view_state.search_active = false;
+                self.input_mode = InputMode::Normal;
                 if self.search_view_state.search_query.is_empty() {
                     let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
                 } else {
@@ -431,41 +454,45 @@ impl App {
     }
 
     fn handle_pull_prompt_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        let InputMode::PullPrompt(ref mut state) = self.input_mode else {
+            return;
+        };
+
         // Don't allow input while pull is in progress
-        if self.pull_in_progress {
+        if state.in_progress {
             return;
         }
 
         match key {
             KeyCode::Esc => {
-                // Cancel the prompt
-                self.pull_prompt_active = false;
-                self.pull_prompt_input.clear();
-                self.pull_prompt_error = None;
+                self.input_mode = InputMode::Normal;
             }
             KeyCode::Enter => {
-                if !self.pull_prompt_input.is_empty() {
+                if !state.input.is_empty() {
                     // Send pull request to manager
-                    self.pull_in_progress = true;
-                    self.pull_prompt_error = None;
-                    let _ = self
-                        .app_sender
-                        .try_send(AppEvent::Pull(self.pull_prompt_input.clone()));
+                    let input = state.input.clone();
+                    state.in_progress = true;
+                    state.error = None;
+                    let _ = self.app_sender.try_send(AppEvent::Pull(input));
                 }
             }
             KeyCode::Backspace => {
-                self.pull_prompt_input.pop();
-                self.pull_prompt_error = None;
+                state.input.pop();
+                state.error = None;
             }
             KeyCode::Char(c) => {
                 if modifiers == KeyModifiers::CONTROL && c == 'c' {
                     self.running = false;
                 } else {
-                    self.pull_prompt_input.push(c);
-                    self.pull_prompt_error = None;
+                    state.input.push(c);
+                    state.error = None;
                 }
             }
             _ => {}
         }
+    }
+
+    fn is_manager_ready(&self) -> bool {
+        self.manager_state == ManagerState::Ready
     }
 }

@@ -16,7 +16,7 @@ keywords = []
 [workspace.lints.rust]
 unsafe_code = "forbid"
 missing_debug_implementations = "deny"
-nonstandard_style = "deny"
+nonstandard_style = { level = "deny", priority = -1 }
 missing_docs = "warn"
 unreachable_pub = "warn"
 
