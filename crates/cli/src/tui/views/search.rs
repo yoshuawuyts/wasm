@@ -157,10 +157,7 @@ impl StatefulWidget for SearchView<'_> {
         let shortcuts = Line::from(vec![
             Span::styled(" / ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Search  "),
-            Span::styled(
-                " Enter ",
-                Style::default().fg(Color::Black).bg(Color::Yellow),
-            ),
+            Span::styled(" p ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Pull selected  "),
             Span::styled(" Esc ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Clear "),
