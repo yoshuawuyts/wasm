@@ -5,6 +5,20 @@ use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
 
+/// A migration that can be applied to the database.
+struct Migration {
+    version: u32,
+    name: &'static str,
+    sql: &'static str,
+}
+
+/// All migrations in order. Each migration is run exactly once.
+const MIGRATIONS: &[Migration] = &[Migration {
+    version: 1,
+    name: "init",
+    sql: include_str!("./migrations/01_init.sql"),
+}];
+
 #[derive(Debug)]
 pub(crate) struct Store {
     pub(crate) config: Config,
@@ -12,6 +26,7 @@ pub(crate) struct Store {
 }
 
 impl Store {
+    /// Open the store and run any pending migrations.
     pub(crate) async fn open() -> anyhow::Result<Self> {
         let config = Config::new()?;
 
@@ -26,9 +41,43 @@ impl Store {
             .context("Could not create config directories on disk")?;
 
         let conn = Connection::open(config.metadata_file())?;
-        conn.execute_batch(include_str!("./migrations/01_init.sql"))?;
+        Self::run_migrations(&conn)?;
 
         Ok(Self { config, conn })
+    }
+
+    /// Initialize the migrations table and run all pending migrations.
+    fn run_migrations(conn: &Connection) -> anyhow::Result<()> {
+        // Create the migrations table if it doesn't exist
+        conn.execute_batch(include_str!("./migrations/00_migrations.sql"))?;
+
+        // Get the current migration version
+        let current_version: u32 = conn
+            .query_row(
+                "SELECT COALESCE(MAX(version), 0) FROM migrations",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        // Run all migrations that haven't been applied yet
+        for migration in MIGRATIONS {
+            if migration.version > current_version {
+                conn.execute_batch(migration.sql).with_context(|| {
+                    format!(
+                        "Failed to run migration {}: {}",
+                        migration.version, migration.name
+                    )
+                })?;
+
+                conn.execute(
+                    "INSERT INTO migrations (version) VALUES (?1)",
+                    [migration.version],
+                )?;
+            }
+        }
+
+        Ok(())
     }
 
     pub(crate) async fn insert(

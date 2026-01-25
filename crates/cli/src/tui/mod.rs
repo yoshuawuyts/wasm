@@ -56,25 +56,25 @@ async fn run_manager(
     mut receiver: mpsc::Receiver<AppEvent>,
     sender: mpsc::Sender<ManagerEvent>,
 ) -> Result<(), anyhow::Error> {
-    let _manager = Manager::open().await?;
+    let manager = Manager::open().await?;
     sender.send(ManagerEvent::Ready).await.ok();
 
     while let Some(event) = receiver.recv().await {
         match event {
             AppEvent::Quit => break,
             AppEvent::RequestPackages => {
-                if let Ok(packages) = _manager.list_all() {
+                if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
                 }
             }
             AppEvent::Pull(reference_str) => {
                 let result = match reference_str.parse::<Reference>() {
-                    Ok(reference) => _manager.pull(reference).await.map_err(|e| e.to_string()),
+                    Ok(reference) => manager.pull(reference).await.map_err(|e| e.to_string()),
                     Err(e) => Err(format!("Invalid reference: {}", e)),
                 };
                 sender.send(ManagerEvent::PullResult(result)).await.ok();
                 // Refresh the packages list after pull
-                if let Ok(packages) = _manager.list_all() {
+                if let Ok(packages) = manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
                 }
             }
