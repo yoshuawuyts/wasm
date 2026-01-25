@@ -1,4 +1,5 @@
 use super::config::Config;
+use super::models::ImageEntry;
 use anyhow::Context;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
@@ -36,15 +37,14 @@ impl Store {
         image: ImageData,
     ) -> anyhow::Result<()> {
         let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
-        self.conn.execute(
-            "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest) VALUES (?1, ?2, ?3, ?4, ?5)",
-            (
-                reference.registry(),
-                reference.repository(),
-                reference.tag(),
-                digest,
-                &serde_json::to_string(&image.manifest)?,
-            ),
+        let manifest = serde_json::to_string(&image.manifest)?;
+        ImageEntry::insert(
+            &self.conn,
+            reference.registry(),
+            reference.repository(),
+            reference.tag(),
+            digest.as_deref(),
+            &manifest,
         )?;
 
         for layer in &image.layers {
@@ -54,5 +54,10 @@ impl Store {
             let _integrity = cacache::write(&cache, &key, data).await?;
         }
         Ok(())
+    }
+
+    /// Returns all currently stored images and their metadata.
+    pub(crate) fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
+        ImageEntry::get_all(&self.conn)
     }
 }
