@@ -3,7 +3,7 @@ mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, Manager};
+use wasm_package_manager::{ImageEntry, Manager, Reference};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -12,6 +12,8 @@ pub enum AppEvent {
     Quit,
     /// Request the list of packages
     RequestPackages,
+    /// Pull a package from a registry
+    Pull(String),
 }
 
 /// Events sent from the Manager to the TUI
@@ -21,6 +23,8 @@ pub enum ManagerEvent {
     Ready,
     /// List of packages
     PackagesList(Vec<ImageEntry>),
+    /// Result of a pull operation
+    PullResult(Result<(), String>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -28,17 +32,22 @@ pub async fn run() -> anyhow::Result<()> {
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);
     let (manager_sender, manager_receiver) = mpsc::channel::<ManagerEvent>(32);
 
-    // Spawn the Manager task
-    let manager_handle = tokio::spawn(run_manager(app_receiver, manager_sender));
+    // Run the TUI in a blocking task (separate thread) since it has a synchronous event loop
+    let tui_handle = tokio::task::spawn_blocking(move || {
+        let terminal = ratatui::init();
+        let res = App::new(app_sender, manager_receiver).run(terminal);
+        ratatui::restore();
+        res
+    });
 
-    // Run the TUI on the main thread
-    let terminal = ratatui::init();
-    let res = App::new(app_sender, manager_receiver).run(terminal);
-    ratatui::restore();
-    res?;
+    // Run the manager on the current task using LocalSet (Manager is not Send)
+    let local = tokio::task::LocalSet::new();
+    local
+        .run_until(run_manager(app_receiver, manager_sender))
+        .await?;
 
-    // Wait for the manager task to finish
-    manager_handle.await??;
+    // Wait for TUI to finish
+    tui_handle.await??;
 
     Ok(())
 }
@@ -54,6 +63,17 @@ async fn run_manager(
         match event {
             AppEvent::Quit => break,
             AppEvent::RequestPackages => {
+                if let Ok(packages) = _manager.list_all() {
+                    sender.send(ManagerEvent::PackagesList(packages)).await.ok();
+                }
+            }
+            AppEvent::Pull(reference_str) => {
+                let result = match reference_str.parse::<Reference>() {
+                    Ok(reference) => _manager.pull(reference).await.map_err(|e| e.to_string()),
+                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                };
+                sender.send(ManagerEvent::PullResult(result)).await.ok();
+                // Refresh the packages list after pull
                 if let Ok(packages) = _manager.list_all() {
                     sender.send(ManagerEvent::PackagesList(packages)).await.ok();
                 }
