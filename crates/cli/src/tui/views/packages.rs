@@ -87,10 +87,12 @@ impl StatefulWidget for PackagesView<'_> {
                         .ref_digest
                         .as_ref()
                         .map(|d| {
-                            if d.len() > 16 {
-                                format!("{}...", &d[..16])
+                            // Strip "sha256:" prefix and show only first 7 chars
+                            let hash = d.strip_prefix("sha256:").unwrap_or(d);
+                            if hash.len() > 7 {
+                                hash[..7].to_string()
                             } else {
-                                d.clone()
+                                hash.to_string()
                             }
                         })
                         .unwrap_or_else(|| "-".to_string());
