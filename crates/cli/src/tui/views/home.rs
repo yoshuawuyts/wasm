@@ -4,9 +4,10 @@ use ratatui::{
 };
 
 const LOGO: &str = "
-▖  ▖       
-▌▞▖▌▀▌▛▘▛▛▌
-▛ ▝▌█▌▄▌▌▌▌
+▖  ▖       ▐▘▗ ▜ 
+▌▞▖▌▀▌▛▘▛▛▌▐ ▜ ▐ 
+▛ ▝▌█▌▄▌▌▌▌▐ ▟▖▐ 
+           ▝▘  ▀ 
 ";
 
 pub(crate) struct HomeView;
