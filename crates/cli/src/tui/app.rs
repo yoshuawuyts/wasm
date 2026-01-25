@@ -285,6 +285,9 @@ impl App {
                 ManagerEvent::KnownPackagesList(packages) => {
                     self.known_packages = packages;
                 }
+                ManagerEvent::RefreshTagsResult(_result) => {
+                    // Tag refresh completed, packages list will be refreshed automatically
+                }
             }
         }
     }
@@ -417,6 +420,19 @@ impl App {
                     // Pull the package with the most recent tag (or latest if none)
                     let reference = package.reference_with_tag();
                     let _ = self.app_sender.try_send(AppEvent::Pull(reference));
+                }
+            }
+            // Refresh tags for selected package from registry
+            (KeyCode::Char('r'), _)
+                if self.current_tab == Tab::Search && self.is_manager_ready() =>
+            {
+                if let Some(selected) = self.search_view_state.selected()
+                    && let Some(package) = self.known_packages.get(selected)
+                {
+                    let _ = self.app_sender.try_send(AppEvent::RefreshTags(
+                        package.registry.clone(),
+                        package.repository.clone(),
+                    ));
                 }
             }
             _ => {}

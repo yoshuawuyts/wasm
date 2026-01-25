@@ -23,6 +23,8 @@ pub enum AppEvent {
     SearchPackages(String),
     /// Request all known packages
     RequestKnownPackages,
+    /// Refresh tags for a package (registry, repository)
+    RefreshTags(String, String),
 }
 
 /// Events sent from the Manager to the TUI
@@ -42,6 +44,8 @@ pub enum ManagerEvent {
     SearchResults(Vec<KnownPackage>),
     /// All known packages
     KnownPackagesList(Vec<KnownPackage>),
+    /// Result of refreshing tags for a package
+    RefreshTagsResult(Result<usize, String>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -123,6 +127,40 @@ async fn run_manager(
                 }
             }
             AppEvent::RequestKnownPackages => {
+                if let Ok(packages) = manager.list_known_packages() {
+                    sender
+                        .send(ManagerEvent::KnownPackagesList(packages))
+                        .await
+                        .ok();
+                }
+            }
+            AppEvent::RefreshTags(registry, repository) => {
+                // Create a reference to fetch tags
+                let reference_str = format!("{}/{}:latest", registry, repository);
+                let result = match reference_str.parse::<Reference>() {
+                    Ok(reference) => match manager.list_tags(&reference).await {
+                        Ok(tags) => {
+                            let tag_count = tags.len();
+                            // Store all fetched tags as known packages
+                            for tag in tags {
+                                let _ = manager.add_known_package(
+                                    &registry,
+                                    &repository,
+                                    Some(&tag),
+                                    None,
+                                );
+                            }
+                            Ok(tag_count)
+                        }
+                        Err(e) => Err(e.to_string()),
+                    },
+                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                };
+                sender
+                    .send(ManagerEvent::RefreshTagsResult(result))
+                    .await
+                    .ok();
+                // Refresh known packages list after updating tags
                 if let Ok(packages) = manager.list_known_packages() {
                     sender
                         .send(ManagerEvent::KnownPackagesList(packages))
