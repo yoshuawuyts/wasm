@@ -18,10 +18,10 @@ use insta::assert_snapshot;
 use ratatui::prelude::*;
 
 use wasm::tui::components::{TabBar, TabItem};
+use wasm::tui::views::packages::PackagesViewState;
 use wasm::tui::views::{
     InterfacesView, LocalView, PackagesView, SearchView, SearchViewState, SettingsView,
 };
-use wasm::tui::views::packages::PackagesViewState;
 
 /// Helper function to render a widget to a string buffer.
 fn render_to_string<W: Widget>(widget: W, width: u16, height: u16) -> String {
