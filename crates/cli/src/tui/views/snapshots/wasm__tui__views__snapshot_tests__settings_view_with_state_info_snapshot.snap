@@ -4,6 +4,7 @@ expression: output
 ---
 Migrations
   Current:  3/3
+
 Storage
 Executable       /usr/local/bin/wasm                        -
 Data storage     /home/user/.local/share/wasm               -

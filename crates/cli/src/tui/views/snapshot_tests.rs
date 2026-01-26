@@ -50,12 +50,14 @@ where
 fn buffer_to_string(buffer: &Buffer) -> String {
     let mut output = String::new();
     for y in 0..buffer.area.height {
+        let line_start = output.len();
         for x in 0..buffer.area.width {
             let cell = &buffer[(x, y)];
             output.push_str(cell.symbol());
         }
-        // Trim trailing spaces and add newline
-        output = output.trim_end().to_string();
+        // Trim trailing spaces using truncate to avoid allocation
+        let trimmed_len = output[line_start..].trim_end().len() + line_start;
+        output.truncate(trimmed_len);
         output.push('\n');
     }
     output

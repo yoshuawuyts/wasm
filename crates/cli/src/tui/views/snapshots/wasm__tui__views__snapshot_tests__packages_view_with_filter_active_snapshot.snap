@@ -7,4 +7,13 @@ expression: output
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 Repository                 Registry             Tag             Size         Digest
 example/hello-world        ghcr.io              v1.0.0          10.00 MB     abc123def456
+
+
+
+
+
+
+
+
+
  /  Filter   p  Pull   d  Delete   Enter  View details   Esc  Clear

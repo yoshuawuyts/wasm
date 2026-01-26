@@ -3,15 +3,27 @@ source: crates/cli/src/tui/views/snapshot_tests.rs
 expression: output
 ---
 ghcr.io/minimal/package
+
 ────────────────────────────────────────────────────────────────────────────────
 Registry: ghcr.io
 Repository: minimal/package
 Size: 1.00 KB
+
 Manifest:
   Schema Version: 2
   Media Type: application/vnd.oci.image.manifest.v1+json
   Config Media Type: application/vnd.oci.image.config.v1+json
   Config Size: 1.00 KB
+
 Layers: 1 layer(s)
   [1] application/vnd.oci.image.layer.v1.tar+gzip (1.00 KB)
+
+
+
+
+
+
+
+
+
  Esc  Back

@@ -3,17 +3,27 @@ source: crates/cli/src/tui/views/snapshot_tests.rs
 expression: output
 ---
 ghcr.io/example/hello-world
+
 ────────────────────────────────────────────────────────────────────────────────
 Registry: ghcr.io
 Repository: example/hello-world
 Tag: v1.0.0
 Digest: sha256:abc123def456
 Size: 10.00 MB
+
 Manifest:
   Schema Version: 2
   Media Type: application/vnd.oci.image.manifest.v1+json
   Config Media Type: application/vnd.oci.image.config.v1+json
   Config Size: 1.00 KB
+
 Layers: 1 layer(s)
   [1] application/vnd.oci.image.layer.v1.tar+gzip (10.00 MB)
+
+
+
+
+
+
+
  Esc  Back
