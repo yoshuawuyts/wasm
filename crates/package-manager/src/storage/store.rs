@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, InterfaceEntry, KnownPackage, Migrations};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -66,11 +66,11 @@ impl Store {
         let state_info = StateInfo::new_at(data_dir, migration_info, layers_size, metadata_size);
 
         let store = Self { state_info, conn };
-        
-        // Re-scan interfaces after migrations to ensure derived data is up-to-date
-        // Ignore errors during re-scan as they shouldn't prevent the store from opening
-        if let Err(e) = store.scan_interfaces().await {
-            eprintln!("Warning: Failed to re-scan interfaces: {}", e);
+
+        // Re-scan known package tags after migrations to ensure derived data is up-to-date
+        // Suppress errors as they shouldn't prevent the store from opening
+        if let Err(e) = store.rescan_known_package_tags() {
+            eprintln!("Warning: Failed to re-scan known package tags: {}", e);
         }
 
         Ok(store)
@@ -198,38 +198,48 @@ impl Store {
         KnownPackage::upsert(&self.conn, registry, repository, tag, description)
     }
 
-    /// Scan all stored images and extract interface information from their component metadata.
-    /// This is a re-scan operation that can be called after migrations to update derived data.
-    pub(crate) async fn scan_interfaces(&self) -> anyhow::Result<usize> {
-        let images = ImageEntry::get_all(&self.conn)?;
-        let mut scanned_count = 0;
+    /// Re-scan known package tags to update derived data after migrations.
+    /// This ensures the known_package_tag table is up-to-date with tag types.
+    pub(crate) fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
+        // Get all unique package IDs and their tags
+        let mut stmt = self.conn.prepare(
+            "SELECT DISTINCT kpt.known_package_id, kpt.tag 
+             FROM known_package_tag kpt
+             ORDER BY kpt.known_package_id"
+        )?;
 
-        for image in images {
-            // Get the layer data for this image
-            // For now, we'll extract interface information from the manifest metadata
-            // In a real implementation, this would parse the actual WASM binary
-            
-            // Extract interface names from the manifest's layers (if they contain metadata)
-            // This is a simplified implementation - in reality, you'd need to:
-            // 1. Load the actual WASM binary from the layer cache
-            // 2. Parse it with wasm-metadata
-            // 3. Extract interface information
-            
-            // For this minimal implementation, we'll create a placeholder interface
-            // based on the image's reference
-            let interface_name = image.reference();
-            
-            // Get the image ID from the entry
-            let image_id = image.id();
+        let tags: Vec<(i64, String)> = stmt
+            .query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
 
-            // Delete existing interfaces for this image before re-scanning
-            InterfaceEntry::delete_by_image_id(&self.conn, image_id)?;
+        let mut updated_count = 0;
 
-            // Insert the interface entry
-            InterfaceEntry::insert(&self.conn, image_id, &interface_name, "component")?;
-            scanned_count += 1;
+        // Re-process each tag to ensure it has the correct tag_type
+        for (package_id, tag) in tags {
+            // Determine the correct tag type
+            let tag_type = if tag.ends_with(".sig") {
+                "signature"
+            } else if tag.ends_with(".att") {
+                "attestation"
+            } else {
+                "release"
+            };
+
+            // Update the tag type if needed
+            let rows_affected = self.conn.execute(
+                "UPDATE known_package_tag 
+                 SET tag_type = ?1 
+                 WHERE known_package_id = ?2 AND tag = ?3 AND tag_type != ?1",
+                (tag_type, package_id, &tag),
+            )?;
+
+            if rows_affected > 0 {
+                updated_count += 1;
+            }
         }
 
-        Ok(scanned_count)
+        Ok(updated_count)
     }
 }

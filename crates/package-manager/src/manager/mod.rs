@@ -112,9 +112,10 @@ impl Manager {
         self.client.list_tags(reference).await
     }
 
-    /// Re-scan all stored images to update derived data (e.g., interfaces).
+    /// Re-scan known package tags to update derived data (e.g., tag types).
     /// This can be called to refresh the database after structural changes.
-    pub async fn rescan_interfaces(&self) -> anyhow::Result<usize> {
-        self.store.scan_interfaces().await
+    /// Returns the number of tags that were updated.
+    pub fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
+        self.store.rescan_known_package_tags()
     }
 }
