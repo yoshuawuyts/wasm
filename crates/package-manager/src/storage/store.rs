@@ -216,8 +216,8 @@ impl Store {
             // 3. Extract interface information
             
             // For this minimal implementation, we'll create a placeholder interface
-            // based on the image's repository name
-            let interface_name = format!("{}/{}", image.ref_registry, image.ref_repository);
+            // based on the image's reference
+            let interface_name = image.reference();
             
             // Get the image ID from the entry
             let image_id = image.id();
