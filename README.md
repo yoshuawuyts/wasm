@@ -73,7 +73,7 @@ Contributions and feedback welcome!
 
 ## Notes on AI
 
-This project is developed with Claude Code. We believe language models are 
+This project is developed with GitHub Copilot. We believe language models are 
 valuable tools for coding when paired with human oversight, testing, and 
 careful review. For transparency, we mention this in the README.
 
