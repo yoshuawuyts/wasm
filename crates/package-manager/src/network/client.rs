@@ -25,8 +25,8 @@ impl Client {
     }
 
     pub async fn pull(&self, reference: &Reference) -> anyhow::Result<ImageData> {
-        let auth = resolve_auth(&reference)?;
-        let image = self.inner.pull(&reference, &auth).await?;
+        let auth = resolve_auth(reference)?;
+        let image = self.inner.pull(reference, &auth).await?;
         Ok(image)
     }
 
@@ -100,10 +100,10 @@ fn resolve_auth(reference: &Reference) -> anyhow::Result<RegistryAuth> {
 
     match docker_credential::get_credential(server_url) {
         Ok(DockerCredential::UsernamePassword(username, password)) => {
-            return Ok(RegistryAuth::Basic(username, password));
+            Ok(RegistryAuth::Basic(username, password))
         }
         Ok(DockerCredential::IdentityToken(_)) => {
-            return Err(anyhow::anyhow!("identity tokens not supported"));
+            Err(anyhow::anyhow!("identity tokens not supported"))
         }
         Err(_) => Ok(RegistryAuth::Anonymous),
     }
