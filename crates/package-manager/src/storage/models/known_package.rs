@@ -267,31 +267,4 @@ impl KnownPackage {
             None => Ok(None),
         }
     }
-
-    /// Create a new KnownPackage for testing purposes.
-    #[doc(hidden)]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_for_test(
-        id: i64,
-        registry: String,
-        repository: String,
-        description: Option<String>,
-        tags: Vec<String>,
-        signature_tags: Vec<String>,
-        attestation_tags: Vec<String>,
-        last_seen_at: String,
-        created_at: String,
-    ) -> Self {
-        Self {
-            id,
-            registry,
-            repository,
-            description,
-            tags,
-            signature_tags,
-            attestation_tags,
-            last_seen_at,
-            created_at,
-        }
-    }
 }

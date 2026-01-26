@@ -53,3 +53,45 @@ contributors the benefit of the doubt and having a sincere willingness to admit
 that you *might* be wrong is critical for any successful open collaboration.
 
 Don't be a bad actor.
+
+## Snapshot Testing
+
+This project uses the [`insta`](https://crates.io/crates/insta) crate for snapshot testing the TUI views. Snapshot tests help catch unintentional changes in the UI, providing more confidence during refactoring and new feature development.
+
+### Running Snapshot Tests
+
+```sh
+# Run all tests including snapshot tests
+$ cargo test --package wasm
+
+# Run only snapshot tests
+$ cargo test --package wasm snapshot
+```
+
+### Updating Snapshots
+
+When views change intentionally, you can update the snapshots:
+
+```sh
+# Install the insta CLI tool (first time only)
+$ cargo install cargo-insta
+
+# Review pending snapshot changes interactively
+$ cargo insta review
+
+# Or automatically accept all new snapshots
+$ cargo insta accept
+```
+
+Alternatively, you can update snapshots directly during test runs:
+
+```sh
+# Accept all new/changed snapshots automatically
+$ INSTA_UPDATE=always cargo test --package wasm
+```
+
+### Best Practices for Snapshot Tests
+
+1. **Review changes carefully**: Always review snapshot changes before accepting them to ensure they match your expected output.
+2. **Keep snapshots readable**: Snapshot files are stored in `crates/cli/tests/snapshots/` and are version-controlled. Keep the rendered output clean and readable.
+3. **Test different states**: Include tests for empty states, populated states, and interactive states (e.g., filter active, search active).

@@ -160,29 +160,4 @@ impl ImageEntry {
         };
         Ok(rows_affected > 0)
     }
-
-    /// Create a new ImageEntry for testing purposes.
-    #[doc(hidden)]
-    #[allow(clippy::too_many_arguments)]
-    pub fn new_for_test(
-        id: i64,
-        ref_registry: String,
-        ref_repository: String,
-        ref_mirror_registry: Option<String>,
-        ref_tag: Option<String>,
-        ref_digest: Option<String>,
-        manifest: OciImageManifest,
-        size_on_disk: u64,
-    ) -> Self {
-        Self {
-            id,
-            ref_registry,
-            ref_repository,
-            ref_mirror_registry,
-            ref_tag,
-            ref_digest,
-            manifest,
-            size_on_disk,
-        }
-    }
 }
