@@ -3,40 +3,30 @@
 //! This binary provides a unified interface for running common development tasks
 //! like testing, linting, and formatting checks.
 
-use std::env;
-use std::process::{Command, exit};
+use std::process::Command;
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
+use anyhow::Result;
+use clap::Parser;
 
-    if args.len() < 2 {
-        print_help();
-        exit(1);
-    }
-
-    match args[1].as_str() {
-        "test" => {
-            if let Err(e) = run_tests() {
-                eprintln!("Error: {}", e);
-                exit(1);
-            }
-        }
-        _ => {
-            eprintln!("Unknown command: {}", args[1]);
-            print_help();
-            exit(1);
-        }
-    }
+#[derive(Parser)]
+#[command(name = "xtask")]
+#[command(about = "Build automation and task orchestration")]
+enum Xtask {
+    /// Run tests, clippy, and formatting checks
+    Test,
 }
 
-fn print_help() {
-    println!("Usage: cargo xtask <COMMAND>");
-    println!();
-    println!("Commands:");
-    println!("  test    Run tests, clippy, and formatting checks");
+fn main() -> Result<()> {
+    let xtask = Xtask::parse();
+
+    match xtask {
+        Xtask::Test => run_tests()?,
+    }
+
+    Ok(())
 }
 
-fn run_tests() -> Result<(), String> {
+fn run_tests() -> Result<()> {
     println!("Running cargo test...");
     run_command("cargo", &["test", "--all"])?;
 
@@ -50,18 +40,11 @@ fn run_tests() -> Result<(), String> {
     Ok(())
 }
 
-fn run_command(cmd: &str, args: &[&str]) -> Result<(), String> {
-    let status = Command::new(cmd)
-        .args(args)
-        .status()
-        .map_err(|e| format!("Failed to execute {}: {}", cmd, e))?;
+fn run_command(cmd: &str, args: &[&str]) -> Result<()> {
+    let status = Command::new(cmd).args(args).status()?;
 
     if !status.success() {
-        return Err(format!(
-            "{} failed with exit code: {:?}",
-            cmd,
-            status.code()
-        ));
+        anyhow::bail!("{} failed with exit code: {:?}", cmd, status.code());
     }
 
     Ok(())

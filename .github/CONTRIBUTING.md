@@ -26,11 +26,6 @@ To run all tests, linting, and formatting checks, use:
 cargo xtask test
 ```
 
-This command will:
-- Run `cargo test` to execute all unit and integration tests
-- Run `cargo clippy` to check for common mistakes and improve code quality
-- Run `cargo fmt --check` to verify code formatting
-
 Before submitting a pull request, always run `cargo xtask test` to ensure your
 changes meet the project's quality standards.
 
