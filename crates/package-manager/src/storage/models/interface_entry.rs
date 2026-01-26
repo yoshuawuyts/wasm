@@ -3,7 +3,7 @@ use rusqlite::Connection;
 /// An interface extracted from a component image.
 #[derive(Debug, Clone)]
 pub struct InterfaceEntry {
-    #[allow(dead_code)] // Used in database schema
+    #[allow(dead_code)] // Only used in database queries, not accessed in Rust
     id: i64,
     pub image_id: i64,
     pub name: String,

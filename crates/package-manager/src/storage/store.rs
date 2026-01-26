@@ -68,7 +68,10 @@ impl Store {
         let store = Self { state_info, conn };
         
         // Re-scan interfaces after migrations to ensure derived data is up-to-date
-        let _ = store.scan_interfaces().await;
+        // Ignore errors during re-scan as they shouldn't prevent the store from opening
+        if let Err(e) = store.scan_interfaces().await {
+            eprintln!("Warning: Failed to re-scan interfaces: {}", e);
+        }
 
         Ok(store)
     }
@@ -216,12 +219,8 @@ impl Store {
             // based on the image's repository name
             let interface_name = format!("{}/{}", image.ref_registry, image.ref_repository);
             
-            // Get the image ID by querying the database
-            let image_id: i64 = self.conn.query_row(
-                "SELECT id FROM image WHERE ref_registry = ?1 AND ref_repository = ?2 AND COALESCE(ref_tag, '') = COALESCE(?3, '') AND COALESCE(ref_digest, '') = COALESCE(?4, '')",
-                (&image.ref_registry, &image.ref_repository, &image.ref_tag, &image.ref_digest),
-                |row| row.get(0),
-            )?;
+            // Get the image ID from the entry
+            let image_id = image.id();
 
             // Delete existing interfaces for this image before re-scanning
             InterfaceEntry::delete_by_image_id(&self.conn, image_id)?;

@@ -13,7 +13,6 @@ pub enum InsertResult {
 /// Metadata for a stored OCI image.
 #[derive(Debug, Clone)]
 pub struct ImageEntry {
-    #[allow(dead_code)] // Used in database schema
     id: i64,
     pub ref_registry: String,
     pub ref_repository: String,
@@ -26,6 +25,11 @@ pub struct ImageEntry {
 }
 
 impl ImageEntry {
+    /// Returns the database ID of this image entry.
+    pub(crate) fn id(&self) -> i64 {
+        self.id
+    }
+
     /// Returns the full reference string for this image (e.g., "ghcr.io/user/repo:tag").
     pub fn reference(&self) -> String {
         let mut reference = format!("{}/{}", self.ref_registry, self.ref_repository);
