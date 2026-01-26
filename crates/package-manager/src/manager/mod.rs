@@ -111,4 +111,10 @@ impl Manager {
     pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         self.client.list_tags(reference).await
     }
+
+    /// Re-scan all stored images to update derived data (e.g., interfaces).
+    /// This can be called to refresh the database after structural changes.
+    pub async fn rescan_interfaces(&self) -> anyhow::Result<usize> {
+        self.store.scan_interfaces().await
+    }
 }

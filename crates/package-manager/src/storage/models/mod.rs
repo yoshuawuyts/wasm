@@ -1,7 +1,9 @@
 mod image_entry;
+mod interface_entry;
 mod known_package;
 mod migration;
 
 pub use image_entry::{ImageEntry, InsertResult};
+pub use interface_entry::InterfaceEntry;
 pub use known_package::KnownPackage;
 pub use migration::Migrations;
