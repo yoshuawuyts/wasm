@@ -6,14 +6,14 @@ use wasm_package_manager::KnownPackage;
 
 /// State for the search view
 #[derive(Debug, Default)]
-pub(crate) struct SearchViewState {
+pub struct SearchViewState {
     pub table_state: TableState,
     pub search_query: String,
     pub search_active: bool,
 }
 
 impl SearchViewState {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
             search_query: String::new(),
@@ -44,12 +44,12 @@ impl SearchViewState {
     }
 }
 
-pub(crate) struct SearchView<'a> {
+pub struct SearchView<'a> {
     packages: &'a [KnownPackage],
 }
 
 impl<'a> SearchView<'a> {
-    pub(crate) fn new(packages: &'a [KnownPackage]) -> Self {
+    pub fn new(packages: &'a [KnownPackage]) -> Self {
         Self { packages }
     }
 }

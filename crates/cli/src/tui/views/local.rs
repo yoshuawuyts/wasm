@@ -10,7 +10,7 @@ const LOGO: &str = "
            ▝▘  ▀ 
 ";
 
-pub(crate) struct LocalView;
+pub struct LocalView;
 
 impl Widget for LocalView {
     fn render(self, area: Rect, buf: &mut Buffer) {

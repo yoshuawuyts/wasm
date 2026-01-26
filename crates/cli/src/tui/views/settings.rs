@@ -4,12 +4,12 @@ use ratatui::{
 };
 use wasm_package_manager::StateInfo;
 
-pub(crate) struct SettingsView<'a> {
+pub struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,
 }
 
 impl<'a> SettingsView<'a> {
-    pub(crate) fn new(state_info: Option<&'a StateInfo>) -> Self {
+    pub fn new(state_info: Option<&'a StateInfo>) -> Self {
         Self { state_info }
     }
 }

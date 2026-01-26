@@ -1,13 +1,13 @@
 ---
-source: crates/cli/src/tui/views/snapshot_tests.rs
+source: crates/cli/tests/snapshot.rs
 expression: output
 ---
 ┌ Search ──────────────────────────────────────────────────────────────────────────────────────────┐
-│Press / to search...                                                                              │
+│wasi_                                                                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-Repository                       Registry                  Tags                 Last Seen
-example/hello-world              ghcr.io                   v1.0.0, v1.1.0, late 2024-01-15
-library/nginx                    docker.io                 1.24, 1.25, +3       2024-01-14
+                               No packages found matching your search.
+
+
 
 
 

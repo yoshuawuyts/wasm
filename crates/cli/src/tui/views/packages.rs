@@ -8,14 +8,14 @@ use super::format_size;
 
 /// State for the packages list view
 #[derive(Debug, Default)]
-pub(crate) struct PackagesViewState {
+pub struct PackagesViewState {
     pub table_state: TableState,
     pub filter_query: String,
     pub filter_active: bool,
 }
 
 impl PackagesViewState {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
             filter_query: String::new(),
@@ -46,12 +46,12 @@ impl PackagesViewState {
     }
 }
 
-pub(crate) struct PackagesView<'a> {
+pub struct PackagesView<'a> {
     packages: &'a [ImageEntry],
 }
 
 impl<'a> PackagesView<'a> {
-    pub(crate) fn new(packages: &'a [ImageEntry]) -> Self {
+    pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
 }

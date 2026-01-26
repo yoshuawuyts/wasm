@@ -3,7 +3,7 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
-pub(crate) struct InterfacesView;
+pub struct InterfacesView;
 
 impl Widget for InterfacesView {
     fn render(self, area: Rect, buf: &mut Buffer) {

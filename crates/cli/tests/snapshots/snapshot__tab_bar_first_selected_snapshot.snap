@@ -1,5 +1,5 @@
 ---
-source: crates/cli/src/tui/views/snapshot_tests.rs
+source: crates/cli/tests/snapshot.rs
 expression: output
 ---
 ┌ Test App - ready ────────────────────────────────────────┐

@@ -11,6 +11,14 @@ authors = { workspace = true }
 categories = { workspace = true }
 keywords = { workspace = true }
 
+[lib]
+name = "wasm"
+path = "src/lib.rs"
+
+[[bin]]
+name = "wasm"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = { workspace = true }
 bytesize = { workspace = true }
@@ -27,4 +35,3 @@ wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
-oci-client = { workspace = true }

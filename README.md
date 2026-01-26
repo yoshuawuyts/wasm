@@ -100,9 +100,8 @@ $ INSTA_UPDATE=always cargo test --package wasm
 ### Best Practices for Snapshot Tests
 
 1. **Review changes carefully**: Always review snapshot changes before accepting them to ensure they match your expected output.
-2. **Keep snapshots readable**: Snapshot files are stored in `crates/cli/src/tui/views/snapshots/` and are version-controlled. Keep the rendered output clean and readable.
+2. **Keep snapshots readable**: Snapshot files are stored in `crates/cli/tests/snapshots/` and are version-controlled. Keep the rendered output clean and readable.
 3. **Test different states**: Include tests for empty states, populated states, and interactive states (e.g., filter active, search active).
-4. **Use consistent test data**: Use the provided helper functions (`create_test_image_entry`, `create_test_known_package`, `create_test_state_info`) to create consistent test data.
 
 ## License
 

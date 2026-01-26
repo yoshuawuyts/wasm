@@ -1,12 +1,12 @@
 ---
-source: crates/cli/src/tui/views/snapshot_tests.rs
+source: crates/cli/tests/snapshot.rs
 expression: output
 ---
 ┌ Filter ──────────────────────────────────────────────────────────────────────────────────────────┐
-│hello_                                                                                            │
+│wasi_                                                                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-Repository                 Registry             Tag             Size         Digest
-example/hello-world        ghcr.io              v1.0.0          10.00 MB     abc123def456
+                               No packages found matching your filter.
+
 
 
 
