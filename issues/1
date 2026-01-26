@@ -1,0 +1,18 @@
+## Summary
+Enable additional clippy lints to improve code quality and maintain consistent coding standards across the codebase.
+
+## Tasks
+- Enable stricter clippy lint groups (e.g., `clippy::pedantic`, `clippy::nursery`)
+- Configure project-specific lint rules in `Cargo.toml` or `clippy.toml`
+- Review and selectively allow/deny specific lints based on project needs
+- Update CI to enforce the new lint configuration
+- Fix any new warnings introduced by the additional lints
+
+## Motivation
+Stricter clippy lints help catch potential bugs, improve code maintainability, and enforce best practices consistently across the codebase.
+
+## Acceptance Criteria
+- Additional clippy lints are configured at the workspace level
+- CI fails on new clippy warnings
+- Existing codebase passes all enabled lints
+- Documentation is updated to reflect the new lint configuration
