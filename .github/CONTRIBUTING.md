@@ -56,40 +56,4 @@ Don't be a bad actor.
 
 ## Releases
 
-This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. The release process is fully automated through GitHub Actions and requires no manual intervention for normal releases.
-
-### How Automated Releases Work
-
-1. **Development**: Contributors make changes and submit pull requests as usual
-2. **Release PR Creation**: When changes are merged to `main`, release-plz automatically:
-   - Analyzes git history to determine version bumps (following [Semantic Versioning](https://semver.org/))
-   - Generates/updates CHANGELOG.md for each affected crate
-   - Creates a release PR with version updates
-3. **Review and Merge**: Maintainers review the release PR and merge it when ready
-4. **Automated Publishing**: Once the release PR is merged, release-plz automatically:
-   - Publishes all updated crates to [crates.io](https://crates.io)
-   - Creates GitHub releases with tags (e.g., `wasm-v0.1.0`)
-   - Attaches changelog entries to the GitHub releases
-
-### Manual Release Steps (Exceptional Cases)
-
-In most cases, releases are fully automated. However, if you need to perform a manual release:
-
-1. **Prerequisites**: You need a crates.io API token with publish permissions
-2. **Local Release**: Run `cargo publish -p <crate-name>` for each crate
-3. **Git Tags**: Create and push git tags manually: `git tag <crate>-v<version>` and `git push --tags`
-
-Note: Manual releases should only be needed for emergency fixes or if the automated system is unavailable.
-
-### Configuration
-
-Release automation is configured in:
-- `.github/workflows/release-plz.yml` - GitHub Actions workflow
-- `release-plz.toml` - release-plz configuration for workspace crates
-
-### Required Secrets
-
-For release-plz to publish crates, the repository must have the following secret configured in GitHub repository settings:
-- `CARGO_REGISTRY_TOKEN` - A crates.io API token with publish permissions for the workspace crates
-
-Maintainers with appropriate access can configure this in the repository settings under Secrets and variables → Actions.
+This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. When changes are merged to `main`, release-plz creates a release PR with version updates. After the PR is merged, crates are automatically published to crates.io and GitHub releases are created. The repository requires a `CARGO_REGISTRY_TOKEN` secret (crates.io API token) configured in Settings → Secrets and variables → Actions.

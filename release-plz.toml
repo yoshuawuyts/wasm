@@ -2,8 +2,8 @@
 # See https://release-plz.dev/docs/config for more options
 
 [workspace]
-# Automatically update changelogs from git history
-changelog_update = true
+# Don't create CHANGELOG.md files - use GitHub's built-in changelog feature instead
+changelog_update = false
 
 # Enable git tag creation for releases
 git_release_enable = true
