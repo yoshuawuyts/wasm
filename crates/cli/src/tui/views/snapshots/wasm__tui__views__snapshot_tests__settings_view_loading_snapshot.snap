@@ -1,0 +1,5 @@
+---
+source: crates/cli/src/tui/views/snapshot_tests.rs
+expression: output
+---
+Loading state information...

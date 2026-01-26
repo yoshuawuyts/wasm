@@ -13,3 +13,6 @@ pub(crate) use search::{SearchView, SearchViewState};
 pub(crate) use settings::SettingsView;
 
 pub(crate) use wasm_package_manager::format_size;
+
+#[cfg(test)]
+mod snapshot_tests;

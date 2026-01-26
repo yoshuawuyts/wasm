@@ -27,3 +27,4 @@ wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
+oci-client = { workspace = true }

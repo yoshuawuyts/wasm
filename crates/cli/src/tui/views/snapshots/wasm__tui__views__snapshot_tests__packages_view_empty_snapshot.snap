@@ -1,0 +1,9 @@
+---
+source: crates/cli/src/tui/views/snapshot_tests.rs
+expression: output
+---
+┌ Filter ──────────────────────────────────────────────────────────────────────┐
+│Press / to filter...                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+                               No packages stored.
+ /  Filter   p  Pull   d  Delete   Enter  View details   Esc  Clear

@@ -99,4 +99,28 @@ impl StateInfo {
     pub fn migration_total(&self) -> u32 {
         self.migration_total
     }
+
+    /// Create a new StateInfo for testing purposes.
+    #[doc(hidden)]
+    pub fn new_for_test(
+        executable: PathBuf,
+        data_dir: PathBuf,
+        layers_dir: PathBuf,
+        layers_size: u64,
+        metadata_file: PathBuf,
+        metadata_size: u64,
+        migration_current: u32,
+        migration_total: u32,
+    ) -> Self {
+        Self {
+            executable,
+            data_dir,
+            layers_dir,
+            layers_size,
+            metadata_file,
+            metadata_size,
+            migration_current,
+            migration_total,
+        }
+    }
 }

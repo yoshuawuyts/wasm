@@ -1,0 +1,9 @@
+---
+source: crates/cli/src/tui/views/snapshot_tests.rs
+expression: output
+---
+┌ Search ──────────────────────────────────────────────────────────────────────┐
+│Press / to search...                                                          │
+└──────────────────────────────────────────────────────────────────────────────┘
+            No known packages. Pull a package to add it to the list.
+ /  Search   p  Pull selected   r  Refresh tags   Esc  Clear

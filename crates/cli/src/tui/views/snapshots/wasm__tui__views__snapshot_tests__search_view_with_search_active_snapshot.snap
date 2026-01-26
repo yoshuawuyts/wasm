@@ -1,0 +1,10 @@
+---
+source: crates/cli/src/tui/views/snapshot_tests.rs
+expression: output
+---
+┌ Search ──────────────────────────────────────────────────────────────────────────────────────────┐
+│hello_                                                                                            │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+Repository                       Registry                  Tags                 Last Seen
+example/hello-world              ghcr.io                   v1.0.0               2024-01-15
+ /  Search   p  Pull selected   r  Refresh tags   Esc  Clear
