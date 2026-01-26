@@ -56,4 +56,4 @@ Don't be a bad actor.
 
 ## Releases
 
-This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. When changes are merged to `main`, release-plz creates a release PR with version updates. After the PR is merged, crates are automatically published to crates.io and GitHub releases are created. The repository requires a `CARGO_REGISTRY_TOKEN` secret (crates.io API token) configured in Settings → Secrets and variables → Actions.
+This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. When changes are merged to `main`, release-plz creates a release PR with version updates. After the PR is merged, crates are automatically published to crates.io using trusted publishing (OIDC) and GitHub releases are created.
