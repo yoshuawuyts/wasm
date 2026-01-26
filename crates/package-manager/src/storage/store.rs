@@ -199,13 +199,15 @@ impl Store {
     }
 
     /// Re-scan known package tags to update derived data after migrations.
-    /// This ensures the known_package_tag table is up-to-date with tag types.
+    /// This re-classifies tag types based on tag naming conventions:
+    /// - Tags ending in ".sig" are classified as "signature"
+    /// - Tags ending in ".att" are classified as "attestation"
+    /// - All other tags are classified as "release"
     pub(crate) fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
         // Get all unique package IDs and their tags
         let mut stmt = self.conn.prepare(
             "SELECT DISTINCT kpt.known_package_id, kpt.tag 
-             FROM known_package_tag kpt
-             ORDER BY kpt.known_package_id"
+             FROM known_package_tag kpt"
         )?;
 
         let tags: Vec<(i64, String)> = stmt
