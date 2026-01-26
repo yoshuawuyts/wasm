@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -218,14 +218,8 @@ impl Store {
 
         // Re-process each tag to ensure it has the correct tag_type
         for (package_id, tag) in tags {
-            // Determine the correct tag type
-            let tag_type = if tag.ends_with(".sig") {
-                "signature"
-            } else if tag.ends_with(".att") {
-                "attestation"
-            } else {
-                "release"
-            };
+            // Determine the correct tag type using existing logic
+            let tag_type = TagType::from_tag(&tag).as_str();
 
             // Update the tag type if needed
             let rows_affected = self.conn.execute(
