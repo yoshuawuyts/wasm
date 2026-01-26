@@ -4,7 +4,7 @@ mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo};
+use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo, WitInterface};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -25,6 +25,8 @@ pub enum AppEvent {
     RequestKnownPackages,
     /// Refresh tags for a package (registry, repository)
     RefreshTags(String, String),
+    /// Request all WIT interfaces
+    RequestWitInterfaces,
 }
 
 /// Events sent from the Manager to the TUI
@@ -46,6 +48,8 @@ pub enum ManagerEvent {
     KnownPackagesList(Vec<KnownPackage>),
     /// Result of refreshing tags for a package
     RefreshTagsResult(Result<usize, String>),
+    /// List of WIT interfaces with their component references
+    WitInterfacesList(Vec<(WitInterface, String)>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -164,6 +168,14 @@ async fn run_manager(
                 if let Ok(packages) = manager.list_known_packages() {
                     sender
                         .send(ManagerEvent::KnownPackagesList(packages))
+                        .await
+                        .ok();
+                }
+            }
+            AppEvent::RequestWitInterfaces => {
+                if let Ok(interfaces) = manager.list_wit_interfaces() {
+                    sender
+                        .send(ManagerEvent::WitInterfacesList(interfaces))
                         .await
                         .ok();
                 }

@@ -73,3 +73,4 @@ cacache = { version = "13.1.0", features = [
 ], default-features = false }
 rusqlite = "0.38.0"
 serde = "1.0.228"
+wit-parser = "0.227"

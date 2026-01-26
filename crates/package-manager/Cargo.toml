@@ -19,8 +19,9 @@ docker_credential = { workspace = true }
 futures-concurrency = { workspace = true }
 oci-client = { workspace = true }
 oci-wasm = { workspace = true }
-tokio = { workspace = true }
 rusqlite = { workspace = true }
 serde_json = { workspace = true }
+tokio = { workspace = true }
+wit-parser = { workspace = true }
 
 [dev-dependencies]

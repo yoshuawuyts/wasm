@@ -35,6 +35,11 @@ const MIGRATIONS: &[MigrationDef] = &[
         name: "tag_type",
         sql: include_str!("../migrations/05_tag_type.sql"),
     },
+    MigrationDef {
+        version: 6,
+        name: "wit_interface",
+        sql: include_str!("../migrations/06_wit_interface.sql"),
+    },
 ];
 
 /// Information about the current migration state.

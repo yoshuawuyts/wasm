@@ -73,8 +73,8 @@ impl ImageEntry {
     }
 
     /// Inserts a new image entry into the database if it doesn't already exist.
-    /// Returns `InsertResult::AlreadyExists` if the entry already exists,
-    /// or `InsertResult::Inserted` if it was successfully inserted.
+    /// Returns `(InsertResult::AlreadyExists, None)` if the entry already exists,
+    /// or `(InsertResult::Inserted, Some(id))` if it was successfully inserted.
     pub(crate) fn insert(
         conn: &Connection,
         ref_registry: &str,
@@ -83,17 +83,17 @@ impl ImageEntry {
         ref_digest: Option<&str>,
         manifest: &str,
         size_on_disk: u64,
-    ) -> anyhow::Result<InsertResult> {
+    ) -> anyhow::Result<(InsertResult, Option<i64>)> {
         // Check if entry already exists
         if Self::exists(conn, ref_registry, ref_repository, ref_tag, ref_digest)? {
-            return Ok(InsertResult::AlreadyExists);
+            return Ok((InsertResult::AlreadyExists, None));
         }
 
         conn.execute(
             "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk as i64),
         )?;
-        Ok(InsertResult::Inserted)
+        Ok((InsertResult::Inserted, Some(conn.last_insert_rowid())))
     }
 
     /// Returns all currently stored images and their metadata, ordered alphabetically by repository.

@@ -5,12 +5,12 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
+use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, LocalView, PackageDetailView, PackagesView, SearchView, SearchViewState,
+    InterfacesView, InterfacesViewState, LocalView, PackageDetailView, PackagesView, SearchView, SearchViewState,
     SettingsView,
 };
 use super::{AppEvent, ManagerEvent};
@@ -58,6 +58,8 @@ pub(crate) enum InputMode {
     Normal,
     /// Viewing a package detail (with the package index)
     PackageDetail(usize),
+    /// Viewing interface detail
+    InterfaceDetail,
     /// Pull prompt is active
     PullPrompt(PullPromptState),
     /// Search input is active
@@ -95,6 +97,10 @@ pub(crate) struct App {
     search_view_state: SearchViewState,
     /// Known packages for search results
     known_packages: Vec<KnownPackage>,
+    /// WIT interfaces with their component references
+    wit_interfaces: Vec<(WitInterface, String)>,
+    /// Interfaces view state
+    interfaces_view_state: InterfacesViewState,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -114,6 +120,8 @@ impl App {
             state_info: None,
             search_view_state: SearchViewState::new(),
             known_packages: Vec::new(),
+            wit_interfaces: Vec::new(),
+            interfaces_view_state: InterfacesViewState::new(),
             app_sender,
             manager_receiver,
         }
@@ -169,7 +177,13 @@ impl App {
                     );
                 }
             }
-            Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
+            Tab::Interfaces => {
+                frame.render_stateful_widget(
+                    InterfacesView::new(&self.wit_interfaces),
+                    content_area,
+                    &mut self.interfaces_view_state,
+                );
+            }
             Tab::Search => {
                 // Sync search_active state for rendering
                 self.search_view_state.search_active = self.input_mode == InputMode::SearchInput;
@@ -272,6 +286,7 @@ impl App {
                     let _ = self.app_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
                     let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
@@ -293,6 +308,9 @@ impl App {
                 }
                 ManagerEvent::RefreshTagsResult(_result) => {
                     // Tag refresh completed, packages list will be refreshed automatically
+                }
+                ManagerEvent::WitInterfacesList(interfaces) => {
+                    self.wit_interfaces = interfaces;
                 }
             }
         }
@@ -316,8 +334,9 @@ impl App {
                 } else {
                     InputMode::Normal
                 };
-                // Refresh known packages
+                // Refresh known packages and WIT interfaces
                 let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
             }
             Err(e) => {
                 // Keep the prompt open with the error
@@ -335,6 +354,7 @@ impl App {
             InputMode::SearchInput => self.handle_search_key(key, modifiers),
             InputMode::FilterInput => self.handle_filter_key(key, modifiers),
             InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
+            InputMode::InterfaceDetail => self.handle_interface_detail_key(key, modifiers),
             InputMode::Normal => self.handle_normal_key(key, modifiers),
         }
     }
@@ -343,6 +363,24 @@ impl App {
         match key {
             KeyCode::Esc | KeyCode::Backspace => {
                 self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('q') => self.running = false,
+            KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
+            _ => {}
+        }
+    }
+
+    fn handle_interface_detail_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match key {
+            KeyCode::Esc | KeyCode::Backspace => {
+                self.interfaces_view_state.viewing_detail = false;
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                self.interfaces_view_state.scroll_up();
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                self.interfaces_view_state.scroll_down();
             }
             KeyCode::Char('q') => self.running = false,
             KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
@@ -433,6 +471,20 @@ impl App {
             // Activate search input with '/'
             (KeyCode::Char('/'), _) if self.current_tab == Tab::Search => {
                 self.input_mode = InputMode::SearchInput;
+            }
+            // Interfaces tab navigation
+            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
+                self.interfaces_view_state.select_prev(self.wit_interfaces.len());
+            }
+            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
+                self.interfaces_view_state.select_next(self.wit_interfaces.len());
+            }
+            (KeyCode::Enter, _) if self.current_tab == Tab::Interfaces => {
+                if !self.wit_interfaces.is_empty() {
+                    self.interfaces_view_state.viewing_detail = true;
+                    self.interfaces_view_state.detail_scroll = 0;
+                    self.input_mode = InputMode::InterfaceDetail;
+                }
             }
             // Pull selected package from search results
             (KeyCode::Char('p'), _)

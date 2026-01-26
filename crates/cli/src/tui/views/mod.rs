@@ -5,7 +5,7 @@ pub(crate) mod packages;
 mod search;
 mod settings;
 
-pub(crate) use interfaces::InterfacesView;
+pub(crate) use interfaces::{InterfacesView, InterfacesViewState};
 pub(crate) use local::LocalView;
 pub(crate) use package_detail::PackageDetailView;
 pub(crate) use packages::PackagesView;

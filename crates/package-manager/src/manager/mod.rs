@@ -1,7 +1,7 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store};
+use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -110,5 +110,10 @@ impl Manager {
     /// List all tags for a given reference from the registry.
     pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         self.client.list_tags(reference).await
+    }
+    
+    /// List all WIT interfaces with their associated component references.
+    pub fn list_wit_interfaces(&self) -> anyhow::Result<Vec<(WitInterface, String)>> {
+        self.store.list_wit_interfaces_with_components()
     }
 }
