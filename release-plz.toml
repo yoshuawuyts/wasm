@@ -1,0 +1,27 @@
+# release-plz configuration for workspace
+# See https://release-plz.dev/docs/config for more options
+
+[workspace]
+# Automatically update changelogs from git history
+changelog_update = true
+
+# Enable git tag creation for releases
+git_release_enable = true
+
+# Add labels to release PRs
+pr_labels = ["release"]
+
+# Configure individual workspace crates
+[[package]]
+name = "wasm"
+# Publish to crates.io
+publish = true
+# Enable semver checks to prevent breaking changes
+semver_check = true
+
+[[package]]
+name = "wasm-package-manager"
+# Publish to crates.io
+publish = true
+# Enable semver checks to prevent breaking changes
+semver_check = true
