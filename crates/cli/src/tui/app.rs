@@ -10,8 +10,8 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, KnownPackageDetailView, LocalView, PackageDetailView, PackagesView,
-    SearchView, SearchViewState, SettingsView,
+    InterfacesView, KnownPackageDetailView, LocalView, PackageDetailView, PackagesView, SearchView,
+    SearchViewState, SettingsView,
 };
 use super::{AppEvent, ManagerEvent};
 
@@ -180,7 +180,8 @@ impl App {
                     }
                 } else {
                     // Sync search_active state for rendering
-                    self.search_view_state.search_active = self.input_mode == InputMode::SearchInput;
+                    self.search_view_state.search_active =
+                        self.input_mode == InputMode::SearchInput;
                     frame.render_stateful_widget(
                         SearchView::new(&self.known_packages),
                         content_area,
@@ -344,7 +345,9 @@ impl App {
             InputMode::SearchInput => self.handle_search_key(key, modifiers),
             InputMode::FilterInput => self.handle_filter_key(key, modifiers),
             InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
-            InputMode::KnownPackageDetail(_) => self.handle_known_package_detail_key(key, modifiers),
+            InputMode::KnownPackageDetail(_) => {
+                self.handle_known_package_detail_key(key, modifiers)
+            }
             InputMode::Normal => self.handle_normal_key(key, modifiers),
         }
     }

@@ -133,7 +133,11 @@ fn test_known_package_detail_view_snapshot() {
         "ghcr.io".to_string(),
         "user/example-package".to_string(),
         Some("An example WASM component package".to_string()),
-        vec!["v1.0.0".to_string(), "v0.9.0".to_string(), "latest".to_string()],
+        vec![
+            "v1.0.0".to_string(),
+            "v0.9.0".to_string(),
+            "latest".to_string(),
+        ],
         vec!["v1.0.0.sig".to_string()],
         vec!["v1.0.0.att".to_string()],
         "2024-01-15T10:30:00Z".to_string(),
