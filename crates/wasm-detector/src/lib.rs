@@ -1,9 +1,10 @@
-//! A library to detect local `.wasm` files in a repository.
+//! A library to detect local `.wasm` files in a repository and extract interface information.
 //!
 //! This crate provides functionality to find WebAssembly files while:
 //! - Respecting `.gitignore` rules
 //! - Including well-known `.wasm` locations that are typically ignored
 //!   (e.g., `target/wasm32-*`, `pkg/`, `dist/`)
+//! - Extracting WIT interface information from WebAssembly components
 //!
 //! # Example
 //!
@@ -14,7 +15,10 @@
 //! let detector = WasmDetector::new(Path::new("."));
 //! for result in detector {
 //!     match result {
-//!         Ok(entry) => println!("Found: {}", entry.path().display()),
+//!         Ok(entry) => {
+//!             println!("Found: {}", entry.path().display());
+//!             println!("  Interfaces: {}", entry.interfaces().len());
+//!         }
 //!         Err(e) => eprintln!("Error: {}", e),
 //!     }
 //! }
@@ -39,7 +43,10 @@ pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
 /// Patterns to match within the target directory for wasm-specific subdirectories.
 const TARGET_WASM_PREFIXES: &[&str] = &["wasm32-"];
 
-/// A discovered WebAssembly file entry.
+/// A discovered WebAssembly file entry with interface information.
+///
+/// This structure represents a `.wasm` file found during detection, along with
+/// any WIT interfaces, dependencies, and child components extracted from it.
 #[derive(Debug, Clone)]
 pub struct WasmEntry {
     path: PathBuf,
@@ -47,6 +54,9 @@ pub struct WasmEntry {
 }
 
 /// Information about a WIT interface or dependency found in a WASM component.
+///
+/// Represents entities like dependency packages, child components, or modules
+/// that are part of a WebAssembly component's interface definition.
 #[derive(Debug, Clone)]
 pub struct InterfaceInfo {
     /// Name of the interface/package
@@ -60,11 +70,11 @@ pub struct InterfaceInfo {
 /// The kind of interface entry.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InterfaceKind {
-    /// A dependency package
+    /// A dependency package defined in the component
     Dependency,
-    /// A child component
+    /// A child component embedded in the parent component
     ChildComponent,
-    /// A child module
+    /// A child module embedded in the parent component
     ChildModule,
 }
 
