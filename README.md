@@ -66,6 +66,17 @@ wasm self clean                 # clean up storage
 └── metadata.db3    # sqlite database (package metadata & references)
 ```
 
+## Repository Structure
+
+```
+yoshuawuyts/wasm/
+├── wasm_cli/       # CLI application
+├── wasm_core/      # Core package manager functionality
+├── wasm_detector/  # WASM file detection library
+├── xtask/          # Build automation
+└── dev/            # Development documentation
+```
+
 ## Status
 
 Experimental. Early development stage — expect breaking changes. 

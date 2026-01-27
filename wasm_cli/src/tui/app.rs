@@ -5,7 +5,7 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
+use wasm_core::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;

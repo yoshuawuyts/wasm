@@ -1,5 +1,5 @@
 [package]
-name = "wasm-detector"
+name = "wasm_detector"
 description = "A library to detect local .wasm files in a repository"
 readme = "README.md"
 repository = { workspace = true }

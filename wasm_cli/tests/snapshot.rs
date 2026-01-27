@@ -23,7 +23,7 @@ use wasm::tui::views::{
     InterfacesView, KnownPackageDetailView, LocalView, PackagesView, SearchView, SearchViewState,
     SettingsView,
 };
-use wasm_package_manager::KnownPackage;
+use wasm_core::KnownPackage;
 
 /// Helper function to render a widget to a string buffer.
 fn render_to_string<W: Widget>(widget: W, width: u16, height: u16) -> String {

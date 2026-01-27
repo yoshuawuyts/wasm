@@ -14,4 +14,4 @@ pub use packages::PackagesView;
 pub use search::{SearchView, SearchViewState};
 pub use settings::SettingsView;
 
-pub(crate) use wasm_package_manager::format_size;
+pub(crate) use wasm_core::format_size;

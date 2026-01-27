@@ -2,7 +2,7 @@ use ratatui::{
     prelude::*,
     widgets::{Cell, Paragraph, Row, Table, Widget},
 };
-use wasm_package_manager::StateInfo;
+use wasm_core::StateInfo;
 
 pub struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,

@@ -1,5 +1,5 @@
 [package]
-name = "wasm-package-manager"
+name = "wasm_core"
 description = "A stateful library to interact with OCI registries storing WebAssembly Components"
 readme = "README.md"
 repository = { workspace = true }
@@ -29,3 +29,6 @@ rusqlite = { workspace = true }
 serde_json = { workspace = true }
 
 [dev-dependencies]
+
+[lints]
+workspace = true

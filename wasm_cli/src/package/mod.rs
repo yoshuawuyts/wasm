@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_package_manager::{InsertResult, Manager, Reference};
+use wasm_core::{InsertResult, Manager, Reference};
 
 /// Package, push, and pull Wasm Components
 #[derive(clap::Parser)]

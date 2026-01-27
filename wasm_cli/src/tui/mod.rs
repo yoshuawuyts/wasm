@@ -4,7 +4,7 @@ pub mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo};
+use wasm_core::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]

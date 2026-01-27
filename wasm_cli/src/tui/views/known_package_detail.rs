@@ -2,7 +2,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
-use wasm_package_manager::KnownPackage;
+use wasm_core::KnownPackage;
 
 /// View for displaying details of a known package (from search results).
 pub struct KnownPackageDetailView<'a> {

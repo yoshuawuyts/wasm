@@ -29,10 +29,13 @@ serde_json = { workspace = true }
 termcolor = { workspace = true }
 tokio = { workspace = true }
 wasm-metadata = { workspace = true }
-wasm-package-manager = { workspace = true }
+wasm-core = { workspace = true }
 wasmtime = { workspace = true }
 wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
-wasm-package-manager = { workspace = true, features = ["test-helpers"] }
+wasm-core = { workspace = true, features = ["test-helpers"] }
+
+[lints]
+workspace = true

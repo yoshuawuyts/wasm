@@ -2,9 +2,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "crates/cli",
-    "crates/package-manager",
-    "crates/wasm-detector",
+    "wasm_cli",
+    "wasm_core",
+    "wasm_detector",
     "xtask",
 ]
 
@@ -35,8 +35,8 @@ unneeded_field_pattern = "deny"
 [workspace.dependencies]
 
 # local dependencies
-wasm-package-manager = { path = "crates/package-manager", version = "0.1.0" }
-wasm-detector = { path = "crates/wasm-detector", version = "0.1.0" }
+wasm-core = { path = "wasm_core", version = "0.1.0", package = "wasm_core" }
+wasm-detector = { path = "wasm_detector", version = "0.1.0", package = "wasm_detector" }
 
 # shared dependencies
 anyhow = "1.0.100"

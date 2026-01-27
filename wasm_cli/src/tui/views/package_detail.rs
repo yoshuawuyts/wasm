@@ -2,7 +2,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
-use wasm_package_manager::ImageEntry;
+use wasm_core::ImageEntry;
 
 pub struct PackageDetailView<'a> {
     package: &'a ImageEntry,

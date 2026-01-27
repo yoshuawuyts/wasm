@@ -1,5 +1,5 @@
 use anyhow::Result;
-use wasm_package_manager::{Manager, format_size};
+use wasm_core::{Manager, format_size};
 
 /// Configure the `wasm(1)` tool, generate completions, & manage state
 #[derive(clap::Parser)]

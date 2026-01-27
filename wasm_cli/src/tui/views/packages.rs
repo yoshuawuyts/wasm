@@ -2,22 +2,24 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Cell, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
 };
-use wasm_package_manager::KnownPackage;
+use wasm_core::ImageEntry;
 
-/// State for the search view
+use super::format_size;
+
+/// State for the packages list view
 #[derive(Debug, Default)]
-pub struct SearchViewState {
+pub struct PackagesViewState {
     pub table_state: TableState,
-    pub search_query: String,
-    pub search_active: bool,
+    pub filter_query: String,
+    pub filter_active: bool,
 }
 
-impl SearchViewState {
+impl PackagesViewState {
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
-            search_query: String::new(),
-            search_active: false,
+            filter_query: String::new(),
+            filter_active: false,
         }
     }
 
@@ -44,60 +46,59 @@ impl SearchViewState {
     }
 }
 
-pub struct SearchView<'a> {
-    packages: &'a [KnownPackage],
+pub struct PackagesView<'a> {
+    packages: &'a [ImageEntry],
 }
 
-impl<'a> SearchView<'a> {
-    pub fn new(packages: &'a [KnownPackage]) -> Self {
+impl<'a> PackagesView<'a> {
+    pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
 }
 
-impl StatefulWidget for SearchView<'_> {
-    type State = SearchViewState;
+impl StatefulWidget for PackagesView<'_> {
+    type State = PackagesViewState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        // Split area into search input, content, and shortcuts bar
+        // Split area into filter input, content, and shortcuts bar
         let layout = Layout::vertical([
             Constraint::Length(3),
             Constraint::Min(0),
             Constraint::Length(1),
         ])
         .split(area);
-        let search_area = layout[0];
+        let filter_area = layout[0];
         let content_area = layout[1];
         let shortcuts_area = layout[2];
 
-        // Render search input
-        let search_style = if state.search_active {
+        // Render filter input
+        let filter_style = if state.filter_active {
             Style::default().fg(Color::Yellow)
         } else {
             Style::default().fg(Color::White)
         };
 
-        let search_text = if state.search_active {
-            format!("{}_", state.search_query)
-        } else if state.search_query.is_empty() {
-            "Press / to search...".to_string()
+        let filter_text = if state.filter_active {
+            format!("{}_", state.filter_query)
+        } else if state.filter_query.is_empty() {
+            "Press / to filter...".to_string()
         } else {
-            state.search_query.clone()
+            state.filter_query.clone()
         };
 
-        let search_block = Block::bordered()
-            .title(" Search ")
-            .border_style(search_style);
-        let search_input = Paragraph::new(search_text)
-            .style(search_style)
-            .block(search_block);
-        search_input.render(search_area, buf);
+        let filter_block = Block::bordered()
+            .title(" Filter ")
+            .border_style(filter_style);
+        let filter_input = Paragraph::new(filter_text)
+            .style(filter_style)
+            .block(filter_block);
+        filter_input.render(filter_area, buf);
 
-        // Render package list
         if self.packages.is_empty() {
-            let message = if state.search_query.is_empty() {
-                "No known packages. Pull a package to add it to the list."
+            let message = if state.filter_query.is_empty() {
+                "No packages stored."
             } else {
-                "No packages found matching your search."
+                "No packages found matching your filter."
             };
             Paragraph::new(message).centered().render(content_area, buf);
         } else {
@@ -105,8 +106,9 @@ impl StatefulWidget for SearchView<'_> {
             let header = Row::new(vec![
                 Cell::from("Repository").style(Style::default().bold()),
                 Cell::from("Registry").style(Style::default().bold()),
-                Cell::from("Tags").style(Style::default().bold()),
-                Cell::from("Last Seen").style(Style::default().bold()),
+                Cell::from("Tag").style(Style::default().bold()),
+                Cell::from("Size").style(Style::default().bold()),
+                Cell::from("Digest").style(Style::default().bold()),
             ])
             .style(Style::default().fg(Color::Yellow));
 
@@ -115,25 +117,22 @@ impl StatefulWidget for SearchView<'_> {
                 .packages
                 .iter()
                 .map(|entry| {
-                    // Format tags (show first few)
-                    let tags_display = if entry.tags.is_empty() {
-                        "-".to_string()
-                    } else if entry.tags.len() <= 3 {
-                        entry.tags.join(", ")
-                    } else {
-                        format!("{}, +{}", entry.tags[..2].join(", "), entry.tags.len() - 2)
-                    };
-                    // Format the date nicely (just show date part)
-                    let last_seen = entry
-                        .last_seen_at
-                        .split('T')
-                        .next()
-                        .unwrap_or(&entry.last_seen_at);
+                    let tag = entry.ref_tag.as_deref().unwrap_or("-");
+                    let size = format_size(entry.size_on_disk);
+                    let digest = entry
+                        .ref_digest
+                        .as_ref()
+                        .map(|d| {
+                            // Strip "sha256:" prefix
+                            d.strip_prefix("sha256:").unwrap_or(d).to_string()
+                        })
+                        .unwrap_or_else(|| "-".to_string());
                     Row::new(vec![
-                        Cell::from(entry.repository.clone()),
-                        Cell::from(entry.registry.clone()),
-                        Cell::from(tags_display),
-                        Cell::from(last_seen.to_string()),
+                        Cell::from(entry.ref_repository.clone()),
+                        Cell::from(entry.ref_registry.clone()),
+                        Cell::from(tag.to_string()),
+                        Cell::from(size),
+                        Cell::from(digest),
                     ])
                 })
                 .collect();
@@ -141,10 +140,11 @@ impl StatefulWidget for SearchView<'_> {
             let table = Table::new(
                 rows,
                 [
-                    Constraint::Percentage(35),
-                    Constraint::Percentage(25),
+                    Constraint::Percentage(30),
                     Constraint::Percentage(20),
-                    Constraint::Percentage(20),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(12),
+                    Constraint::Percentage(23),
                 ],
             )
             .header(header)
@@ -156,11 +156,11 @@ impl StatefulWidget for SearchView<'_> {
         // Render shortcuts bar
         let shortcuts = Line::from(vec![
             Span::styled(" / ", Style::default().fg(Color::Black).bg(Color::Yellow)),
-            Span::raw(" Search  "),
+            Span::raw(" Filter  "),
             Span::styled(" p ", Style::default().fg(Color::Black).bg(Color::Yellow)),
-            Span::raw(" Pull selected  "),
-            Span::styled(" r ", Style::default().fg(Color::Black).bg(Color::Yellow)),
-            Span::raw(" Refresh tags  "),
+            Span::raw(" Pull  "),
+            Span::styled(" d ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Delete  "),
             Span::styled(
                 " Enter ",
                 Style::default().fg(Color::Black).bg(Color::Yellow),
@@ -175,9 +175,9 @@ impl StatefulWidget for SearchView<'_> {
     }
 }
 
-impl Widget for SearchView<'_> {
+impl Widget for PackagesView<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let mut state = SearchViewState::new();
+        let mut state = PackagesViewState::new();
         StatefulWidget::render(self, area, buf, &mut state);
     }
 }
