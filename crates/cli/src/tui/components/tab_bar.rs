@@ -16,7 +16,8 @@ pub trait TabItem: Copy + PartialEq + 'static {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
         let next_idx = (current_idx + 1) % all.len();
-        all[next_idx]
+        // SAFETY: next_idx is always < all.len() due to modulo
+        all.get(next_idx).copied().unwrap_or(*self)
     }
 
     /// Returns the previous tab (wrapping around).
@@ -28,11 +29,13 @@ pub trait TabItem: Copy + PartialEq + 'static {
         } else {
             current_idx - 1
         };
-        all[prev_idx]
+        // SAFETY: prev_idx is always valid when all is non-empty
+        all.get(prev_idx).copied().unwrap_or(*self)
     }
 }
 
 /// A reusable tab bar component.
+#[derive(Debug)]
 pub struct TabBar<'a, T: TabItem> {
     title: String,
     selected: T,

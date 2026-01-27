@@ -4,11 +4,15 @@ use ratatui::{
 };
 use wasm_package_manager::ImageEntry;
 
+/// View for displaying details of a single package.
+#[derive(Debug)]
 pub struct PackageDetailView<'a> {
     package: &'a ImageEntry,
 }
 
 impl<'a> PackageDetailView<'a> {
+    /// Create a new package detail view for the given package.
+    #[must_use]
     pub fn new(package: &'a ImageEntry) -> Self {
         Self { package }
     }
@@ -18,14 +22,24 @@ impl Widget for PackageDetailView<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Split area into content and shortcuts bar
         let main_layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
-        let content_area = main_layout[0];
-        let shortcuts_area = main_layout[1];
+        let Some(content_area) = main_layout.first().copied() else {
+            return;
+        };
+        let Some(shortcuts_area) = main_layout.get(1).copied() else {
+            return;
+        };
 
         let layout = Layout::vertical([
             Constraint::Length(3), // Header
             Constraint::Min(0),    // Details
         ])
         .split(content_area);
+        let Some(header_area) = layout.first().copied() else {
+            return;
+        };
+        let Some(details_area) = layout.get(1).copied() else {
+            return;
+        };
 
         // Header with package name
         let header_text = format!(
@@ -35,7 +49,7 @@ impl Widget for PackageDetailView<'_> {
         Paragraph::new(header_text)
             .style(Style::default().bold().fg(Color::Yellow))
             .block(Block::default().borders(Borders::BOTTOM))
-            .render(layout[0], buf);
+            .render(header_area, buf);
 
         // Build details text
         let mut details = Vec::new();
@@ -127,7 +141,7 @@ impl Widget for PackageDetailView<'_> {
 
         Paragraph::new(details)
             .wrap(Wrap { trim: false })
-            .render(layout[1], buf);
+            .render(details_area, buf);
 
         // Render shortcuts bar
         let shortcuts = Line::from(vec![

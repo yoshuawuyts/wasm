@@ -141,15 +141,21 @@ impl App {
 
         // Create main layout with tabs at top
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
+        let Some(tabs_area) = layout.first().copied() else {
+            return;
+        };
+        let Some(main_area) = layout.get(1).copied() else {
+            return;
+        };
 
         // Render tab bar
         let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
-        frame.render_widget(tab_bar, layout[0]);
+        frame.render_widget(tab_bar, tabs_area);
 
         // Render content based on current tab
         let content_block = Block::bordered();
-        let content_area = content_block.inner(layout[1]);
-        frame.render_widget(content_block, layout[1]);
+        let content_area = content_block.inner(main_area);
+        frame.render_widget(content_block, main_area);
 
         match self.current_tab {
             Tab::Local => frame.render_widget(LocalView, content_area),
@@ -246,17 +252,23 @@ impl App {
 
         // Label
         let label = Paragraph::new("Enter package reference (e.g., ghcr.io/user/pkg:tag):");
-        frame.render_widget(label, chunks[0]);
+        if let Some(label_area) = chunks.first().copied() {
+            frame.render_widget(label, label_area);
+        }
 
         // Input field with cursor
         let input_text = format!("{}_", state.input);
         let input = Paragraph::new(input_text).style(Style::default().fg(Color::Yellow));
-        frame.render_widget(input, chunks[1]);
+        if let Some(input_area) = chunks.get(1).copied() {
+            frame.render_widget(input, input_area);
+        }
 
         // Error message if present
         if let Some(ref error) = state.error {
             let error_msg = Paragraph::new(error.as_str()).style(Style::default().fg(Color::Red));
-            frame.render_widget(error_msg, chunks[2]);
+            if let Some(error_area) = chunks.get(2).copied() {
+                frame.render_widget(error_msg, error_area);
+            }
         }
     }
 

@@ -9,12 +9,17 @@ use super::format_size;
 /// State for the packages list view
 #[derive(Debug, Default)]
 pub struct PackagesViewState {
+    /// The table state for selection.
     pub table_state: TableState,
+    /// Current filter query string.
     pub filter_query: String,
+    /// Whether the filter input is active.
     pub filter_active: bool,
 }
 
 impl PackagesViewState {
+    /// Create a new packages view state.
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -46,11 +51,15 @@ impl PackagesViewState {
     }
 }
 
+/// View for displaying a list of packages.
+#[derive(Debug)]
 pub struct PackagesView<'a> {
     packages: &'a [ImageEntry],
 }
 
 impl<'a> PackagesView<'a> {
+    /// Create a new packages view with the given packages.
+    #[must_use]
     pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
@@ -67,9 +76,15 @@ impl StatefulWidget for PackagesView<'_> {
             Constraint::Length(1),
         ])
         .split(area);
-        let filter_area = layout[0];
-        let content_area = layout[1];
-        let shortcuts_area = layout[2];
+        let Some(filter_area) = layout.first().copied() else {
+            return;
+        };
+        let Some(content_area) = layout.get(1).copied() else {
+            return;
+        };
+        let Some(shortcuts_area) = layout.get(2).copied() else {
+            return;
+        };
 
         // Render filter input
         let filter_style = if state.filter_active {

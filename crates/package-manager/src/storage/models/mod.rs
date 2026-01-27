@@ -4,4 +4,4 @@ mod migration;
 
 pub use image_entry::{ImageEntry, InsertResult};
 pub use known_package::{KnownPackage, TagType};
-pub use migration::Migrations;
+pub(crate) use migration::Migrations;

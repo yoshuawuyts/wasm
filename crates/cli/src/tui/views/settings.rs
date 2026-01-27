@@ -4,11 +4,15 @@ use ratatui::{
 };
 use wasm_package_manager::StateInfo;
 
+/// View for the settings tab.
+#[derive(Debug)]
 pub struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,
 }
 
 impl<'a> SettingsView<'a> {
+    /// Create a new settings view with optional state info.
+    #[must_use]
     pub fn new(state_info: Option<&'a StateInfo>) -> Self {
         Self { state_info }
     }
@@ -21,6 +25,12 @@ impl Widget for SettingsView<'_> {
                 // Split area for migrations section and storage table
                 let layout =
                     Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
+                let Some(migrations_area) = layout.first().copied() else {
+                    return;
+                };
+                let Some(storage_section_area) = layout.get(1).copied() else {
+                    return;
+                };
 
                 // Migrations section
                 let migrations = Text::from(vec![
@@ -34,17 +44,23 @@ impl Widget for SettingsView<'_> {
                         info.migration_total()
                     )),
                 ]);
-                Paragraph::new(migrations).render(layout[0], buf);
+                Paragraph::new(migrations).render(migrations_area, buf);
 
                 // Storage section with table
                 let storage_layout =
-                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(layout[1]);
+                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(storage_section_area);
+                let Some(storage_header_area) = storage_layout.first().copied() else {
+                    return;
+                };
+                let Some(storage_table_area) = storage_layout.get(1).copied() else {
+                    return;
+                };
 
                 let storage_header = Line::from(vec![Span::styled(
                     "Storage",
                     Style::default().bold().fg(Color::Yellow),
                 )]);
-                Paragraph::new(storage_header).render(storage_layout[0], buf);
+                Paragraph::new(storage_header).render(storage_header_area, buf);
 
                 // Compute column widths based on content
                 let executable_path = info.executable().display().to_string();
@@ -99,7 +115,7 @@ impl Widget for SettingsView<'_> {
                 )
                 .column_spacing(3);
 
-                Widget::render(table, storage_layout[1], buf);
+                Widget::render(table, storage_table_area, buf);
             }
             None => {
                 Paragraph::new("Loading state information...").render(area, buf);

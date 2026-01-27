@@ -1,3 +1,5 @@
+//! A stateful library to interact with OCI registries storing WebAssembly Components.
+
 mod manager;
 mod network;
 mod storage;
@@ -7,6 +9,7 @@ pub use oci_client::Reference;
 pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 
 /// Format a byte size as a human-readable string (B, KB, MB, GB).
+#[must_use]
 pub fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;

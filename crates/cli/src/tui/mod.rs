@@ -1,5 +1,11 @@
+//! TUI module for the wasm CLI
+//!
+//! This module contains components and views for the terminal user interface.
+
 mod app;
+/// TUI components like tab bars and widgets.
 pub mod components;
+/// TUI views for different application screens.
 pub mod views;
 
 use app::App;
@@ -48,6 +54,7 @@ pub enum ManagerEvent {
     RefreshTagsResult(Result<usize, String>),
 }
 
+/// Start the TUI application.
 pub async fn run() -> anyhow::Result<()> {
     // Create channels for bidirectional communication
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);

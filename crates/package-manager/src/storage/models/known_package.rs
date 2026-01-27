@@ -2,7 +2,7 @@ use rusqlite::Connection;
 
 /// The type of a tag, used to distinguish release tags from signatures and attestations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TagType {
+pub(crate) enum TagType {
     /// A regular release tag (e.g., "1.0.0", "latest")
     Release,
     /// A signature tag (ending in ".sig")
@@ -13,7 +13,7 @@ pub enum TagType {
 
 impl TagType {
     /// Determine the tag type from a tag string.
-    pub fn from_tag(tag: &str) -> Self {
+    pub(crate) fn from_tag(tag: &str) -> Self {
         if tag.ends_with(".sig") {
             TagType::Signature
         } else if tag.ends_with(".att") {
@@ -39,8 +39,11 @@ impl TagType {
 pub struct KnownPackage {
     #[allow(dead_code)]
     id: i64,
+    /// The registry where the package is hosted (e.g., "ghcr.io")
     pub registry: String,
+    /// The repository path within the registry (e.g., "user/repo")
     pub repository: String,
+    /// Optional description of the package
     pub description: Option<String>,
     /// Release tags (regular version tags like "1.0.0", "latest")
     pub tags: Vec<String>,
@@ -48,17 +51,21 @@ pub struct KnownPackage {
     pub signature_tags: Vec<String>,
     /// Attestation tags (tags ending in ".att")
     pub attestation_tags: Vec<String>,
+    /// Timestamp when the package was last seen
     pub last_seen_at: String,
+    /// Timestamp when the package was first added
     pub created_at: String,
 }
 
 impl KnownPackage {
     /// Returns the full reference string for this package (e.g., "ghcr.io/user/repo").
+    #[must_use]
     pub fn reference(&self) -> String {
         format!("{}/{}", self.registry, self.repository)
     }
 
     /// Returns the full reference string with the most recent tag.
+    #[must_use]
     pub fn reference_with_tag(&self) -> String {
         if let Some(tag) = self.tags.first() {
             format!("{}:{}", self.reference(), tag)
