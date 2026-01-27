@@ -6,14 +6,14 @@ use wasm_package_manager::StateInfo;
 
 /// View for the settings tab.
 #[derive(Debug)]
-pub struct SettingsView<'a> {
+pub(crate) struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,
 }
 
 impl<'a> SettingsView<'a> {
     /// Create a new settings view with optional state info.
     #[must_use]
-    pub fn new(state_info: Option<&'a StateInfo>) -> Self {
+    pub(crate) fn new(state_info: Option<&'a StateInfo>) -> Self {
         Self { state_info }
     }
 }

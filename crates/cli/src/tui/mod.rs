@@ -4,9 +4,9 @@
 
 mod app;
 /// TUI components like tab bars and widgets.
-pub mod components;
+pub(crate) mod components;
 /// TUI views for different application screens.
-pub mod views;
+pub(crate) mod views;
 
 use app::App;
 use tokio::sync::mpsc;
@@ -14,7 +14,7 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Refe
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
-pub enum AppEvent {
+pub(crate) enum AppEvent {
     /// Request to quit the application
     Quit,
     /// Request the list of packages
@@ -35,7 +35,7 @@ pub enum AppEvent {
 
 /// Events sent from the Manager to the TUI
 #[derive(Debug)]
-pub enum ManagerEvent {
+pub(crate) enum ManagerEvent {
     /// Manager has finished initializing
     Ready,
     /// List of packages
@@ -55,7 +55,7 @@ pub enum ManagerEvent {
 }
 
 /// Start the TUI application.
-pub async fn run() -> anyhow::Result<()> {
+pub(crate) async fn run() -> anyhow::Result<()> {
     // Create channels for bidirectional communication
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);
     let (manager_sender, manager_receiver) = mpsc::channel::<ManagerEvent>(32);

@@ -6,14 +6,14 @@ use wasm_package_manager::ImageEntry;
 
 /// View for displaying details of a single package.
 #[derive(Debug)]
-pub struct PackageDetailView<'a> {
+pub(crate) struct PackageDetailView<'a> {
     package: &'a ImageEntry,
 }
 
 impl<'a> PackageDetailView<'a> {
     /// Create a new package detail view for the given package.
     #[must_use]
-    pub fn new(package: &'a ImageEntry) -> Self {
+    pub(crate) fn new(package: &'a ImageEntry) -> Self {
         Self { package }
     }
 }

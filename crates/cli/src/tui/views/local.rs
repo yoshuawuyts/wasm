@@ -12,7 +12,7 @@ const LOGO: &str = "
 
 /// View for the local tab.
 #[derive(Debug)]
-pub struct LocalView;
+pub(crate) struct LocalView;
 
 impl Widget for LocalView {
     fn render(self, area: Rect, buf: &mut Buffer) {

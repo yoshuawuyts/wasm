@@ -8,7 +8,7 @@ use super::format_size;
 
 /// State for the packages list view
 #[derive(Debug, Default)]
-pub struct PackagesViewState {
+pub(crate) struct PackagesViewState {
     /// The table state for selection.
     pub table_state: TableState,
     /// Current filter query string.
@@ -20,7 +20,7 @@ pub struct PackagesViewState {
 impl PackagesViewState {
     /// Create a new packages view state.
     #[must_use]
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
             filter_query: String::new(),
@@ -53,14 +53,14 @@ impl PackagesViewState {
 
 /// View for displaying a list of packages.
 #[derive(Debug)]
-pub struct PackagesView<'a> {
+pub(crate) struct PackagesView<'a> {
     packages: &'a [ImageEntry],
 }
 
 impl<'a> PackagesView<'a> {
     /// Create a new packages view with the given packages.
     #[must_use]
-    pub fn new(packages: &'a [ImageEntry]) -> Self {
+    pub(crate) fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
 }

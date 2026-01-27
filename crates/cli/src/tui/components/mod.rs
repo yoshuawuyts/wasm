@@ -1,3 +1,3 @@
 mod tab_bar;
 
-pub use tab_bar::{TabBar, TabItem};
+pub(crate) use tab_bar::{TabBar, TabItem};

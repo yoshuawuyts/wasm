@@ -4,7 +4,7 @@ use ratatui::{
 };
 
 /// A trait for items that can be displayed in a tab bar.
-pub trait TabItem: Copy + PartialEq + 'static {
+pub(crate) trait TabItem: Copy + PartialEq + 'static {
     /// Returns all tab items in order.
     fn all() -> &'static [Self];
 
@@ -36,7 +36,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
 
 /// A reusable tab bar component.
 #[derive(Debug)]
-pub struct TabBar<'a, T: TabItem> {
+pub(crate) struct TabBar<'a, T: TabItem> {
     title: String,
     selected: T,
     highlight_style: Style,
@@ -45,7 +45,7 @@ pub struct TabBar<'a, T: TabItem> {
 
 impl<'a, T: TabItem> TabBar<'a, T> {
     /// Creates a new tab bar with the given title and selected tab.
-    pub fn new(title: impl Into<String>, selected: T) -> Self {
+    pub(crate) fn new(title: impl Into<String>, selected: T) -> Self {
         Self {
             title: title.into(),
             selected,

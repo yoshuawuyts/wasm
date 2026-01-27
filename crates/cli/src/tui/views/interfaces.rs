@@ -5,7 +5,7 @@ use ratatui::{
 
 /// View for the interfaces tab.
 #[derive(Debug)]
-pub struct InterfacesView;
+pub(crate) struct InterfacesView;
 
 impl Widget for InterfacesView {
     fn render(self, area: Rect, buf: &mut Buffer) {

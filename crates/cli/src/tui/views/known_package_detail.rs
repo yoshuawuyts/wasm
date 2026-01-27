@@ -6,13 +6,14 @@ use wasm_package_manager::KnownPackage;
 
 /// View for displaying details of a known package (from search results).
 #[derive(Debug)]
-pub struct KnownPackageDetailView<'a> {
+pub(crate) struct KnownPackageDetailView<'a> {
     package: &'a KnownPackage,
 }
 
 impl<'a> KnownPackageDetailView<'a> {
     /// Creates a new known package detail view.
-    pub fn new(package: &'a KnownPackage) -> Self {
+    #[must_use] 
+    pub(crate) fn new(package: &'a KnownPackage) -> Self {
         Self { package }
     }
 }
