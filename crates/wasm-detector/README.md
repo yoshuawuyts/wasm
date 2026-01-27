@@ -30,11 +30,11 @@ for result in detector {
 
 The detector automatically includes these typically-ignored directories:
 
-| Location | Description |
-|----------|-------------|
-| `target/wasm32-*` | Rust wasm32 target outputs |
-| `pkg/` | wasm-pack output directory |
-| `dist/` | JavaScript/jco build output |
+| Location          | Description                  |
+|-------------------|------------------------------|
+| `target/wasm32-*` | Rust wasm32 target outputs   |
+| `pkg/`            | wasm-pack output directory   |
+| `dist/`           | JavaScript/jco build output  |
 
 ## License
 
