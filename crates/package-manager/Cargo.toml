@@ -27,6 +27,7 @@ oci-wasm = { workspace = true }
 tokio = { workspace = true }
 rusqlite = { workspace = true }
 serde_json = { workspace = true }
+wit-parser = { workspace = true }
 
 [dev-dependencies]
 

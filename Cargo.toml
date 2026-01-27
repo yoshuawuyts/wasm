@@ -79,6 +79,7 @@ cacache = { version = "13.1.0", features = [
 ], default-features = false }
 rusqlite = { version = "0.38.0", features = ["bundled"] }
 serde = "1.0.228"
+wit-parser = "0.230"
 
 # detector dependencies
 ignore = "0.4.25"

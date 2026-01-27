@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface};
+use super::wit_parser::extract_wit_metadata;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -41,17 +42,15 @@ impl Store {
         let data_dir = dirs::data_local_dir()
             .context("No local data dir known for the current OS")?
             .join("wasm");
-        let store_dir = data_dir.join("store");
-        let db_dir = data_dir.join("db");
-        let metadata_file = db_dir.join("metadata.db3");
+        let layers_dir = data_dir.join("layers");
+        let metadata_file = data_dir.join("metadata.db3");
 
         // TODO: remove me once we're done testing
         // tokio::fs::remove_dir_all(&data_dir).await?;
 
         let a = tokio::fs::create_dir_all(&data_dir);
-        let b = tokio::fs::create_dir_all(&store_dir);
-        let c = tokio::fs::create_dir_all(&db_dir);
-        let _ = (a, b, c)
+        let b = tokio::fs::create_dir_all(&layers_dir);
+        let _ = (a, b)
             .try_join()
             .await
             .context("Could not create config directories on disk")?;
@@ -60,12 +59,12 @@ impl Store {
         Migrations::run_all(&conn)?;
 
         let migration_info = Migrations::get(&conn)?;
-        let store_size = dir_size(&store_dir).await;
+        let layers_size = dir_size(&layers_dir).await;
         let metadata_size = tokio::fs::metadata(&metadata_file)
             .await
             .map(|m| m.len())
             .unwrap_or(0);
-        let state_info = StateInfo::new_at(data_dir, migration_info, store_size, metadata_size);
+        let state_info = StateInfo::new_at(data_dir, migration_info, layers_size, metadata_size);
 
         let store = Self { state_info, conn };
 
@@ -89,7 +88,7 @@ impl Store {
         // Calculate total size on disk from all layers
         let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
 
-        let result = ImageEntry::insert(
+        let (result, image_id) = ImageEntry::insert(
             &self.conn,
             reference.registry(),
             reference.repository(),
@@ -105,7 +104,7 @@ impl Store {
             // The manifest.layers and image.layers should be in the same order
             if let Some(ref manifest) = image.manifest {
                 for (idx, layer) in image.layers.iter().enumerate() {
-                    let cache = self.state_info.store_dir();
+                    let cache = self.state_info.layers_dir();
                     // Use the layer's content digest from the manifest as the key
                     let fallback_key = reference.whole().to_string();
                     let key = manifest
@@ -115,10 +114,39 @@ impl Store {
                         .unwrap_or(&fallback_key);
                     let data = &layer.data;
                     let _integrity = cacache::write(&cache, key, data).await?;
+
+                    // Try to extract WIT interface from this layer
+                    if let Some(image_id) = image_id {
+                        self.try_extract_wit_interface(image_id, data);
+                    }
                 }
             }
         }
         Ok(result)
+    }
+
+    /// Attempt to extract WIT interface from wasm component bytes.
+    /// This is best-effort - if extraction fails, we silently skip.
+    fn try_extract_wit_interface(&self, image_id: i64, wasm_bytes: &[u8]) {
+        let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
+            return; // Not a valid wasm component, skip
+        };
+
+        // Insert the WIT interface
+        let wit_id = match WitInterface::insert(
+            &self.conn,
+            &metadata.wit_text,
+            metadata.package_name.as_deref(),
+            Some(&metadata.world_name),
+            metadata.import_count,
+            metadata.export_count,
+        ) {
+            Ok(id) => id,
+            Err(_) => return, // Failed to insert, skip
+        };
+
+        // Link to image
+        let _ = WitInterface::link_to_image(&self.conn, image_id, wit_id);
     }
 
     /// Returns all currently stored images and their metadata.
@@ -164,7 +192,7 @@ impl Store {
             // Only delete layers that are not needed by other entries
             for layer_digest in layers_to_delete {
                 if !layers_still_needed.contains(layer_digest) {
-                    let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
+                    let _ = cacache::remove(self.state_info.layers_dir(), layer_digest).await;
                 }
             }
         }
@@ -239,5 +267,17 @@ impl Store {
         }
 
         Ok(updated_count)
+    }
+
+    /// Get all WIT interfaces.
+    pub(crate) fn list_wit_interfaces(&self) -> anyhow::Result<Vec<WitInterface>> {
+        WitInterface::get_all(&self.conn)
+    }
+
+    /// Get all WIT interfaces with their associated component references.
+    pub(crate) fn list_wit_interfaces_with_components(
+        &self,
+    ) -> anyhow::Result<Vec<(WitInterface, String)>> {
+        WitInterface::get_all_with_images(&self.conn)
     }
 }
