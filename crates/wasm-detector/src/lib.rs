@@ -23,6 +23,7 @@
 use ignore::WalkBuilder;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+use wasm_metadata::Payload;
 
 /// Well-known directories that typically contain `.wasm` files but are often ignored.
 ///
@@ -42,12 +43,91 @@ const TARGET_WASM_PREFIXES: &[&str] = &["wasm32-"];
 #[derive(Debug, Clone)]
 pub struct WasmEntry {
     path: PathBuf,
+    interfaces: Vec<InterfaceInfo>,
+}
+
+/// Information about a WIT interface or dependency found in a WASM component.
+#[derive(Debug, Clone)]
+pub struct InterfaceInfo {
+    /// Name of the interface/package
+    pub name: String,
+    /// Version of the interface/package, if available
+    pub version: Option<String>,
+    /// Type of interface entry (dependency, child component, etc.)
+    pub kind: InterfaceKind,
+}
+
+/// The kind of interface entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InterfaceKind {
+    /// A dependency package
+    Dependency,
+    /// A child component
+    ChildComponent,
+    /// A child module
+    ChildModule,
 }
 
 impl WasmEntry {
     /// Create a new WasmEntry from a path.
     fn new(path: PathBuf) -> Self {
-        Self { path }
+        let interfaces = Self::extract_interfaces(&path);
+        Self { path, interfaces }
+    }
+
+    /// Extract interface information from a WASM file.
+    fn extract_interfaces(path: &Path) -> Vec<InterfaceInfo> {
+        let mut interfaces = Vec::new();
+
+        // Try to read and parse the WASM file
+        let Ok(bytes) = std::fs::read(path) else {
+            return interfaces;
+        };
+
+        let Ok(payload) = Payload::from_binary(&bytes) else {
+            return interfaces;
+        };
+
+        // Extract interfaces recursively
+        Self::extract_interfaces_from_payload(&payload, &mut interfaces);
+
+        interfaces
+    }
+
+    /// Recursively extract interfaces from a payload.
+    fn extract_interfaces_from_payload(payload: &Payload, interfaces: &mut Vec<InterfaceInfo>) {
+        let metadata = payload.metadata();
+
+        // Extract dependencies
+        if let Some(deps) = &metadata.dependencies {
+            for package in &deps.version_info().packages {
+                interfaces.push(InterfaceInfo {
+                    name: package.name.clone(),
+                    version: Some(package.version.to_string()),
+                    kind: InterfaceKind::Dependency,
+                });
+            }
+        }
+
+        // Extract child components/modules
+        if let Payload::Component { children, .. } = payload {
+            for child in children {
+                let child_metadata = child.metadata();
+                if let Some(name) = &child_metadata.name {
+                    let kind = match child {
+                        Payload::Component { .. } => InterfaceKind::ChildComponent,
+                        Payload::Module(_) => InterfaceKind::ChildModule,
+                    };
+                    interfaces.push(InterfaceInfo {
+                        name: name.clone(),
+                        version: child_metadata.version.as_ref().map(|v| v.to_string()),
+                        kind,
+                    });
+                }
+                // Recursively extract from children
+                Self::extract_interfaces_from_payload(child, interfaces);
+            }
+        }
     }
 
     /// Returns the path to the `.wasm` file.
@@ -60,6 +140,12 @@ impl WasmEntry {
     #[must_use]
     pub fn file_name(&self) -> Option<&str> {
         self.path.file_name().and_then(|s| s.to_str())
+    }
+
+    /// Returns the interfaces found in this WASM file.
+    #[must_use]
+    pub fn interfaces(&self) -> &[InterfaceInfo] {
+        &self.interfaces
     }
 
     /// Consumes the entry and returns the underlying path.

@@ -2,4 +2,6 @@
 source: crates/cli/tests/snapshot.rs
 expression: output
 ---
-              Interfaces will be shown here...
+       No WIT interfaces detected in local WASM files.
+
+                    Press 'r' to refresh.

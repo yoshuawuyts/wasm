@@ -78,7 +78,8 @@ fn test_local_view_snapshot() {
 
 #[test]
 fn test_interfaces_view_snapshot() {
-    let output = render_to_string(InterfacesView, 60, 10);
+    let wasm_files = vec![];
+    let output = render_to_string(InterfacesView::new(&wasm_files), 60, 10);
     assert_snapshot!(output);
 }
 

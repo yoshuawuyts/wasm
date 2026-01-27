@@ -175,7 +175,9 @@ impl App {
                     );
                 }
             }
-            Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
+            Tab::Interfaces => {
+                frame.render_widget(InterfacesView::new(&self.local_wasm_files), content_area)
+            }
             Tab::Search => {
                 // Check if we're viewing a known package detail
                 if let InputMode::KnownPackageDetail(idx) = self.input_mode {
@@ -502,7 +504,8 @@ impl App {
             }
             // Refresh local WASM files on Local tab
             (KeyCode::Char('r'), _)
-                if self.current_tab == Tab::Local && self.is_manager_ready() =>
+                if (self.current_tab == Tab::Local || self.current_tab == Tab::Interfaces)
+                    && self.is_manager_ready() =>
             {
                 let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
             }
