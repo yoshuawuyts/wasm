@@ -12,6 +12,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
     fn title(&self) -> &'static str;
 
     /// Returns the next tab (wrapping around).
+    #[allow(clippy::indexing_slicing)]
     fn next(&self) -> Self {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
@@ -20,6 +21,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
     }
 
     /// Returns the previous tab (wrapping around).
+    #[allow(clippy::indexing_slicing)]
     fn prev(&self) -> Self {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
@@ -33,6 +35,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
 }
 
 /// A reusable tab bar component.
+#[derive(Debug)]
 pub struct TabBar<'a, T: TabItem> {
     title: String,
     selected: T,

@@ -7,12 +7,17 @@ use wasm_package_manager::KnownPackage;
 /// State for the search view
 #[derive(Debug, Default)]
 pub struct SearchViewState {
+    /// Table selection state
     pub table_state: TableState,
+    /// Current search query
     pub search_query: String,
+    /// Whether search mode is active
     pub search_active: bool,
 }
 
 impl SearchViewState {
+    /// Creates a new search view state
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -44,11 +49,15 @@ impl SearchViewState {
     }
 }
 
+/// View for displaying search results
+#[derive(Debug)]
 pub struct SearchView<'a> {
     packages: &'a [KnownPackage],
 }
 
 impl<'a> SearchView<'a> {
+    /// Creates a new search view
+    #[must_use]
     pub fn new(packages: &'a [KnownPackage]) -> Self {
         Self { packages }
     }
@@ -57,6 +66,7 @@ impl<'a> SearchView<'a> {
 impl StatefulWidget for SearchView<'_> {
     type State = SearchViewState;
 
+    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         // Split area into search input, content, and shortcuts bar
         let layout = Layout::vertical([

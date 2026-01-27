@@ -1,5 +1,9 @@
+#![allow(unreachable_pub)]
+
 mod app;
+/// TUI components
 pub mod components;
+/// TUI views
 pub mod views;
 
 use app::App;
@@ -8,7 +12,7 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Refe
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
-pub enum AppEvent {
+pub(crate) enum AppEvent {
     /// Request to quit the application
     Quit,
     /// Request the list of packages
@@ -29,7 +33,7 @@ pub enum AppEvent {
 
 /// Events sent from the Manager to the TUI
 #[derive(Debug)]
-pub enum ManagerEvent {
+pub(crate) enum ManagerEvent {
     /// Manager has finished initializing
     Ready,
     /// List of packages
@@ -48,6 +52,7 @@ pub enum ManagerEvent {
     RefreshTagsResult(Result<usize, String>),
 }
 
+/// Run the TUI application
 pub async fn run() -> anyhow::Result<()> {
     // Create channels for bidirectional communication
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);

@@ -9,12 +9,17 @@ use super::format_size;
 /// State for the packages list view
 #[derive(Debug, Default)]
 pub struct PackagesViewState {
+    /// Table selection state
     pub table_state: TableState,
+    /// Current filter query
     pub filter_query: String,
+    /// Whether filter mode is active
     pub filter_active: bool,
 }
 
 impl PackagesViewState {
+    /// Creates a new packages view state
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -46,11 +51,15 @@ impl PackagesViewState {
     }
 }
 
+/// View for displaying the list of installed packages
+#[derive(Debug)]
 pub struct PackagesView<'a> {
     packages: &'a [ImageEntry],
 }
 
 impl<'a> PackagesView<'a> {
+    /// Creates a new packages view
+    #[must_use]
     pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
@@ -59,6 +68,7 @@ impl<'a> PackagesView<'a> {
 impl StatefulWidget for PackagesView<'_> {
     type State = PackagesViewState;
 
+    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         // Split area into filter input, content, and shortcuts bar
         let layout = Layout::vertical([

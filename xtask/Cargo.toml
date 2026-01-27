@@ -7,3 +7,6 @@ publish = false
 [dependencies]
 clap = { workspace = true }
 anyhow = { workspace = true }
+
+[lints]
+workspace = true

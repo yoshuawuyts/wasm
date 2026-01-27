@@ -15,11 +15,17 @@ pub enum InsertResult {
 pub struct ImageEntry {
     #[allow(dead_code)] // Used in database schema
     id: i64,
+    /// Registry hostname
     pub ref_registry: String,
+    /// Repository path
     pub ref_repository: String,
+    /// Optional mirror registry hostname
     pub ref_mirror_registry: Option<String>,
+    /// Optional tag
     pub ref_tag: Option<String>,
+    /// Optional digest
     pub ref_digest: Option<String>,
+    /// OCI image manifest
     pub manifest: OciImageManifest,
     /// Size of the image on disk in bytes
     pub size_on_disk: u64,
@@ -27,6 +33,7 @@ pub struct ImageEntry {
 
 impl ImageEntry {
     /// Returns the full reference string for this image (e.g., "ghcr.io/user/repo:tag").
+    #[must_use]
     pub fn reference(&self) -> String {
         let mut reference = format!("{}/{}", self.ref_registry, self.ref_repository);
         if let Some(tag) = &self.ref_tag {
