@@ -73,7 +73,35 @@ Don't be a bad actor.
 
 ## Releases
 
-This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. When changes are merged to `main`, release-plz creates a release PR with version updates. After the PR is merged, crates are automatically published to crates.io using trusted publishing (OIDC) and GitHub releases are created.
+This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates.
+
+### How the Release Process Works
+
+1. **On every push to `main`**: The Release workflow automatically runs and creates or updates a release PR with:
+   - Version bumps based on [conventional commits](https://www.conventionalcommits.org/)
+   - Changelog updates for each crate
+   - Updated version numbers in Cargo.toml files
+
+2. **Review and merge the release PR**: Once you're ready to publish a release, review the automatically generated release PR and merge it.
+
+3. **Automatic publishing**: When the release PR is merged, the workflow automatically:
+   - Publishes all changed crates to crates.io using [trusted publishing (OIDC)](https://blog.rust-lang.org/2023/06/23/secure-credential-free-publishing.html)
+   - Creates GitHub releases with the changelogs
+
+### Conventional Commits
+
+For release-plz to work correctly, commit messages should follow the [conventional commits](https://www.conventionalcommits.org/) format:
+
+- `feat: add new feature` - Creates a minor version bump (0.1.0 -> 0.2.0)
+- `fix: fix bug` - Creates a patch version bump (0.1.0 -> 0.1.1)
+- `feat!: breaking change` or commits with `BREAKING CHANGE:` in the body - Creates a major version bump (0.1.0 -> 1.0.0)
+
+### Manual Intervention
+
+The release process is fully automated. If you need to make manual adjustments to a release:
+1. Edit the automatically created release PR
+2. Commit your changes to the release PR branch
+3. Merge the PR when ready
 
 ## Snapshot Testing
 
