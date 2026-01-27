@@ -267,4 +267,30 @@ impl KnownPackage {
             None => Ok(None),
         }
     }
+
+    /// Creates a new KnownPackage for testing purposes.
+    #[cfg(any(test, feature = "test-helpers"))]
+    #[must_use]
+    pub fn new_for_testing(
+        registry: String,
+        repository: String,
+        description: Option<String>,
+        tags: Vec<String>,
+        signature_tags: Vec<String>,
+        attestation_tags: Vec<String>,
+        last_seen_at: String,
+        created_at: String,
+    ) -> Self {
+        Self {
+            id: 0, // Test ID
+            registry,
+            repository,
+            description,
+            tags,
+            signature_tags,
+            attestation_tags,
+            last_seen_at,
+            created_at,
+        }
+    }
 }
