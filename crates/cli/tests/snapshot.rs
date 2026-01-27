@@ -66,7 +66,8 @@ fn buffer_to_string(buffer: &Buffer) -> String {
 
 #[test]
 fn test_local_view_snapshot() {
-    let output = render_to_string(LocalView, 40, 10);
+    let wasm_files = vec![];
+    let output = render_to_string(LocalView::new(&wasm_files), 40, 10);
     assert_snapshot!(output);
 }
 
@@ -79,6 +80,41 @@ fn test_interfaces_view_snapshot() {
     let interfaces = vec![];
     let mut state = InterfacesViewState::new();
     let output = render_stateful_to_string(InterfacesView::new(&interfaces), &mut state, 60, 10);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn test_interfaces_view_populated_snapshot() {
+    use wasm_package_manager::WitInterface;
+
+    let interfaces = vec![
+        (
+            WitInterface::new_for_testing(
+                1,
+                Some("wasi:http@0.2.0".to_string()),
+                "package wasi:http@0.2.0;\n\nworld proxy {\n  import wasi:http/types;\n  export wasi:http/handler;\n}".to_string(),
+                Some("proxy".to_string()),
+                1,
+                1,
+                "2024-01-15T10:30:00Z".to_string(),
+            ),
+            "ghcr.io/example/http-proxy:v1.0.0".to_string(),
+        ),
+        (
+            WitInterface::new_for_testing(
+                2,
+                Some("wasi:cli@0.2.0".to_string()),
+                "package wasi:cli@0.2.0;\n\nworld command {\n  import wasi:cli/stdin;\n  import wasi:cli/stdout;\n  export run;\n}".to_string(),
+                Some("command".to_string()),
+                2,
+                1,
+                "2024-01-16T11:20:00Z".to_string(),
+            ),
+            "ghcr.io/example/cli-tool:latest".to_string(),
+        ),
+    ];
+    let mut state = InterfacesViewState::new();
+    let output = render_stateful_to_string(InterfacesView::new(&interfaces), &mut state, 100, 15);
     assert_snapshot!(output);
 }
 

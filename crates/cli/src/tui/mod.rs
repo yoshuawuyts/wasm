@@ -33,6 +33,8 @@ pub enum AppEvent {
     RefreshTags(String, String),
     /// Request all WIT interfaces
     RequestWitInterfaces,
+    /// Request to detect local WASM files
+    DetectLocalWasm,
 }
 
 /// Events sent from the Manager to the TUI
@@ -56,6 +58,8 @@ pub enum ManagerEvent {
     RefreshTagsResult(Result<usize, String>),
     /// List of WIT interfaces with their component references
     WitInterfacesList(Vec<(WitInterface, String)>),
+    /// List of local WASM files
+    LocalWasmList(Vec<wasm_detector::WasmEntry>),
 }
 
 /// Run the TUI application
@@ -186,6 +190,15 @@ async fn run_manager(
                         .await
                         .ok();
                 }
+            }
+            AppEvent::DetectLocalWasm => {
+                // Detect local WASM files in the current directory
+                let detector = wasm_detector::WasmDetector::new(std::path::Path::new("."));
+                let wasm_files: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
+                sender
+                    .send(ManagerEvent::LocalWasmList(wasm_files))
+                    .await
+                    .ok();
             }
         }
     }

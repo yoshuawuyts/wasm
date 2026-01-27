@@ -25,6 +25,28 @@ impl WitInterface {
         self.id
     }
 
+    /// Create a new WitInterface for testing purposes
+    #[must_use]
+    pub fn new_for_testing(
+        id: i64,
+        package_name: Option<String>,
+        wit_text: String,
+        world_name: Option<String>,
+        import_count: i32,
+        export_count: i32,
+        created_at: String,
+    ) -> Self {
+        Self {
+            id,
+            package_name,
+            wit_text,
+            world_name,
+            import_count,
+            export_count,
+            created_at,
+        }
+    }
+
     /// Insert a new WIT interface and return its ID.
     /// Uses content-addressable storage - if the same WIT text already exists, returns existing ID.
     pub(crate) fn insert(
