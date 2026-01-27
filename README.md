@@ -1,4 +1,4 @@
-<h1 align="center">wasm</h1>
+<h1 align="center">wasm(1)</h1>
 <div align="center">
   <strong>
     Unified developer tools for WebAssembly
