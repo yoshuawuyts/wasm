@@ -31,7 +31,7 @@ use std::path::{Path, PathBuf};
 pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
     // Rust wasm targets (the target directory is scanned for wasm32-* subdirs)
     "target", // wasm-pack output
-    "pkg", // JavaScript/jco output
+    "pkg",    // JavaScript/jco output
     "dist",
 ];
 
