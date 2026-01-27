@@ -93,7 +93,7 @@ impl StatefulWidget for InterfacesView<'_> {
 
 impl InterfacesView<'_> {
     fn render_list(&self, area: Rect, buf: &mut Buffer, state: &mut InterfacesViewState) {
-        let header = Row::new(vec!["Package", "World", "Imports", "Exports", "Component"])
+        let header = Row::new(vec!["Package", "Component", "World", "Imports", "Exports"])
             .style(Style::default().bold())
             .bottom_margin(1);
 
@@ -103,20 +103,20 @@ impl InterfacesView<'_> {
             .map(|(interface, component_ref)| {
                 Row::new(vec![
                     interface.package_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
+                    component_ref.clone(),
                     interface.world_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
                     interface.import_count.to_string(),
                     interface.export_count.to_string(),
-                    component_ref.clone(),
                 ])
             })
             .collect();
 
         let widths = [
             Constraint::Percentage(25),
+            Constraint::Percentage(30),
             Constraint::Percentage(20),
             Constraint::Length(10),
             Constraint::Length(10),
-            Constraint::Percentage(30),
         ];
 
         let table = Table::new(rows, widths)
