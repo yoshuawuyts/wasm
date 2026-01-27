@@ -4,12 +4,12 @@ use ratatui::{
 };
 use wasm_package_manager::ImageEntry;
 
-pub(crate) struct PackageDetailView<'a> {
+pub struct PackageDetailView<'a> {
     package: &'a ImageEntry,
 }
 
 impl<'a> PackageDetailView<'a> {
-    pub(crate) fn new(package: &'a ImageEntry) -> Self {
+    pub fn new(package: &'a ImageEntry) -> Self {
         Self { package }
     }
 }

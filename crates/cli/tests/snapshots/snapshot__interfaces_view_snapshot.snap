@@ -1,0 +1,5 @@
+---
+source: crates/cli/tests/snapshot.rs
+expression: output
+---
+              Interfaces will be shown here...
