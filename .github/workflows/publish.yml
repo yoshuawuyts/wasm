@@ -1,15 +1,34 @@
 name: Publish
 
-# This workflow runs on pushes to main to automate releases.
-# Note: This differs from ci.yaml which runs on staging/trying branches (likely for bors).
+# This workflow is triggered manually via workflow_dispatch to give explicit control
+# over when releases are published.
+#
+# How to trigger:
+# 1. Go to the "Actions" tab in GitHub
+# 2. Select the "Publish" workflow
+# 3. Click "Run workflow"
+# 4. Choose the release action from the dropdown:
+#    - "release": Publish crates to crates.io (creates GitHub releases)
+#    - "release-pr": Create/update a release PR with changelog
+#    - "both": Run both release and release-pr jobs
+# 5. Click "Run workflow" to start
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      release_action:
+        description: 'Release action to perform'
+        required: true
+        default: 'both'
+        type: choice
+        options:
+          - release
+          - release-pr
+          - both
 
 jobs:
   release-plz-release:
     name: Release-plz release
+    if: github.event.inputs.release_action == 'release' || github.event.inputs.release_action == 'both'
     runs-on: ubuntu-latest
     permissions:
       id-token: write  # Enable OIDC for trusted publishing to crates.io
@@ -38,6 +57,7 @@ jobs:
 
   release-plz-pr:
     name: Release-plz PR
+    if: github.event.inputs.release_action == 'release-pr' || github.event.inputs.release_action == 'both'
     runs-on: ubuntu-latest
     permissions:
       contents: write
