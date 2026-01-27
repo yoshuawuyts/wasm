@@ -120,7 +120,10 @@ mod tests {
 
         assert_eq!(state_info.data_dir(), data_dir);
         assert_eq!(state_info.store_dir(), data_dir.join("store"));
-        assert_eq!(state_info.metadata_file(), data_dir.join("db").join("metadata.db3"));
+        assert_eq!(
+            state_info.metadata_file(),
+            data_dir.join("db").join("metadata.db3")
+        );
         assert_eq!(state_info.store_size(), 1024);
         assert_eq!(state_info.metadata_size(), 512);
         assert_eq!(state_info.migration_current(), 3);
