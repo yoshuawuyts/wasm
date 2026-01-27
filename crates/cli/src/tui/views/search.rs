@@ -161,6 +161,11 @@ impl StatefulWidget for SearchView<'_> {
             Span::raw(" Pull selected  "),
             Span::styled(" r ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Refresh tags  "),
+            Span::styled(
+                " Enter ",
+                Style::default().fg(Color::Black).bg(Color::Yellow),
+            ),
+            Span::raw(" View details  "),
             Span::styled(" Esc ", Style::default().fg(Color::Black).bg(Color::Yellow)),
             Span::raw(" Clear "),
         ]);

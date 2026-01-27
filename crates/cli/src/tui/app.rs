@@ -10,8 +10,8 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, LocalView, PackageDetailView, PackagesView, SearchView, SearchViewState,
-    SettingsView,
+    InterfacesView, KnownPackageDetailView, LocalView, PackageDetailView, PackagesView,
+    SearchView, SearchViewState, SettingsView,
 };
 use super::{AppEvent, ManagerEvent};
 
@@ -58,6 +58,8 @@ pub(crate) enum InputMode {
     Normal,
     /// Viewing a package detail (with the package index)
     PackageDetail(usize),
+    /// Viewing a known package detail from search results (with the package index)
+    KnownPackageDetail(usize),
     /// Pull prompt is active
     PullPrompt(PullPromptState),
     /// Search input is active
@@ -171,13 +173,20 @@ impl App {
             }
             Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
             Tab::Search => {
-                // Sync search_active state for rendering
-                self.search_view_state.search_active = self.input_mode == InputMode::SearchInput;
-                frame.render_stateful_widget(
-                    SearchView::new(&self.known_packages),
-                    content_area,
-                    &mut self.search_view_state,
-                );
+                // Check if we're viewing a known package detail
+                if let InputMode::KnownPackageDetail(idx) = self.input_mode {
+                    if let Some(package) = self.known_packages.get(idx) {
+                        frame.render_widget(KnownPackageDetailView::new(package), content_area);
+                    }
+                } else {
+                    // Sync search_active state for rendering
+                    self.search_view_state.search_active = self.input_mode == InputMode::SearchInput;
+                    frame.render_stateful_widget(
+                        SearchView::new(&self.known_packages),
+                        content_area,
+                        &mut self.search_view_state,
+                    );
+                }
             }
             Tab::Settings => {
                 frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
@@ -335,7 +344,19 @@ impl App {
             InputMode::SearchInput => self.handle_search_key(key, modifiers),
             InputMode::FilterInput => self.handle_filter_key(key, modifiers),
             InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
+            InputMode::KnownPackageDetail(_) => self.handle_known_package_detail_key(key, modifiers),
             InputMode::Normal => self.handle_normal_key(key, modifiers),
+        }
+    }
+
+    fn handle_known_package_detail_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+        match key {
+            KeyCode::Esc | KeyCode::Backspace => {
+                self.input_mode = InputMode::Normal;
+            }
+            KeyCode::Char('q') => self.running = false,
+            KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
+            _ => {}
         }
     }
 
@@ -457,6 +478,14 @@ impl App {
                         package.registry.clone(),
                         package.repository.clone(),
                     ));
+                }
+            }
+            // View selected package details in search tab
+            (KeyCode::Enter, _) if self.current_tab == Tab::Search => {
+                if let Some(selected) = self.search_view_state.selected()
+                    && self.known_packages.get(selected).is_some()
+                {
+                    self.input_mode = InputMode::KnownPackageDetail(selected);
                 }
             }
             _ => {}
