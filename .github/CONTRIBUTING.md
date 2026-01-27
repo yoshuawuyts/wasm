@@ -54,6 +54,10 @@ that you *might* be wrong is critical for any successful open collaboration.
 
 Don't be a bad actor.
 
+## Releases
+
+This project uses [release-plz](https://github.com/MarcoIeni/release-plz) to automate the release process for all workspace crates. When changes are merged to `main`, release-plz creates a release PR with version updates. After the PR is merged, crates are automatically published to crates.io using trusted publishing (OIDC) and GitHub releases are created.
+
 ## Snapshot Testing
 
 This project uses the [`insta`](https://crates.io/crates/insta) crate for snapshot testing the TUI views. Snapshot tests help catch unintentional changes in the UI, providing more confidence during refactoring and new feature development.
