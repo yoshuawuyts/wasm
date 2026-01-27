@@ -22,8 +22,8 @@ cargo add wasm
 
 - **Interactive TUI**: Launch with no arguments
 - **Package Management**: Pull, push, and list packages
-- **Local Discovery**: Detect and manage local WASM files
-- **Inspection**: Examine WASM component structure
+- **Local Discovery**: Detect and manage local Wasm files
+- **Inspection**: Examine Wasm component structure
 - **Self Management**: Configure and manage the tool itself
 
 ## Interactive Mode
@@ -86,11 +86,11 @@ This shows:
 - Pull timestamps
 - Storage size
 
-## Local WASM File Discovery
+## Local Wasm File Discovery
 
 ### Listing Local Files
 
-Detect WASM files in the current directory:
+Detect Wasm files in the current directory:
 
 ```bash
 wasm local list
@@ -103,11 +103,11 @@ This recursively scans for `.wasm` files and displays:
 
 The detector respects `.gitignore` rules and standard ignore patterns.
 
-## Inspecting WASM Components
+## Inspecting Wasm Components
 
 ### Basic Inspection
 
-Examine a WASM component file:
+Examine a Wasm component file:
 
 ```bash
 wasm inspect file.wasm
@@ -166,13 +166,13 @@ This operation:
 
 ### Publishing a Package
 
-1. Build your WASM component
+1. Build your Wasm component
 2. Authenticate with your registry (see [Authentication](authentication.md))
 3. Push with `wasm package push registry.example.com/myorg/component:v1.0.0`
 
 ### Managing Local Development
 
-1. Use `wasm local list` to discover WASM files in your project
+1. Use `wasm local list` to discover Wasm files in your project
 2. Inspect components with `wasm inspect`
 3. Test components locally before publishing
 
