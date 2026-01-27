@@ -121,6 +121,7 @@ fn test_wasm_entry_methods() {
 
     assert_eq!(results.len(), 1);
 
+    #[allow(clippy::indexing_slicing)]
     let entry = &results[0];
     assert!(entry.path().ends_with("module.wasm"));
     assert_eq!(entry.file_name(), Some("module.wasm"));

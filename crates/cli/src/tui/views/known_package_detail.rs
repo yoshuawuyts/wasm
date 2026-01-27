@@ -5,18 +5,21 @@ use ratatui::{
 use wasm_package_manager::KnownPackage;
 
 /// View for displaying details of a known package (from search results).
+#[derive(Debug)]
 pub struct KnownPackageDetailView<'a> {
     package: &'a KnownPackage,
 }
 
 impl<'a> KnownPackageDetailView<'a> {
     /// Creates a new known package detail view.
+    #[must_use]
     pub fn new(package: &'a KnownPackage) -> Self {
         Self { package }
     }
 }
 
 impl Widget for KnownPackageDetailView<'_> {
+    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Split area into content and shortcuts bar
         let main_layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
