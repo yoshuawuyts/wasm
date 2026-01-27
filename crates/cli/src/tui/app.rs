@@ -10,8 +10,8 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo};
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, KnownPackageDetailView, LocalView, PackageDetailView, PackagesView, SearchView,
-    SearchViewState, SettingsView,
+    InterfacesView, InterfacesViewState, KnownPackageDetailView, LocalView, PackageDetailView,
+    PackagesView, SearchView, SearchViewState, SettingsView,
 };
 use super::{AppEvent, ManagerEvent};
 
@@ -95,6 +95,8 @@ pub(crate) struct App {
     state_info: Option<StateInfo>,
     /// Search view state
     search_view_state: SearchViewState,
+    /// Interfaces view state
+    interfaces_view_state: InterfacesViewState,
     /// Known packages for search results
     known_packages: Vec<KnownPackage>,
     /// Local WASM files
@@ -117,6 +119,7 @@ impl App {
             packages_view_state: PackagesViewState::new(),
             state_info: None,
             search_view_state: SearchViewState::new(),
+            interfaces_view_state: InterfacesViewState::new(),
             known_packages: Vec::new(),
             local_wasm_files: Vec::new(),
             app_sender,
@@ -175,9 +178,11 @@ impl App {
                     );
                 }
             }
-            Tab::Interfaces => {
-                frame.render_widget(InterfacesView::new(&self.local_wasm_files), content_area)
-            }
+            Tab::Interfaces => frame.render_stateful_widget(
+                InterfacesView::new(&self.local_wasm_files),
+                content_area,
+                &mut self.interfaces_view_state,
+            ),
             Tab::Search => {
                 // Check if we're viewing a known package detail
                 if let InputMode::KnownPackageDetail(idx) = self.input_mode {
@@ -501,6 +506,30 @@ impl App {
                 {
                     self.input_mode = InputMode::KnownPackageDetail(selected);
                 }
+            }
+            // Interfaces tab navigation
+            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
+                // Count total interfaces
+                let interface_count: usize = self
+                    .local_wasm_files
+                    .iter()
+                    .map(|w| w.interfaces().len())
+                    .sum();
+                self.interfaces_view_state.select_prev(interface_count);
+            }
+            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
+                // Count total interfaces
+                let interface_count: usize = self
+                    .local_wasm_files
+                    .iter()
+                    .map(|w| w.interfaces().len())
+                    .sum();
+                self.interfaces_view_state.select_next(interface_count);
+            }
+            // View selected interface details (placeholder for now)
+            (KeyCode::Enter, _) if self.current_tab == Tab::Interfaces => {
+                // TODO: Add interface detail view when implemented
+                // For now, this does nothing but the key is handled
             }
             // Refresh local WASM files on Local tab
             (KeyCode::Char('r'), _)

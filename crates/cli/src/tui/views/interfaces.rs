@@ -1,8 +1,48 @@
 use ratatui::{
     prelude::*,
-    widgets::{Block, List, ListItem, Paragraph, Widget},
+    widgets::{Cell, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
 };
 use wasm_detector::{InterfaceInfo, InterfaceKind, WasmEntry};
+
+/// State for the interfaces list view
+#[derive(Debug, Default)]
+pub struct InterfacesViewState {
+    /// Table selection state
+    pub table_state: TableState,
+}
+
+impl InterfacesViewState {
+    /// Creates a new interfaces view state
+    #[must_use]
+    pub fn new() -> Self {
+        Self {
+            table_state: TableState::default().with_selected(Some(0)),
+        }
+    }
+
+    #[allow(dead_code)] // Will be used when interface detail view is implemented
+    pub(crate) fn selected(&self) -> Option<usize> {
+        self.table_state.selected()
+    }
+
+    pub(crate) fn select_next(&mut self, len: usize) {
+        if len == 0 {
+            return;
+        }
+        let current = self.table_state.selected().unwrap_or(0);
+        let next = if current >= len - 1 { 0 } else { current + 1 };
+        self.table_state.select(Some(next));
+    }
+
+    pub(crate) fn select_prev(&mut self, len: usize) {
+        if len == 0 {
+            return;
+        }
+        let current = self.table_state.selected().unwrap_or(0);
+        let prev = if current == 0 { len - 1 } else { current - 1 };
+        self.table_state.select(Some(prev));
+    }
+}
 
 /// View for the Interfaces tab
 #[derive(Debug)]
@@ -18,8 +58,11 @@ impl<'a> InterfacesView<'a> {
     }
 }
 
-impl Widget for InterfacesView<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl StatefulWidget for InterfacesView<'_> {
+    type State = InterfacesViewState;
+
+    #[allow(clippy::indexing_slicing)]
+    fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         // Collect all unique interfaces from all WASM files
         let mut all_interfaces: Vec<(&InterfaceInfo, &WasmEntry)> = Vec::new();
 
@@ -29,76 +72,91 @@ impl Widget for InterfacesView<'_> {
             }
         }
 
+        // Split area into content and shortcuts bar
+        let layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
+        let content_area = layout[0];
+        let shortcuts_area = layout[1];
+
         if all_interfaces.is_empty() {
             let message = Paragraph::new(
                 "No WIT interfaces detected in local WASM files.\n\nPress 'r' to refresh.",
             )
             .centered()
             .style(Style::default().fg(Color::DarkGray));
-            message.render(area, buf);
+            message.render(content_area, buf);
         } else {
-            #[allow(clippy::indexing_slicing)]
-            let layout = Layout::vertical([
-                Constraint::Length(2),
-                Constraint::Min(0),
-                Constraint::Length(2),
+            // Create header row
+            let header = Row::new(vec![
+                Cell::from("Interface").style(Style::default().bold()),
+                Cell::from("Type").style(Style::default().bold()),
+                Cell::from("Version").style(Style::default().bold()),
+                Cell::from("Source File").style(Style::default().bold()),
             ])
-            .split(area);
+            .style(Style::default().fg(Color::Yellow));
 
-            // Title
-            let title = Paragraph::new(format!(
-                "Detected {} interface(s) from {} WASM file(s)",
-                all_interfaces.len(),
-                self.wasm_files.len()
-            ))
-            .style(Style::default().fg(Color::Cyan))
-            .alignment(Alignment::Center);
-            #[allow(clippy::indexing_slicing)]
-            title.render(layout[0], buf);
-
-            // List of interfaces
-            let items: Vec<ListItem> = all_interfaces
+            // Create data rows
+            let rows: Vec<Row> = all_interfaces
                 .iter()
-                .enumerate()
-                .map(|(idx, (interface, wasm_entry))| {
+                .map(|(interface, wasm_entry)| {
                     let kind_str = match interface.kind {
-                        InterfaceKind::Dependency => "dep",
-                        InterfaceKind::ChildComponent => "component",
-                        InterfaceKind::ChildModule => "module",
+                        InterfaceKind::Dependency => "Dependency",
+                        InterfaceKind::ChildComponent => "Component",
+                        InterfaceKind::ChildModule => "Module",
                     };
 
                     let version_str = interface
                         .version
                         .as_ref()
-                        .map(|v| format!(" [{}]", v))
-                        .unwrap_or_default();
+                        .map(|v| v.to_string())
+                        .unwrap_or_else(|| "-".to_string());
 
                     let file_name = wasm_entry.file_name().unwrap_or("<unnamed>");
-                    let content = format!(
-                        "{}. {} ({}) from {}{}",
-                        idx + 1,
-                        interface.name,
-                        kind_str,
-                        file_name,
-                        version_str
-                    );
-                    ListItem::new(content).style(Style::default().fg(Color::White))
+
+                    Row::new(vec![
+                        Cell::from(interface.name.clone()),
+                        Cell::from(kind_str),
+                        Cell::from(version_str),
+                        Cell::from(file_name.to_string()),
+                    ])
                 })
                 .collect();
 
-            let list = List::new(items)
-                .block(Block::bordered().title("Interfaces"))
-                .style(Style::default());
+            let table = Table::new(
+                rows,
+                [
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(15),
+                    Constraint::Percentage(30),
+                ],
+            )
+            .header(header)
+            .row_highlight_style(Style::default().bg(Color::DarkGray));
 
-            #[allow(clippy::indexing_slicing)]
-            Widget::render(list, layout[1], buf);
-
-            // Help text
-            let help = Paragraph::new("Press 'r' to refresh • 'q' to quit")
-                .style(Style::default().fg(Color::DarkGray))
-                .alignment(Alignment::Center);
-            #[allow(clippy::indexing_slicing)]
-            help.render(layout[2], buf);
+            StatefulWidget::render(table, content_area, buf, &mut state.table_state);
         }
+
+        // Render shortcuts bar
+        let shortcuts = Line::from(vec![
+            Span::styled(" ↑↓ ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Navigate  "),
+            Span::styled(
+                " Enter ",
+                Style::default().fg(Color::Black).bg(Color::Yellow),
+            ),
+            Span::raw(" View details  "),
+            Span::styled(" r ", Style::default().fg(Color::Black).bg(Color::Yellow)),
+            Span::raw(" Refresh "),
+        ]);
+        Paragraph::new(shortcuts)
+            .style(Style::default().fg(Color::DarkGray))
+            .render(shortcuts_area, buf);
+    }
+}
+
+impl Widget for InterfacesView<'_> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let mut state = InterfacesViewState::new();
+        StatefulWidget::render(self, area, buf, &mut state);
     }
 }

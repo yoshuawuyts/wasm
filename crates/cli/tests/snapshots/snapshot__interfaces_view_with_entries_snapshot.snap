@@ -2,22 +2,23 @@
 source: crates/cli/tests/snapshot.rs
 expression: output
 ---
-                             Detected 5 interface(s) from 2 WASM file(s)
+Interface                             Type            Version         Source File
+wasi:cli/command                      Dependency      0.2.0           component.wasm
+wasi:http/proxy                       Dependency      0.2.0           component.wasm
+my-component                          Component       1.0.0           component.wasm
+wasi:filesystem/types                 Dependency      0.2.0           example.wasm
+core-module                           Module          -               example.wasm
 
-┌Interfaces────────────────────────────────────────────────────────────────────────────────────────┐
-│1. wasi:cli/command (dep) from component.wasm [0.2.0]                                             │
-│2. wasi:http/proxy (dep) from component.wasm [0.2.0]                                              │
-│3. my-component (component) from component.wasm [1.0.0]                                           │
-│4. wasi:filesystem/types (dep) from example.wasm [0.2.0]                                          │
-│5. core-module (module) from example.wasm                                                         │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-│                                                                                                  │
-└──────────────────────────────────────────────────────────────────────────────────────────────────┘
-                                 Press 'r' to refresh • 'q' to quit
+
+
+
+
+
+
+
+
+
+
+
+
+ ↑↓  Navigate   Enter  View details   r  Refresh

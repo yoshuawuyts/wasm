@@ -7,7 +7,7 @@ pub mod packages;
 mod search;
 mod settings;
 
-pub use interfaces::InterfacesView;
+pub use interfaces::{InterfacesView, InterfacesViewState};
 pub use known_package_detail::KnownPackageDetailView;
 pub use local::LocalView;
 pub use package_detail::PackageDetailView;
