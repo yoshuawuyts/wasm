@@ -25,6 +25,8 @@ pub enum AppEvent {
     RequestKnownPackages,
     /// Refresh tags for a package (registry, repository)
     RefreshTags(String, String),
+    /// Request to detect local WASM files
+    DetectLocalWasm,
 }
 
 /// Events sent from the Manager to the TUI
@@ -46,6 +48,8 @@ pub enum ManagerEvent {
     KnownPackagesList(Vec<KnownPackage>),
     /// Result of refreshing tags for a package
     RefreshTagsResult(Result<usize, String>),
+    /// Local WASM files detected
+    LocalWasmFiles(Vec<views::LocalWasmFile>),
 }
 
 pub async fn run() -> anyhow::Result<()> {
@@ -167,6 +171,20 @@ async fn run_manager(
                         .await
                         .ok();
                 }
+            }
+            AppEvent::DetectLocalWasm => {
+                // Detect local WASM files in current directory
+                use wasm_detector::WasmDetector;
+                let detector = WasmDetector::new(std::path::Path::new("."));
+                let mut files = Vec::new();
+                for result in detector {
+                    if let Ok(entry) = result {
+                        files.push(views::LocalWasmFile {
+                            path: entry.into_path(),
+                        });
+                    }
+                }
+                sender.send(ManagerEvent::LocalWasmFiles(files)).await.ok();
             }
         }
     }

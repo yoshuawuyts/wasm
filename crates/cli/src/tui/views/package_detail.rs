@@ -4,8 +4,17 @@ use ratatui::{
 };
 use wasm_package_manager::ImageEntry;
 
+/// View for displaying package details
 pub struct PackageDetailView<'a> {
     package: &'a ImageEntry,
+}
+
+impl<'a> std::fmt::Debug for PackageDetailView<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PackageDetailView")
+            .field("package", &self.package)
+            .finish()
+    }
 }
 
 impl<'a> PackageDetailView<'a> {

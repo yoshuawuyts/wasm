@@ -4,11 +4,22 @@ use ratatui::{
 };
 use wasm_package_manager::StateInfo;
 
+/// View for displaying settings
 pub struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,
 }
 
+impl<'a> std::fmt::Debug for SettingsView<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SettingsView")
+            .field("has_state_info", &self.state_info.is_some())
+            .finish()
+    }
+}
+
 impl<'a> SettingsView<'a> {
+    /// Create a new settings view
+    #[must_use]
     pub fn new(state_info: Option<&'a StateInfo>) -> Self {
         Self { state_info }
     }

@@ -46,8 +46,17 @@ impl PackagesViewState {
     }
 }
 
+/// View for displaying packages list
 pub struct PackagesView<'a> {
     packages: &'a [ImageEntry],
+}
+
+impl<'a> std::fmt::Debug for PackagesView<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PackagesView")
+            .field("packages_count", &self.packages.len())
+            .finish()
+    }
 }
 
 impl<'a> PackagesView<'a> {

@@ -3,6 +3,8 @@ use ratatui::{
     widgets::{Paragraph, Widget},
 };
 
+/// View for displaying interfaces
+#[derive(Debug)]
 pub struct InterfacesView;
 
 impl Widget for InterfacesView {

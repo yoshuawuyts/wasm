@@ -40,6 +40,14 @@ pub struct TabBar<'a, T: TabItem> {
     _marker: std::marker::PhantomData<&'a T>,
 }
 
+impl<'a, T: TabItem> std::fmt::Debug for TabBar<'a, T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("TabBar")
+            .field("title", &self.title)
+            .finish()
+    }
+}
+
 impl<'a, T: TabItem> TabBar<'a, T> {
     /// Creates a new tab bar with the given title and selected tab.
     pub fn new(title: impl Into<String>, selected: T) -> Self {

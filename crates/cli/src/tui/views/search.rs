@@ -44,8 +44,17 @@ impl SearchViewState {
     }
 }
 
+/// View for displaying search results
 pub struct SearchView<'a> {
     packages: &'a [KnownPackage],
+}
+
+impl<'a> std::fmt::Debug for SearchView<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SearchView")
+            .field("packages_count", &self.packages.len())
+            .finish()
+    }
 }
 
 impl<'a> SearchView<'a> {

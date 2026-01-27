@@ -2,6 +2,7 @@
 //!
 
 mod inspect;
+mod local;
 mod package;
 mod self_;
 mod tui;
@@ -24,6 +25,7 @@ impl Cli {
             Some(Command::Run) => todo!(),
             Some(Command::Inspect(opts)) => opts.run()?,
             Some(Command::Convert) => todo!(),
+            Some(Command::Local(opts)) => opts.run()?,
             Some(Command::Package(opts)) => opts.run().await?,
             Some(Command::Compose) => todo!(),
             Some(Command::Self_(opts)) => opts.run().await?,
@@ -44,6 +46,9 @@ enum Command {
     /// Convert a Wasm Component to another format
     #[command(subcommand)]
     Convert,
+    /// Detect and manage local WASM files
+    #[command(subcommand)]
+    Local(local::Opts),
     /// Package, push, and pull Wasm Components
     #[command(subcommand)]
     Package(package::Opts),

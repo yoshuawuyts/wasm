@@ -9,6 +9,14 @@ pub struct KnownPackageDetailView<'a> {
     package: &'a KnownPackage,
 }
 
+impl<'a> std::fmt::Debug for KnownPackageDetailView<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("KnownPackageDetailView")
+            .field("package", &self.package)
+            .finish()
+    }
+}
+
 impl<'a> KnownPackageDetailView<'a> {
     /// Creates a new known package detail view.
     pub fn new(package: &'a KnownPackage) -> Self {
