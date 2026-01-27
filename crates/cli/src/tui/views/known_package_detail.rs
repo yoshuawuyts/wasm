@@ -5,6 +5,7 @@ use ratatui::{
 use wasm_package_manager::KnownPackage;
 
 /// View for displaying details of a known package (from search results).
+#[derive(Debug)]
 pub struct KnownPackageDetailView<'a> {
     package: &'a KnownPackage,
 }
