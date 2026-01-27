@@ -96,9 +96,10 @@ impl StatefulWidget for LocalView<'_> {
         }
 
         if self.files.is_empty() {
-            let empty_msg = Paragraph::new("No .wasm files found in current directory\n\nPress 'r' to refresh")
-                .centered()
-                .block(block);
+            let empty_msg =
+                Paragraph::new("No .wasm files found in current directory\n\nPress 'r' to refresh")
+                    .centered()
+                    .block(block);
             empty_msg.render(area, buf);
             return;
         }
@@ -114,19 +115,19 @@ impl StatefulWidget for LocalView<'_> {
             .map(|(i, file)| {
                 let file_name = file.file_name().unwrap_or("Unknown");
                 let path_str = file.path.display().to_string();
-                
+
                 let content = if i == state.selected {
                     format!("▶ {} ({})", file_name, path_str)
                 } else {
                     format!("  {} ({})", file_name, path_str)
                 };
-                
+
                 let style = if i == state.selected {
                     Style::default().fg(Color::Yellow).bold()
                 } else {
                     Style::default()
                 };
-                
+
                 ListItem::new(content).style(style)
             })
             .collect();
@@ -135,7 +136,10 @@ impl StatefulWidget for LocalView<'_> {
         Widget::render(list, inner, buf);
 
         // Instructions at the bottom
-        let instructions = format!("↑/↓: Navigate | r: Refresh | Found {} file(s)", self.files.len());
+        let instructions = format!(
+            "↑/↓: Navigate | r: Refresh | Found {} file(s)",
+            self.files.len()
+        );
         let instructions_area = Rect {
             x: inner.x,
             y: inner.y + inner.height.saturating_sub(1),
@@ -147,4 +151,3 @@ impl StatefulWidget for LocalView<'_> {
             .render(instructions_area, buf);
     }
 }
-

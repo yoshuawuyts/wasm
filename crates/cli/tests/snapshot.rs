@@ -20,8 +20,8 @@ use ratatui::prelude::*;
 use wasm::tui::components::{TabBar, TabItem};
 use wasm::tui::views::packages::PackagesViewState;
 use wasm::tui::views::{
-    InterfacesView, KnownPackageDetailView, LocalView, PackagesView, SearchView, SearchViewState,
-    SettingsView,
+    InterfacesView, KnownPackageDetailView, LocalView, LocalViewState, LocalWasmFile, PackagesView,
+    SearchView, SearchViewState, SettingsView,
 };
 use wasm_package_manager::KnownPackage;
 
@@ -67,7 +67,11 @@ fn buffer_to_string(buffer: &Buffer) -> String {
 
 #[test]
 fn test_local_view_snapshot() {
-    let output = render_to_string(LocalView, 40, 10);
+    use wasm::tui::views::{LocalViewState, LocalWasmFile};
+    let files = vec![]; // Empty files list for snapshot
+    let mut state = LocalViewState::new();
+    state.loading = false; // Not loading for snapshot
+    let output = render_stateful_to_string(LocalView::new(&files), &mut state, 40, 10);
     assert_snapshot!(output);
 }
 
