@@ -40,6 +40,8 @@
 
 mod lockfile;
 mod manifest;
+mod validation;
 
 pub use lockfile::{Lockfile, Package, PackageDependency};
 pub use manifest::{Dependency, Manifest};
+pub use validation::{ValidationError, validate};
