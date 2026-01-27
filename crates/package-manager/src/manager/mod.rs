@@ -111,4 +111,12 @@ impl Manager {
     pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         self.client.list_tags(reference).await
     }
+
+    /// Re-scan known package tags to update derived data (e.g., tag types).
+    /// This should be called after migrations that affect tag classification logic
+    /// (e.g., when tag type rules change from .sig/.att suffixes).
+    /// Returns the number of tags that were updated.
+    pub fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
+        self.store.rescan_known_package_tags()
+    }
 }
