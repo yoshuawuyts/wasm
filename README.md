@@ -62,8 +62,9 @@ wasm self clean                 # clean up storage
 
 ```
 ~/.local/share/wasm/
-├── layers/         # content-addressable blob storage (image layers)
-└── metadata.db3    # sqlite database (package metadata & references)
+├── store/          # content-addressable blob storage (image layers)
+└── db/
+    └── metadata.db3    # sqlite database (package metadata & references)
 ```
 
 ## Status

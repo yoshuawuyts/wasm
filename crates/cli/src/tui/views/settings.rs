@@ -49,9 +49,9 @@ impl Widget for SettingsView<'_> {
                 // Compute column widths based on content
                 let executable_path = info.executable().display().to_string();
                 let data_dir_path = info.data_dir().display().to_string();
-                let layers_dir_path = info.layers_dir().display().to_string();
+                let store_dir_path = info.store_dir().display().to_string();
                 let metadata_file_path = info.metadata_file().display().to_string();
-                let layers_size = super::format_size(info.layers_size());
+                let store_size = super::format_size(info.store_size());
                 let metadata_size = super::format_size(info.metadata_size());
 
                 // Column 1: longest is "Image metadata" = 14 chars
@@ -60,10 +60,10 @@ impl Widget for SettingsView<'_> {
                 let col2_width = executable_path
                     .len()
                     .max(data_dir_path.len())
-                    .max(layers_dir_path.len())
+                    .max(store_dir_path.len())
                     .max(metadata_file_path.len());
                 // Column 3: longest size string or "-"
-                let col3_width = layers_size.len().max(metadata_size.len()).max(1);
+                let col3_width = store_size.len().max(metadata_size.len()).max(1);
 
                 // Create data rows
                 let rows = vec![
@@ -78,9 +78,9 @@ impl Widget for SettingsView<'_> {
                         Cell::from("-"),
                     ]),
                     Row::new(vec![
-                        Cell::from("Image layers"),
-                        Cell::from(layers_dir_path),
-                        Cell::from(layers_size),
+                        Cell::from("Content store"),
+                        Cell::from(store_dir_path),
+                        Cell::from(store_size),
                     ]),
                     Row::new(vec![
                         Cell::from("Image metadata"),

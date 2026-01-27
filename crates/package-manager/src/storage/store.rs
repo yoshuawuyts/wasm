@@ -41,15 +41,17 @@ impl Store {
         let data_dir = dirs::data_local_dir()
             .context("No local data dir known for the current OS")?
             .join("wasm");
-        let layers_dir = data_dir.join("layers");
-        let metadata_file = data_dir.join("metadata.db3");
+        let store_dir = data_dir.join("store");
+        let db_dir = data_dir.join("db");
+        let metadata_file = db_dir.join("metadata.db3");
 
         // TODO: remove me once we're done testing
         // tokio::fs::remove_dir_all(&data_dir).await?;
 
         let a = tokio::fs::create_dir_all(&data_dir);
-        let b = tokio::fs::create_dir_all(&layers_dir);
-        let _ = (a, b)
+        let b = tokio::fs::create_dir_all(&store_dir);
+        let c = tokio::fs::create_dir_all(&db_dir);
+        let _ = (a, b, c)
             .try_join()
             .await
             .context("Could not create config directories on disk")?;
@@ -58,12 +60,12 @@ impl Store {
         Migrations::run_all(&conn)?;
 
         let migration_info = Migrations::get(&conn)?;
-        let layers_size = dir_size(&layers_dir).await;
+        let store_size = dir_size(&store_dir).await;
         let metadata_size = tokio::fs::metadata(&metadata_file)
             .await
             .map(|m| m.len())
             .unwrap_or(0);
-        let state_info = StateInfo::new_at(data_dir, migration_info, layers_size, metadata_size);
+        let state_info = StateInfo::new_at(data_dir, migration_info, store_size, metadata_size);
 
         let store = Self { state_info, conn };
 
@@ -103,7 +105,7 @@ impl Store {
             // The manifest.layers and image.layers should be in the same order
             if let Some(ref manifest) = image.manifest {
                 for (idx, layer) in image.layers.iter().enumerate() {
-                    let cache = self.state_info.layers_dir();
+                    let cache = self.state_info.store_dir();
                     // Use the layer's content digest from the manifest as the key
                     let fallback_key = reference.whole().to_string();
                     let key = manifest
@@ -162,7 +164,7 @@ impl Store {
             // Only delete layers that are not needed by other entries
             for layer_digest in layers_to_delete {
                 if !layers_still_needed.contains(layer_digest) {
-                    let _ = cacache::remove(self.state_info.layers_dir(), layer_digest).await;
+                    let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
                 }
             }
         }
