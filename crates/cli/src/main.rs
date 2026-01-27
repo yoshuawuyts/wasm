@@ -40,7 +40,10 @@ impl Cli {
             Some(Command::Compose) => todo!(),
             Some(Command::Self_(opts)) => opts.run().await?,
             None if std::io::stdin().is_terminal() => tui::run().await?,
-            None => Cli::command().print_help()?,
+            None => {
+                // Apply the parsed color choice when printing help
+                Cli::command().color(self.color).print_help()?;
+            }
         }
         Ok(())
     }
