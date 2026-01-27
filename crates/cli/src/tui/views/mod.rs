@@ -1,5 +1,6 @@
 mod interfaces;
-mod known_package_detail;
+/// Known package detail view module
+pub mod known_package_detail;
 mod local;
 mod package_detail;
 /// Packages view module
