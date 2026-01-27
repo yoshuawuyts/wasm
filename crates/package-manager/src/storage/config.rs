@@ -110,6 +110,22 @@ impl StateInfo {
     pub fn migration_total(&self) -> u32 {
         self.migration_total
     }
+
+    /// Creates a new StateInfo for testing purposes.
+    #[cfg(any(test, feature = "test-helpers"))]
+    #[must_use]
+    pub fn new_for_testing() -> Self {
+        Self {
+            executable: PathBuf::from("/usr/local/bin/wasm"),
+            data_dir: PathBuf::from("/home/user/.local/share/wasm"),
+            store_dir: PathBuf::from("/home/user/.local/share/wasm/store"),
+            store_size: 1024 * 1024 * 10, // 10 MB
+            metadata_file: PathBuf::from("/home/user/.local/share/wasm/db/metadata.db3"),
+            metadata_size: 1024 * 64, // 64 KB
+            migration_current: 3,
+            migration_total: 3,
+        }
+    }
 }
 
 #[cfg(test)]

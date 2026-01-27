@@ -50,6 +50,13 @@ impl WasmEntry {
         Self { path }
     }
 
+    /// Creates a new WasmEntry for testing purposes.
+    #[cfg(any(test, feature = "test-helpers"))]
+    #[must_use]
+    pub fn new_for_testing(path: PathBuf) -> Self {
+        Self::new(path)
+    }
+
     /// Returns the path to the `.wasm` file.
     #[must_use]
     pub fn path(&self) -> &Path {

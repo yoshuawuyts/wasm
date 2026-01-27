@@ -1,6 +1,6 @@
 [package]
-name = "wasm-detector"
-description = "A library to detect local .wasm files in a repository"
+name = "wasm-manifest"
+description = "Manifest and lockfile format types for WebAssembly packages"
 readme = "README.md"
 repository = { workspace = true }
 documentation = { workspace = true }
@@ -11,16 +11,11 @@ authors = { workspace = true }
 categories = { workspace = true }
 keywords = { workspace = true }
 
-[features]
-default = []
-# Enable test helpers for use in other crates' tests
-test-helpers = []
-
 [dependencies]
-ignore = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
 
 [dev-dependencies]
-tempfile = { workspace = true }
 
 [lints]
 workspace = true
