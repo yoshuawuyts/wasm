@@ -19,7 +19,6 @@ impl<'a> InterfacesView<'a> {
 }
 
 impl Widget for InterfacesView<'_> {
-    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Collect all unique interfaces from all WASM files
         let mut all_interfaces: Vec<(&InterfaceInfo, &WasmEntry)> = Vec::new();
@@ -38,6 +37,7 @@ impl Widget for InterfacesView<'_> {
             .style(Style::default().fg(Color::DarkGray));
             message.render(area, buf);
         } else {
+            #[allow(clippy::indexing_slicing)]
             let layout = Layout::vertical([
                 Constraint::Length(2),
                 Constraint::Min(0),
@@ -53,6 +53,7 @@ impl Widget for InterfacesView<'_> {
             ))
             .style(Style::default().fg(Color::Cyan))
             .alignment(Alignment::Center);
+            #[allow(clippy::indexing_slicing)]
             title.render(layout[0], buf);
 
             // List of interfaces
@@ -89,12 +90,14 @@ impl Widget for InterfacesView<'_> {
                 .block(Block::bordered().title("Interfaces"))
                 .style(Style::default());
 
+            #[allow(clippy::indexing_slicing)]
             Widget::render(list, layout[1], buf);
 
             // Help text
             let help = Paragraph::new("Press 'r' to refresh • 'q' to quit")
                 .style(Style::default().fg(Color::DarkGray))
                 .alignment(Alignment::Center);
+            #[allow(clippy::indexing_slicing)]
             help.render(layout[2], buf);
         }
     }

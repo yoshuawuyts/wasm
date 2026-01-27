@@ -124,7 +124,8 @@ impl WasmEntry {
             for child in children {
                 let child_metadata = child.metadata();
                 if let Some(name) = &child_metadata.name {
-                    // Note: Only child payloads are processed here, not top-level modules
+                    // Only children of Component payloads are processed here.
+                    // Top-level modules (not wrapped in a component) won't reach this code path.
                     let kind = match child {
                         Payload::Component { .. } => InterfaceKind::ChildComponent,
                         Payload::Module(_) => InterfaceKind::ChildModule,
