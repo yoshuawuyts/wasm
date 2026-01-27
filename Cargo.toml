@@ -3,6 +3,7 @@
 resolver = "2"
 members = [
     "crates/cli",
+    "crates/manifest",
     "crates/package-manager",
     "crates/wasm-detector",
     "xtask",
@@ -35,6 +36,7 @@ unneeded_field_pattern = "deny"
 [workspace.dependencies]
 
 # local dependencies
+wasm-manifest = { path = "crates/manifest", version = "0.1.0" }
 wasm-package-manager = { path = "crates/package-manager", version = "0.1.0" }
 wasm-detector = { path = "crates/wasm-detector", version = "0.1.0" }
 
@@ -79,6 +81,7 @@ cacache = { version = "13.1.0", features = [
 ], default-features = false }
 rusqlite = { version = "0.38.0", features = ["bundled"] }
 serde = "1.0.228"
+toml = "0.8"
 
 # detector dependencies
 ignore = "0.4.25"
