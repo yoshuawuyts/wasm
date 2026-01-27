@@ -1,4 +1,4 @@
-//! A library to scan local `.wasm` files in a repository.
+//! A library to detect local `.wasm` files in a repository.
 //!
 //! This crate provides functionality to find WebAssembly files while:
 //! - Respecting `.gitignore` rules
@@ -8,11 +8,11 @@
 //! # Example
 //!
 //! ```no_run
-//! use wasm_scanner::WasmScanner;
+//! use wasm_detector::WasmDetector;
 //! use std::path::Path;
 //!
-//! let scanner = WasmScanner::new(Path::new("."));
-//! for result in scanner {
+//! let detector = WasmDetector::new(Path::new("."));
+//! for result in detector {
 //!     match result {
 //!         Ok(entry) => println!("Found: {}", entry.path().display()),
 //!         Err(e) => eprintln!("Error: {}", e),
@@ -29,7 +29,7 @@ use std::path::{Path, PathBuf};
 /// These directories are scanned separately without respecting `.gitignore` rules
 /// to ensure important wasm output locations are always included.
 pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
-    // Rust wasm targets (the target directory is scanned for wasm32-* and wasm-gc-* subdirs)
+    // Rust wasm targets (the target directory is scanned for wasm32-* subdirs)
     "target",
     // wasm-pack output
     "pkg",
@@ -38,7 +38,7 @@ pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
 ];
 
 /// Patterns to match within the target directory for wasm-specific subdirectories.
-const TARGET_WASM_PREFIXES: &[&str] = &["wasm32-", "wasm-gc-"];
+const TARGET_WASM_PREFIXES: &[&str] = &["wasm32-"];
 
 /// A discovered WebAssembly file entry.
 #[derive(Debug, Clone)]
@@ -71,9 +71,9 @@ impl WasmEntry {
     }
 }
 
-/// A scanner that finds `.wasm` files in a directory tree.
+/// A detector that finds `.wasm` files in a directory tree.
 ///
-/// The scanner:
+/// The detector:
 /// - Respects `.gitignore` rules by default
 /// - Automatically includes well-known `.wasm` locations that are typically ignored
 /// - Returns an iterator over discovered `.wasm` files
@@ -81,22 +81,22 @@ impl WasmEntry {
 /// # Example
 ///
 /// ```no_run
-/// use wasm_scanner::WasmScanner;
+/// use wasm_detector::WasmDetector;
 /// use std::path::Path;
 ///
-/// let scanner = WasmScanner::new(Path::new("."));
-/// let wasm_files: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+/// let detector = WasmDetector::new(Path::new("."));
+/// let wasm_files: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 /// println!("Found {} wasm files", wasm_files.len());
 /// ```
 #[derive(Debug, Clone)]
-pub struct WasmScanner {
+pub struct WasmDetector {
     root: PathBuf,
     include_hidden: bool,
     follow_symlinks: bool,
 }
 
-impl WasmScanner {
-    /// Create a new scanner that will search from the given root directory.
+impl WasmDetector {
+    /// Create a new detector that will search from the given root directory.
     #[must_use]
     pub fn new(root: &Path) -> Self {
         Self {
@@ -124,15 +124,15 @@ impl WasmScanner {
         self
     }
 
-    /// Scan for `.wasm` files and return all results as a vector.
+    /// Detect `.wasm` files and return all results as a vector.
     ///
     /// This is a convenience method that collects all results.
     /// For large directories, consider using the iterator interface instead.
     ///
     /// # Errors
     ///
-    /// Returns an error if the scan fails to complete.
-    pub fn scan(&self) -> Result<Vec<WasmEntry>, ignore::Error> {
+    /// Returns an error if the detection fails to complete.
+    pub fn detect(&self) -> Result<Vec<WasmEntry>, ignore::Error> {
         self.into_iter().collect()
     }
 
@@ -148,7 +148,7 @@ impl WasmScanner {
             }
         }
 
-        // Check for target/wasm32-* and target/wasm-gc-* directories
+        // Check for target/wasm32-* directories
         let target_dir = self.root.join("target");
         if target_dir.is_dir()
             && let Ok(entries) = std::fs::read_dir(&target_dir)
@@ -172,21 +172,21 @@ impl WasmScanner {
     }
 }
 
-impl IntoIterator for WasmScanner {
+impl IntoIterator for WasmDetector {
     type Item = Result<WasmEntry, ignore::Error>;
-    type IntoIter = WasmScannerIter;
+    type IntoIter = WasmDetectorIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        WasmScannerIter::new(self)
+        WasmDetectorIter::new(self)
     }
 }
 
-impl IntoIterator for &WasmScanner {
+impl IntoIterator for &WasmDetector {
     type Item = Result<WasmEntry, ignore::Error>;
-    type IntoIter = WasmScannerIter;
+    type IntoIter = WasmDetectorIter;
 
     fn into_iter(self) -> Self::IntoIter {
-        WasmScannerIter::new(self.clone())
+        WasmDetectorIter::new(self.clone())
     }
 }
 
@@ -195,7 +195,7 @@ impl IntoIterator for &WasmScanner {
 /// This iterator combines results from multiple walks:
 /// 1. A main walk that respects `.gitignore`
 /// 2. Additional walks for well-known directories (ignoring `.gitignore`)
-pub struct WasmScannerIter {
+pub struct WasmDetectorIter {
     /// The main walker that respects gitignore
     main_walker: ignore::Walk,
     /// Walkers for well-known directories (ignoring gitignore)
@@ -208,9 +208,9 @@ pub struct WasmScannerIter {
     main_walk_done: bool,
 }
 
-impl std::fmt::Debug for WasmScannerIter {
+impl std::fmt::Debug for WasmDetectorIter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WasmScannerIter")
+        f.debug_struct("WasmDetectorIter")
             .field("main_walk_done", &self.main_walk_done)
             .field("current_well_known_idx", &self.current_well_known_idx)
             .field("seen_paths_count", &self.seen_paths.len())
@@ -218,25 +218,25 @@ impl std::fmt::Debug for WasmScannerIter {
     }
 }
 
-impl WasmScannerIter {
-    fn new(scanner: WasmScanner) -> Self {
+impl WasmDetectorIter {
+    fn new(detector: WasmDetector) -> Self {
         // Build the main walker that respects gitignore
-        let main_walker = WalkBuilder::new(&scanner.root)
-            .hidden(!scanner.include_hidden)
-            .follow_links(scanner.follow_symlinks)
+        let main_walker = WalkBuilder::new(&detector.root)
+            .hidden(!detector.include_hidden)
+            .follow_links(detector.follow_symlinks)
             .git_ignore(true)
             .git_global(true)
             .git_exclude(true)
             .build();
 
         // Build walkers for well-known directories (ignoring gitignore)
-        let well_known_dirs = scanner.find_well_known_dirs();
+        let well_known_dirs = detector.find_well_known_dirs();
         let well_known_walkers: Vec<_> = well_known_dirs
             .into_iter()
             .map(|dir| {
                 WalkBuilder::new(dir)
-                    .hidden(!scanner.include_hidden)
-                    .follow_links(scanner.follow_symlinks)
+                    .hidden(!detector.include_hidden)
+                    .follow_links(detector.follow_symlinks)
                     .git_ignore(false) // Don't respect gitignore for well-known dirs
                     .git_global(false)
                     .git_exclude(false)
@@ -310,7 +310,7 @@ impl WasmScannerIter {
     }
 }
 
-impl Iterator for WasmScannerIter {
+impl Iterator for WasmDetectorIter {
     type Item = Result<WasmEntry, ignore::Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -363,11 +363,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_finds_wasm_files() {
+    fn test_detector_finds_wasm_files() {
         let temp_dir = setup_test_dir();
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         // Should find all .wasm files
         assert!(
@@ -387,11 +387,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_finds_target_wasm_files() {
+    fn test_detector_finds_target_wasm_files() {
         let temp_dir = setup_test_dir();
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         // Check that we found files in target directories
         let target_files: Vec<_> = results
@@ -407,11 +407,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_finds_pkg_wasm_files() {
+    fn test_detector_finds_pkg_wasm_files() {
         let temp_dir = setup_test_dir();
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         // Check that we found files in pkg directory
         let pkg_files: Vec<_> = results
@@ -423,11 +423,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_finds_dist_wasm_files() {
+    fn test_detector_finds_dist_wasm_files() {
         let temp_dir = setup_test_dir();
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         // Check that we found files in dist directory
         let dist_files: Vec<_> = results
@@ -448,7 +448,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_with_gitignore() {
+    fn test_detector_with_gitignore() {
         use std::process::Command;
 
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -475,8 +475,8 @@ mod tests {
         fs::create_dir_all(root.join("target/wasm32-wasip2")).unwrap();
         File::create(root.join("target/wasm32-wasip2/app.wasm")).unwrap();
 
-        let scanner = WasmScanner::new(root);
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let detector = WasmDetector::new(root);
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         // Should find src/visible.wasm and target/wasm32-wasip2/app.wasm
         // but NOT ignored/hidden.wasm
@@ -497,11 +497,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scan_convenience_method() {
+    fn test_detect_convenience_method() {
         let temp_dir = setup_test_dir();
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results = scanner.scan().expect("Scan should succeed");
+        let results = detector.detect().expect("Detect should succeed");
 
         assert!(
             results.len() >= 5,
@@ -511,11 +511,11 @@ mod tests {
     }
 
     #[test]
-    fn test_scanner_empty_directory() {
+    fn test_detector_empty_directory() {
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
-        let scanner = WasmScanner::new(temp_dir.path());
+        let detector = WasmDetector::new(temp_dir.path());
 
-        let results: Vec<_> = scanner.into_iter().filter_map(Result::ok).collect();
+        let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
         assert!(results.is_empty(), "Empty directory should yield no results");
     }
