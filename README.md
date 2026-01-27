@@ -46,6 +46,37 @@
 $ cargo add wasm
 ```
 
+## Using `wasm`
+
+```bash
+wasm                            # launch interactive TUI
+wasm inspect file.wasm          # inspect a Wasm Component
+wasm package pull ghcr.io/...   # pull a package from a registry
+wasm package push ghcr.io/...   # push a package to a registry
+wasm package list               # list installed packages
+wasm self state                 # show storage state info
+wasm self clean                 # clean up storage
+```
+
+## Storage Layout
+
+```
+~/.local/share/wasm/
+├── layers/         # content-addressable blob storage (image layers)
+└── metadata.db3    # sqlite database (package metadata & references)
+```
+
+## Status
+
+Experimental. Early development stage — expect breaking changes. 
+Contributions and feedback welcome!
+
+## Notes on AI
+
+This project is developed with GitHub Copilot. We believe language models can be 
+valuable tools for coding when paired with human oversight, testing, and 
+careful review. For transparency, we mention this in the README.
+
 ## Safety
 This crate uses ``#![deny(unsafe_code)]`` to ensure everything is implemented in
 100% Safe Rust.
