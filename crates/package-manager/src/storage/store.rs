@@ -45,6 +45,9 @@ impl Store {
         let layers_dir = data_dir.join("layers");
         let metadata_file = data_dir.join("metadata.db3");
 
+        // TODO: remove me once we're done testing
+        // tokio::fs::remove_dir_all(&data_dir).await?;
+
         let a = tokio::fs::create_dir_all(&data_dir);
         let b = tokio::fs::create_dir_all(&layers_dir);
         let _ = (a, b)
