@@ -144,8 +144,9 @@ mod tests {
 
         // Current should equal total after running all migrations
         assert_eq!(info.current, info.total);
-        // Should have at least 5 migrations (based on the MIGRATIONS const)
-        assert!(info.total >= 5);
+        // Total should match the number of migrations defined
+        let expected_total = MIGRATIONS.last().map(|m| m.version).unwrap_or(0);
+        assert_eq!(info.total, expected_total);
     }
 
     #[test]
@@ -161,6 +162,7 @@ mod tests {
         // Current should be 0 before running migrations
         assert_eq!(info.current, 0);
         // Total should still reflect available migrations
-        assert!(info.total >= 5);
+        let expected_total = MIGRATIONS.last().map(|m| m.version).unwrap_or(0);
+        assert_eq!(info.total, expected_total);
     }
 }
