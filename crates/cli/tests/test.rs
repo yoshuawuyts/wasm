@@ -130,7 +130,7 @@ fn test_color_flag_auto() {
         .args(&["--color", "auto", "--version"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
 }
 
@@ -141,7 +141,7 @@ fn test_color_flag_always() {
         .args(&["--color", "always", "--version"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
 }
 
@@ -152,7 +152,7 @@ fn test_color_flag_never() {
         .args(&["--color", "never", "--version"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
 }
 
@@ -163,7 +163,7 @@ fn test_color_flag_invalid_value() {
         .args(&["--color", "invalid", "--version"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(!output.status.success());
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(stderr.contains("invalid value 'invalid'"));
@@ -185,10 +185,10 @@ fn test_no_color_env_var() {
         .env("NO_COLOR", "1")
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
     // The output should not contain ANSI escape codes when NO_COLOR is set
-    // We can't easily test for absence of color codes without parsing, 
+    // We can't easily test for absence of color codes without parsing,
     // but we can verify the command succeeds
 }
 
@@ -200,7 +200,7 @@ fn test_clicolor_env_var() {
         .env("CLICOLOR", "0")
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
 }
 
@@ -211,6 +211,6 @@ fn test_color_flag_with_subcommand() {
         .args(&["--color", "never", "local", "--help"])
         .output()
         .expect("Failed to execute command");
-    
+
     assert!(output.status.success());
 }
