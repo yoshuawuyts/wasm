@@ -1,7 +1,9 @@
 #![allow(unreachable_pub)]
 
 mod app;
+/// TUI components
 pub mod components;
+/// TUI views
 pub mod views;
 
 use app::App;

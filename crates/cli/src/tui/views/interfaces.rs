@@ -19,6 +19,8 @@ pub struct InterfacesViewState {
 }
 
 impl InterfacesViewState {
+    /// Create a new InterfacesViewState
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -27,10 +29,13 @@ impl InterfacesViewState {
         }
     }
 
+    /// Get the currently selected interface index
+    #[must_use]
     pub fn selected(&self) -> Option<usize> {
         self.table_state.selected()
     }
 
+    /// Select the next interface in the list
     pub fn select_next(&mut self, len: usize) {
         if len == 0 {
             return;
@@ -39,6 +44,7 @@ impl InterfacesViewState {
         self.table_state.select(Some((current + 1) % len));
     }
 
+    /// Select the previous interface in the list
     pub fn select_prev(&mut self, len: usize) {
         if len == 0 {
             return;
@@ -48,10 +54,12 @@ impl InterfacesViewState {
             .select(Some(current.checked_sub(1).unwrap_or(len - 1)));
     }
 
+    /// Scroll down in the detail view
     pub fn scroll_down(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_add(1);
     }
 
+    /// Scroll up in the detail view
     pub fn scroll_up(&mut self) {
         self.detail_scroll = self.detail_scroll.saturating_sub(1);
     }
@@ -65,6 +73,7 @@ pub struct InterfacesView<'a> {
 
 impl<'a> InterfacesView<'a> {
     /// Create a new InterfacesView with the given interfaces
+    #[must_use]
     pub fn new(interfaces: &'a [(WitInterface, String)]) -> Self {
         Self { interfaces }
     }

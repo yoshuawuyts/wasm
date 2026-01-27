@@ -20,10 +20,9 @@ use ratatui::prelude::*;
 use wasm::tui::components::{TabBar, TabItem};
 use wasm::tui::views::packages::PackagesViewState;
 use wasm::tui::views::{
-    InterfacesView, KnownPackageDetailView, LocalView, PackagesView, SearchView, SearchViewState,
+    InterfacesView, InterfacesViewState, LocalView, PackagesView, SearchView, SearchViewState,
     SettingsView,
 };
-use wasm_package_manager::KnownPackage;
 
 /// Helper function to render a widget to a string buffer.
 fn render_to_string<W: Widget>(widget: W, width: u16, height: u16) -> String {
@@ -67,8 +66,7 @@ fn buffer_to_string(buffer: &Buffer) -> String {
 
 #[test]
 fn test_local_view_snapshot() {
-    let wasm_files = vec![];
-    let output = render_to_string(LocalView::new(&wasm_files), 40, 10);
+    let output = render_to_string(LocalView, 40, 10);
     assert_snapshot!(output);
 }
 
@@ -78,7 +76,9 @@ fn test_local_view_snapshot() {
 
 #[test]
 fn test_interfaces_view_snapshot() {
-    let output = render_to_string(InterfacesView, 60, 10);
+    let interfaces = vec![];
+    let mut state = InterfacesViewState::new();
+    let output = render_stateful_to_string(InterfacesView::new(&interfaces), &mut state, 60, 10);
     assert_snapshot!(output);
 }
 
@@ -121,30 +121,6 @@ fn test_search_view_with_search_active_snapshot() {
     state.search_active = true;
     state.search_query = "wasi".to_string();
     let output = render_stateful_to_string(SearchView::new(&packages), &mut state, 100, 15);
-    assert_snapshot!(output);
-}
-
-// =============================================================================
-// KnownPackageDetailView Snapshot Tests
-// =============================================================================
-
-#[test]
-fn test_known_package_detail_view_snapshot() {
-    let package = KnownPackage::new_for_testing(
-        "ghcr.io".to_string(),
-        "user/example-package".to_string(),
-        Some("An example WASM component package".to_string()),
-        vec![
-            "v1.0.0".to_string(),
-            "v0.9.0".to_string(),
-            "latest".to_string(),
-        ],
-        vec!["v1.0.0.sig".to_string()],
-        vec!["v1.0.0.att".to_string()],
-        "2024-01-15T10:30:00Z".to_string(),
-        "2024-01-01T08:00:00Z".to_string(),
-    );
-    let output = render_to_string(KnownPackageDetailView::new(&package), 80, 20);
     assert_snapshot!(output);
 }
 

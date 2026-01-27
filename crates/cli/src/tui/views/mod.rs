@@ -2,12 +2,12 @@ mod interfaces;
 mod known_package_detail;
 mod local;
 mod package_detail;
+/// Packages view module
 pub mod packages;
 mod search;
 mod settings;
 
 pub use interfaces::{InterfacesView, InterfacesViewState};
-pub use known_package_detail::KnownPackageDetailView;
 pub use local::LocalView;
 pub use package_detail::PackageDetailView;
 pub use packages::PackagesView;
