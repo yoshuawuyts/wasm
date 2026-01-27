@@ -14,6 +14,9 @@ use std::process::Command;
 use insta::assert_snapshot;
 
 /// Run the CLI with the given arguments and capture the output.
+///
+/// The output is normalized to replace platform-specific binary names
+/// (e.g., `wasm.exe` on Windows) with `wasm` for consistent snapshots.
 fn run_cli(args: &[&str]) -> String {
     let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
         .args(args)
@@ -24,11 +27,15 @@ fn run_cli(args: &[&str]) -> String {
     let stderr = String::from_utf8_lossy(&output.stderr);
 
     // Combine stdout and stderr for help output (clap writes to stdout by default for --help)
-    if !stdout.is_empty() {
+    let result = if !stdout.is_empty() {
         stdout.to_string()
     } else {
         stderr.to_string()
-    }
+    };
+
+    // Normalize binary name for cross-platform consistency
+    // On Windows, the binary is "wasm.exe" but on Unix it's "wasm"
+    result.replace("wasm.exe", "wasm")
 }
 
 // =============================================================================
