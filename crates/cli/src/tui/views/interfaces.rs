@@ -72,7 +72,7 @@ impl Widget for InterfacesView<'_> {
                         .map(|v| format!(" [{}]", v))
                         .unwrap_or_default();
 
-                    let file_name = wasm_entry.file_name().unwrap_or("unknown");
+                    let file_name = wasm_entry.file_name().unwrap_or("<unnamed>");
                     let content = format!(
                         "{}. {} ({}) from {}{}",
                         idx + 1,
