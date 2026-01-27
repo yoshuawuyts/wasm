@@ -161,3 +161,427 @@ impl ImageEntry {
         Ok(rows_affected > 0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::models::Migrations;
+
+    /// Create an in-memory database with migrations applied for testing.
+    fn setup_test_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+        conn
+    }
+
+    /// Create a minimal valid manifest JSON string for testing.
+    fn test_manifest() -> String {
+        r#"{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"mediaType":"application/vnd.oci.image.config.v1+json","digest":"sha256:abc123","size":100},"layers":[]}"#.to_string()
+    }
+
+    // =========================================================================
+    // ImageEntry Tests
+    // =========================================================================
+
+    #[test]
+    fn test_image_entry_insert_new() {
+        let conn = setup_test_db();
+
+        let result = ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        assert_eq!(result, InsertResult::Inserted);
+    }
+
+    #[test]
+    fn test_image_entry_insert_duplicate() {
+        let conn = setup_test_db();
+
+        // Insert first time
+        let result1 = ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+        assert_eq!(result1, InsertResult::Inserted);
+
+        // Insert duplicate
+        let result2 = ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+        assert_eq!(result2, InsertResult::AlreadyExists);
+    }
+
+    #[test]
+    fn test_image_entry_insert_different_tags() {
+        let conn = setup_test_db();
+
+        // Insert with tag v1
+        let result1 = ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+        assert_eq!(result1, InsertResult::Inserted);
+
+        // Insert with tag v2 - should succeed (different tag)
+        let result2 = ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v2.0.0"),
+            None,
+            &test_manifest(),
+            2048,
+        )
+        .unwrap();
+        assert_eq!(result2, InsertResult::Inserted);
+
+        // Verify both exist
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries.len(), 2);
+    }
+
+    #[test]
+    fn test_image_entry_exists() {
+        let conn = setup_test_db();
+
+        // Initially doesn't exist
+        assert!(!ImageEntry::exists(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap());
+
+        // Insert
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        // Now exists
+        assert!(ImageEntry::exists(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap());
+
+        // Different tag doesn't exist
+        assert!(!ImageEntry::exists(&conn, "ghcr.io", "user/repo", Some("v2.0.0"), None).unwrap());
+    }
+
+    #[test]
+    fn test_image_entry_exists_with_digest() {
+        let conn = setup_test_db();
+
+        // Insert with digest only
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            Some("sha256:abc123"),
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        // Exists with digest
+        assert!(
+            ImageEntry::exists(&conn, "ghcr.io", "user/repo", None, Some("sha256:abc123")).unwrap()
+        );
+
+        // Different digest doesn't exist
+        assert!(
+            !ImageEntry::exists(&conn, "ghcr.io", "user/repo", None, Some("sha256:def456"))
+                .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_image_entry_exists_with_tag_and_digest() {
+        let conn = setup_test_db();
+
+        // Insert with both tag and digest
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            Some("sha256:abc123"),
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        // Exists with both
+        assert!(
+            ImageEntry::exists(
+                &conn,
+                "ghcr.io",
+                "user/repo",
+                Some("v1.0.0"),
+                Some("sha256:abc123")
+            )
+            .unwrap()
+        );
+
+        // Wrong digest doesn't match
+        assert!(
+            !ImageEntry::exists(
+                &conn,
+                "ghcr.io",
+                "user/repo",
+                Some("v1.0.0"),
+                Some("sha256:wrong")
+            )
+            .unwrap()
+        );
+    }
+
+    #[test]
+    fn test_image_entry_get_all_empty() {
+        let conn = setup_test_db();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert!(entries.is_empty());
+    }
+
+    #[test]
+    fn test_image_entry_get_all_ordered() {
+        let conn = setup_test_db();
+
+        // Insert in non-alphabetical order
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "zebra/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+        ImageEntry::insert(
+            &conn,
+            "docker.io",
+            "apple/repo",
+            Some("latest"),
+            None,
+            &test_manifest(),
+            2048,
+        )
+        .unwrap();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries.len(), 2);
+        // Should be ordered by repository ASC
+        assert_eq!(entries[0].ref_repository, "apple/repo");
+        assert_eq!(entries[1].ref_repository, "zebra/repo");
+    }
+
+    #[test]
+    fn test_image_entry_delete_by_reference_with_tag() {
+        let conn = setup_test_db();
+
+        // Insert
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        // Delete
+        let deleted =
+            ImageEntry::delete_by_reference(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None)
+                .unwrap();
+        assert!(deleted);
+
+        // Verify gone
+        assert!(ImageEntry::get_all(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_image_entry_delete_by_reference_not_found() {
+        let conn = setup_test_db();
+
+        // Try to delete non-existent
+        let deleted = ImageEntry::delete_by_reference(
+            &conn,
+            "ghcr.io",
+            "nonexistent/repo",
+            Some("v1.0.0"),
+            None,
+        )
+        .unwrap();
+        assert!(!deleted);
+    }
+
+    #[test]
+    fn test_image_entry_delete_by_reference_with_digest() {
+        let conn = setup_test_db();
+
+        // Insert with digest
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            Some("sha256:abc123"),
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        // Delete by digest
+        let deleted = ImageEntry::delete_by_reference(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            Some("sha256:abc123"),
+        )
+        .unwrap();
+        assert!(deleted);
+
+        assert!(ImageEntry::get_all(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_image_entry_delete_by_registry_repository_only() {
+        let conn = setup_test_db();
+
+        // Insert multiple entries for same repo
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v2.0.0"),
+            None,
+            &test_manifest(),
+            2048,
+        )
+        .unwrap();
+
+        // Delete all by registry/repository only
+        let deleted =
+            ImageEntry::delete_by_reference(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        assert!(deleted);
+
+        assert!(ImageEntry::get_all(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn test_image_entry_reference_with_tag() {
+        let conn = setup_test_db();
+
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries[0].reference(), "ghcr.io/user/repo:v1.0.0");
+    }
+
+    #[test]
+    fn test_image_entry_reference_with_digest() {
+        let conn = setup_test_db();
+
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            Some("sha256:abc123"),
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries[0].reference(), "ghcr.io/user/repo@sha256:abc123");
+    }
+
+    #[test]
+    fn test_image_entry_reference_plain() {
+        let conn = setup_test_db();
+
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            None,
+            &test_manifest(),
+            1024,
+        )
+        .unwrap();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries[0].reference(), "ghcr.io/user/repo");
+    }
+
+    #[test]
+    fn test_image_entry_size_on_disk() {
+        let conn = setup_test_db();
+
+        ImageEntry::insert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            Some("v1.0.0"),
+            None,
+            &test_manifest(),
+            12345678,
+        )
+        .unwrap();
+
+        let entries = ImageEntry::get_all(&conn).unwrap();
+        assert_eq!(entries[0].size_on_disk, 12345678);
+    }
+}

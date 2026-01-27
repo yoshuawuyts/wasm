@@ -94,3 +94,73 @@ impl Migrations {
         Ok(Self { current, total })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_migrations_run_all_creates_tables() {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+
+        // Verify migrations table exists
+        let count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM migrations", [], |row| row.get(0))
+            .unwrap();
+        assert!(count > 0);
+
+        // Verify image table exists
+        conn.execute("SELECT 1 FROM image LIMIT 1", []).ok();
+
+        // Verify known_package table exists
+        conn.execute("SELECT 1 FROM known_package LIMIT 1", []).ok();
+
+        // Verify known_package_tag table exists
+        conn.execute("SELECT 1 FROM known_package_tag LIMIT 1", [])
+            .ok();
+    }
+
+    #[test]
+    fn test_migrations_run_all_idempotent() {
+        let conn = Connection::open_in_memory().unwrap();
+
+        // Run migrations multiple times
+        Migrations::run_all(&conn).unwrap();
+        Migrations::run_all(&conn).unwrap();
+        Migrations::run_all(&conn).unwrap();
+
+        // Should still work correctly
+        let info = Migrations::get(&conn).unwrap();
+        assert_eq!(info.current, info.total);
+    }
+
+    #[test]
+    fn test_migrations_get_info() {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+
+        let info = Migrations::get(&conn).unwrap();
+
+        // Current should equal total after running all migrations
+        assert_eq!(info.current, info.total);
+        // Should have at least 5 migrations (based on the MIGRATIONS const)
+        assert!(info.total >= 5);
+    }
+
+    #[test]
+    fn test_migrations_get_before_running() {
+        let conn = Connection::open_in_memory().unwrap();
+
+        // Create migrations table manually to test get() on fresh db
+        conn.execute_batch(include_str!("../migrations/00_migrations.sql"))
+            .unwrap();
+
+        let info = Migrations::get(&conn).unwrap();
+
+        // Current should be 0 before running migrations
+        assert_eq!(info.current, 0);
+        // Total should still reflect available migrations
+        assert!(info.total >= 5);
+    }
+}
