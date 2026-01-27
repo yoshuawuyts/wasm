@@ -1,4 +1,6 @@
 use oci_client::manifest::OciImageManifest;
+#[cfg(any(test, feature = "test-helpers"))]
+use oci_client::manifest::{IMAGE_MANIFEST_MEDIA_TYPE, OciDescriptor};
 use rusqlite::Connection;
 
 /// Result of an insert operation.
@@ -190,10 +192,12 @@ impl ImageEntry {
         }
     }
 
-    /// Creates a test manifest for testing purposes.
+    /// Creates a minimal OCI image manifest with a single WASM layer for testing.
+    ///
+    /// The manifest uses placeholder digests and sizes that are valid but not
+    /// representative of real content.
     #[cfg(any(test, feature = "test-helpers"))]
     fn test_manifest() -> OciImageManifest {
-        use oci_client::manifest::{IMAGE_MANIFEST_MEDIA_TYPE, OciDescriptor};
         OciImageManifest {
             schema_version: 2,
             media_type: Some(IMAGE_MANIFEST_MEDIA_TYPE.to_string()),

@@ -1,0 +1,14 @@
+---
+source: crates/cli/tests/test.rs
+expression: output
+---
+Pull a component from the registry
+
+Usage: wasm package pull <REFERENCE>
+
+Arguments:
+  <REFERENCE>  The reference to pull
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version

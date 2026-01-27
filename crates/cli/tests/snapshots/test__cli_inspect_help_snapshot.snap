@@ -1,0 +1,15 @@
+---
+source: crates/cli/tests/test.rs
+expression: output
+---
+Inspect a Wasm Component
+
+Usage: wasm inspect [OPTIONS] <INPUT>
+
+Arguments:
+  <INPUT>  Path to a .wasm to inspect
+
+Options:
+      --json     Output in JSON encoding
+  -h, --help     Print help
+  -V, --version  Print version
