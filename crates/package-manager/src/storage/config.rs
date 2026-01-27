@@ -87,18 +87,6 @@ impl StateInfo {
         self.store_size
     }
 
-    /// Get the location of the crate's cache dir
-    #[must_use]
-    pub fn layers_dir(&self) -> &Path {
-        &self.layers_dir
-    }
-
-    /// Get the size of the layers directory in bytes
-    #[must_use]
-    pub fn layers_size(&self) -> u64 {
-        self.layers_size
-    }
-
     /// Get the location of the crate's metadata file
     #[must_use]
     pub fn metadata_file(&self) -> &Path {
