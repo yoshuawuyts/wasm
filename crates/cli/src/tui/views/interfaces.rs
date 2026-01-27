@@ -93,7 +93,7 @@ impl StatefulWidget for InterfacesView<'_> {
 
 impl InterfacesView<'_> {
     fn render_list(&self, area: Rect, buf: &mut Buffer, state: &mut InterfacesViewState) {
-        let header = Row::new(vec!["World", "Imports", "Exports", "Component"])
+        let header = Row::new(vec!["Package", "World", "Imports", "Exports", "Component"])
             .style(Style::default().bold())
             .bottom_margin(1);
 
@@ -102,6 +102,7 @@ impl InterfacesView<'_> {
             .iter()
             .map(|(interface, component_ref)| {
                 Row::new(vec![
+                    interface.package_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
                     interface.world_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
                     interface.import_count.to_string(),
                     interface.export_count.to_string(),
@@ -112,9 +113,10 @@ impl InterfacesView<'_> {
 
         let widths = [
             Constraint::Percentage(25),
+            Constraint::Percentage(20),
             Constraint::Length(10),
             Constraint::Length(10),
-            Constraint::Percentage(50),
+            Constraint::Percentage(30),
         ];
 
         let table = Table::new(rows, widths)
@@ -150,15 +152,15 @@ impl InterfacesView<'_> {
 
         // Header with component info
         let header_text = format!(
-            "World: {}  │  Component: {}  │  Imports: {}  │  Exports: {}",
+            "Package: {}  │  World: {}  │  Imports: {}  │  Exports: {}",
+            interface.package_name.as_deref().unwrap_or("<unknown>"),
             interface.world_name.as_deref().unwrap_or("<unknown>"),
-            component_ref,
             interface.import_count,
             interface.export_count
         );
         let header = Paragraph::new(header_text)
             .style(Style::default().bold())
-            .block(Block::bordered().title(" Interface Details "));
+            .block(Block::bordered().title(format!(" {} ", component_ref)));
         header.render(chunks[0], buf);
 
         // WIT content with scrolling

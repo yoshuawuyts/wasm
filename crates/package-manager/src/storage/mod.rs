@@ -1,6 +1,7 @@
 mod config;
 mod models;
 mod store;
+mod wit_parser;
 
 pub use config::StateInfo;
 pub use models::ImageEntry;
