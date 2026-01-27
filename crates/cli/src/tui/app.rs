@@ -10,8 +10,8 @@ use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, StateInfo, Wi
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, InterfacesViewState, LocalView, PackageDetailView, PackagesView, SearchView, SearchViewState,
-    SettingsView,
+    InterfacesView, InterfacesViewState, LocalView, PackageDetailView, PackagesView, SearchView,
+    SearchViewState, SettingsView,
 };
 use super::{AppEvent, ManagerEvent};
 
@@ -476,10 +476,12 @@ impl App {
             }
             // Interfaces tab navigation
             (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state.select_prev(self.wit_interfaces.len());
+                self.interfaces_view_state
+                    .select_prev(self.wit_interfaces.len());
             }
             (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state.select_next(self.wit_interfaces.len());
+                self.interfaces_view_state
+                    .select_next(self.wit_interfaces.len());
             }
             (KeyCode::Enter, _) if self.current_tab == Tab::Interfaces => {
                 if !self.wit_interfaces.is_empty() {

@@ -1,10 +1,14 @@
+#![allow(unreachable_pub)]
+
 mod app;
 mod components;
 mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo, WitInterface};
+use wasm_package_manager::{
+    ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo, WitInterface,
+};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]

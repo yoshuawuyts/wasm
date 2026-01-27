@@ -131,10 +131,7 @@ mod tests {
 
         assert_eq!(state_info.data_dir(), data_dir);
         assert_eq!(state_info.layers_dir(), data_dir.join("layers"));
-        assert_eq!(
-            state_info.metadata_file(),
-            data_dir.join("metadata.db3")
-        );
+        assert_eq!(state_info.metadata_file(), data_dir.join("metadata.db3"));
         assert_eq!(state_info.layers_size(), 1024);
         assert_eq!(state_info.metadata_size(), 512);
         assert_eq!(state_info.migration_current(), 3);

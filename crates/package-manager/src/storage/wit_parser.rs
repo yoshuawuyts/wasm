@@ -18,18 +18,27 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
     // Extract metadata based on decoded type
     let (package_name, world_name, import_count, export_count) = match &decoded {
         DecodedWasm::WitPackage(resolve, package_id) => {
-            let package = resolve.packages.get(*package_id).expect("Package ID should be valid");
+            let package = resolve
+                .packages
+                .get(*package_id)
+                .expect("Package ID should be valid");
             let pkg_name = format!("{}", package.name);
             // Use the first world name if available
             let world = package.worlds.iter().next().map(|(name, world_id)| {
-                let w = resolve.worlds.get(*world_id).expect("World ID should be valid");
+                let w = resolve
+                    .worlds
+                    .get(*world_id)
+                    .expect("World ID should be valid");
                 (name.clone(), w.imports.len() as i32, w.exports.len() as i32)
             });
             let (world_name, imports, exports) = world.unwrap_or((package.name.name.clone(), 0, 0));
             (Some(pkg_name), world_name, imports, exports)
         }
         DecodedWasm::Component(resolve, world_id) => {
-            let world = resolve.worlds.get(*world_id).expect("World ID should be valid");
+            let world = resolve
+                .worlds
+                .get(*world_id)
+                .expect("World ID should be valid");
             // Try to get package name from world's package reference
             let pkg_name = world
                 .package
@@ -63,17 +72,26 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
 
     match decoded {
         DecodedWasm::WitPackage(_, package_id) => {
-            let package = resolve.packages.get(*package_id).expect("Package ID should be valid");
+            let package = resolve
+                .packages
+                .get(*package_id)
+                .expect("Package ID should be valid");
             output.push_str(&format!("package {};\n\n", package.name));
 
             // Print interfaces
             for (name, interface_id) in &package.interfaces {
                 output.push_str(&format!("interface {} {{\n", name));
-                let interface = resolve.interfaces.get(*interface_id).expect("Interface ID should be valid");
+                let interface = resolve
+                    .interfaces
+                    .get(*interface_id)
+                    .expect("Interface ID should be valid");
 
                 // Print types
                 for (type_name, type_id) in &interface.types {
-                    let type_def = resolve.types.get(*type_id).expect("Type ID should be valid");
+                    let type_def = resolve
+                        .types
+                        .get(*type_id)
+                        .expect("Type ID should be valid");
                     output.push_str(&format!(
                         "  type {}: {:?};\n",
                         type_name,
@@ -98,7 +116,10 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
 
             // Print worlds
             for (name, world_id) in &package.worlds {
-                let world = resolve.worlds.get(*world_id).expect("World ID should be valid");
+                let world = resolve
+                    .worlds
+                    .get(*world_id)
+                    .expect("World ID should be valid");
                 output.push_str(&format!("world {} {{\n", name));
 
                 for (key, _item) in &world.imports {
@@ -111,7 +132,10 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
             }
         }
         DecodedWasm::Component(_, world_id) => {
-            let world = resolve.worlds.get(*world_id).expect("World ID should be valid");
+            let world = resolve
+                .worlds
+                .get(*world_id)
+                .expect("World ID should be valid");
             output.push_str("// Inferred component interface\n");
             output.push_str(&format!("world {} {{\n", world.name));
 

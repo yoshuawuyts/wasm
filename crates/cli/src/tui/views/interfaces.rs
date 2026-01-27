@@ -1,6 +1,9 @@
 use ratatui::{
     prelude::*,
-    widgets::{Block, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Table, TableState, Widget, Wrap},
+    widgets::{
+        Block, Paragraph, Row, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget,
+        Table, TableState, Widget, Wrap,
+    },
 };
 use wasm_package_manager::WitInterface;
 
@@ -102,9 +105,15 @@ impl InterfacesView<'_> {
             .iter()
             .map(|(interface, component_ref)| {
                 Row::new(vec![
-                    interface.package_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
+                    interface
+                        .package_name
+                        .clone()
+                        .unwrap_or_else(|| "<unknown>".to_string()),
                     component_ref.clone(),
-                    interface.world_name.clone().unwrap_or_else(|| "<unknown>".to_string()),
+                    interface
+                        .world_name
+                        .clone()
+                        .unwrap_or_else(|| "<unknown>".to_string()),
                     interface.import_count.to_string(),
                     interface.export_count.to_string(),
                 ])
@@ -173,7 +182,10 @@ impl InterfacesView<'_> {
                 // Apply syntax highlighting
                 let style = if line.trim().starts_with("//") || line.trim().starts_with("///") {
                     Style::default().fg(Color::DarkGray)
-                } else if line.contains("package ") || line.contains("world ") || line.contains("interface ") {
+                } else if line.contains("package ")
+                    || line.contains("world ")
+                    || line.contains("interface ")
+                {
                     Style::default().fg(Color::Cyan).bold()
                 } else if line.contains("import ") {
                     Style::default().fg(Color::Green)
@@ -181,7 +193,11 @@ impl InterfacesView<'_> {
                     Style::default().fg(Color::Yellow)
                 } else if line.contains("func ") || line.contains("resource ") {
                     Style::default().fg(Color::Magenta)
-                } else if line.contains("record ") || line.contains("enum ") || line.contains("variant ") || line.contains("flags ") {
+                } else if line.contains("record ")
+                    || line.contains("enum ")
+                    || line.contains("variant ")
+                    || line.contains("flags ")
+                {
                     Style::default().fg(Color::Blue)
                 } else {
                     Style::default()
@@ -192,7 +208,7 @@ impl InterfacesView<'_> {
 
         let total_lines = wit_lines.len() as u16;
         let visible_height = chunks[1].height.saturating_sub(2); // Account for block borders
-        
+
         // Clamp scroll to valid range
         let max_scroll = total_lines.saturating_sub(visible_height);
         if state.detail_scroll > max_scroll {
@@ -209,9 +225,9 @@ impl InterfacesView<'_> {
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
-            let mut scrollbar_state = ScrollbarState::new(total_lines as usize)
-                .position(state.detail_scroll as usize);
-            
+            let mut scrollbar_state =
+                ScrollbarState::new(total_lines as usize).position(state.detail_scroll as usize);
+
             let scrollbar_area = Rect {
                 x: chunks[1].x + chunks[1].width - 1,
                 y: chunks[1].y + 1,
