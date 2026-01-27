@@ -1,4 +1,4 @@
-name: Release
+name: Publish
 
 # This workflow automates the release process using release-plz.
 #
