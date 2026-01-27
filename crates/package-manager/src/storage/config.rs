@@ -100,3 +100,54 @@ impl StateInfo {
         self.migration_total
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn test_migrations() -> Migrations {
+        Migrations {
+            current: 3,
+            total: 5,
+        }
+    }
+
+    #[test]
+    fn test_state_info_new_at() {
+        let data_dir = PathBuf::from("/test/data");
+        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024, 512);
+
+        assert_eq!(state_info.data_dir(), data_dir);
+        assert_eq!(state_info.layers_dir(), data_dir.join("layers"));
+        assert_eq!(state_info.metadata_file(), data_dir.join("metadata.db3"));
+        assert_eq!(state_info.layers_size(), 1024);
+        assert_eq!(state_info.metadata_size(), 512);
+        assert_eq!(state_info.migration_current(), 3);
+        assert_eq!(state_info.migration_total(), 5);
+    }
+
+    #[test]
+    fn test_state_info_executable() {
+        let data_dir = PathBuf::from("/test/data");
+        let state_info = StateInfo::new_at(data_dir, test_migrations(), 0, 0);
+
+        // executable() should return something (either the actual exe or "unknown")
+        let exe = state_info.executable();
+        assert!(!exe.as_os_str().is_empty());
+    }
+
+    #[test]
+    fn test_state_info_sizes() {
+        let data_dir = PathBuf::from("/test/data");
+
+        // Test with various sizes
+        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 0, 0);
+        assert_eq!(state_info.layers_size(), 0);
+        assert_eq!(state_info.metadata_size(), 0);
+
+        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024 * 1024, 1024);
+        assert_eq!(state_info.layers_size(), 1024 * 1024);
+        assert_eq!(state_info.metadata_size(), 1024);
+    }
+}

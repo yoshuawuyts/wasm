@@ -294,3 +294,232 @@ impl KnownPackage {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::models::Migrations;
+
+    /// Create an in-memory database with migrations applied for testing.
+    fn setup_test_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+        conn
+    }
+
+    // =========================================================================
+    // TagType Tests
+    // =========================================================================
+
+    #[test]
+    fn test_tag_type_from_tag_release() {
+        assert_eq!(TagType::from_tag("latest"), TagType::Release);
+        assert_eq!(TagType::from_tag("v1.0.0"), TagType::Release);
+        assert_eq!(TagType::from_tag("1.2.3"), TagType::Release);
+        assert_eq!(TagType::from_tag("main"), TagType::Release);
+    }
+
+    #[test]
+    fn test_tag_type_from_tag_signature() {
+        assert_eq!(TagType::from_tag("v1.0.0.sig"), TagType::Signature);
+        assert_eq!(TagType::from_tag("latest.sig"), TagType::Signature);
+        assert_eq!(TagType::from_tag(".sig"), TagType::Signature);
+    }
+
+    #[test]
+    fn test_tag_type_from_tag_attestation() {
+        assert_eq!(TagType::from_tag("v1.0.0.att"), TagType::Attestation);
+        assert_eq!(TagType::from_tag("latest.att"), TagType::Attestation);
+        assert_eq!(TagType::from_tag(".att"), TagType::Attestation);
+    }
+
+    // =========================================================================
+    // KnownPackage Tests
+    // =========================================================================
+
+    #[test]
+    fn test_known_package_upsert_new_package() {
+        let conn = setup_test_db();
+
+        // Insert a new package
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+
+        // Verify it was inserted
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].registry, "ghcr.io");
+        assert_eq!(packages[0].repository, "user/repo");
+    }
+
+    #[test]
+    fn test_known_package_upsert_with_tag() {
+        let conn = setup_test_db();
+
+        // Insert a package with a tag
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+
+        // Verify it was inserted with the tag
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].tags, vec!["v1.0.0"]);
+    }
+
+    #[test]
+    fn test_known_package_upsert_multiple_tags() {
+        let conn = setup_test_db();
+
+        // Insert a package with multiple tags
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v2.0.0"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("latest"), None).unwrap();
+
+        // Verify all tags are present
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        // Tags are ordered by last_seen_at DESC
+        assert!(packages[0].tags.contains(&"v1.0.0".to_string()));
+        assert!(packages[0].tags.contains(&"v2.0.0".to_string()));
+        assert!(packages[0].tags.contains(&"latest".to_string()));
+    }
+
+    #[test]
+    fn test_known_package_upsert_with_description() {
+        let conn = setup_test_db();
+
+        // Insert a package with description
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, Some("A test package")).unwrap();
+
+        // Verify description was saved
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].description, Some("A test package".to_string()));
+    }
+
+    #[test]
+    fn test_known_package_upsert_updates_existing() {
+        let conn = setup_test_db();
+
+        // Insert package
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+
+        // Update with description
+        KnownPackage::upsert(
+            &conn,
+            "ghcr.io",
+            "user/repo",
+            None,
+            Some("Updated description"),
+        )
+        .unwrap();
+
+        // Verify only one package exists with updated description
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(
+            packages[0].description,
+            Some("Updated description".to_string())
+        );
+    }
+
+    #[test]
+    fn test_known_package_tag_types_separated() {
+        let conn = setup_test_db();
+
+        // Insert package with different tag types
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0.sig"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0.att"), None).unwrap();
+
+        // Verify tags are separated by type
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert!(packages[0].tags.contains(&"v1.0.0".to_string()));
+        assert!(
+            packages[0]
+                .signature_tags
+                .contains(&"v1.0.0.sig".to_string())
+        );
+        assert!(
+            packages[0]
+                .attestation_tags
+                .contains(&"v1.0.0.att".to_string())
+        );
+    }
+
+    #[test]
+    fn test_known_package_search() {
+        let conn = setup_test_db();
+
+        // Insert multiple packages
+        KnownPackage::upsert(&conn, "ghcr.io", "bytecode/component", None, None).unwrap();
+        KnownPackage::upsert(&conn, "docker.io", "library/nginx", None, None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/nginx-app", None, None).unwrap();
+
+        // Search for nginx
+        let results = KnownPackage::search(&conn, "nginx").unwrap();
+        assert_eq!(results.len(), 2);
+
+        // Search for ghcr.io
+        let results = KnownPackage::search(&conn, "ghcr").unwrap();
+        assert_eq!(results.len(), 2);
+
+        // Search for bytecode
+        let results = KnownPackage::search(&conn, "bytecode").unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].repository, "bytecode/component");
+    }
+
+    #[test]
+    fn test_known_package_search_no_results() {
+        let conn = setup_test_db();
+
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+
+        let results = KnownPackage::search(&conn, "nonexistent").unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_known_package_get() {
+        let conn = setup_test_db();
+
+        // Insert a package
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+
+        // Get existing package
+        let package = KnownPackage::get(&conn, "ghcr.io", "user/repo").unwrap();
+        assert!(package.is_some());
+        let package = package.unwrap();
+        assert_eq!(package.registry, "ghcr.io");
+        assert_eq!(package.repository, "user/repo");
+
+        // Get non-existent package
+        let package = KnownPackage::get(&conn, "docker.io", "nonexistent").unwrap();
+        assert!(package.is_none());
+    }
+
+    #[test]
+    fn test_known_package_reference() {
+        let conn = setup_test_db();
+
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages[0].reference(), "ghcr.io/user/repo");
+    }
+
+    #[test]
+    fn test_known_package_reference_with_tag() {
+        let conn = setup_test_db();
+
+        // Package without tags uses "latest"
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages[0].reference_with_tag(), "ghcr.io/user/repo:latest");
+
+        // Package with tag uses first tag
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+        let packages = KnownPackage::get_all(&conn).unwrap();
+        assert_eq!(packages[0].reference_with_tag(), "ghcr.io/user/repo:v1.0.0");
+    }
+}
