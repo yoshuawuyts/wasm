@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, WitInterface};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface};
 use super::wit_parser::extract_wit_metadata;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
@@ -63,7 +63,15 @@ impl Store {
             .unwrap_or(0);
         let state_info = StateInfo::new_at(data_dir, migration_info, layers_size, metadata_size);
 
-        Ok(Self { state_info, conn })
+        let store = Self { state_info, conn };
+
+        // Re-scan known package tags after migrations to ensure derived data is up-to-date
+        // Suppress errors as they shouldn't prevent the store from opening
+        if let Err(e) = store.rescan_known_package_tags() {
+            eprintln!("Warning: Failed to re-scan known package tags: {}", e);
+        }
+
+        Ok(store)
     }
 
     pub(crate) async fn insert(
@@ -227,5 +235,46 @@ impl Store {
         &self,
     ) -> anyhow::Result<Vec<(WitInterface, String)>> {
         WitInterface::get_all_with_images(&self.conn)
+    }
+
+    /// Re-scan known package tags to update derived data after migrations.
+    /// This re-classifies tag types based on tag naming conventions:
+    /// - Tags ending in ".sig" are classified as "signature"
+    /// - Tags ending in ".att" are classified as "attestation"
+    /// - All other tags are classified as "release"
+    pub(crate) fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
+        // Get all unique package IDs and their tags
+        let mut stmt = self.conn.prepare(
+            "SELECT DISTINCT kpt.known_package_id, kpt.tag 
+             FROM known_package_tag kpt",
+        )?;
+
+        let tags: Vec<(i64, String)> = stmt
+            .query_map([], |row| {
+                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut updated_count = 0;
+
+        // Re-process each tag to ensure it has the correct tag_type
+        for (package_id, tag) in tags {
+            // Determine the correct tag type using existing logic
+            let tag_type = TagType::from_tag(&tag).as_str();
+
+            // Update the tag type if needed
+            let rows_affected = self.conn.execute(
+                "UPDATE known_package_tag 
+                 SET tag_type = ?1 
+                 WHERE known_package_id = ?2 AND tag = ?3 AND tag_type != ?1",
+                (tag_type, package_id, &tag),
+            )?;
+
+            if rows_affected > 0 {
+                updated_count += 1;
+            }
+        }
+
+        Ok(updated_count)
     }
 }
