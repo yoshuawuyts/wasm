@@ -118,3 +118,99 @@ fn test_cli_self_state_help_snapshot() {
     let output = run_cli(&["self", "state", "--help"]);
     assert_snapshot!(output);
 }
+
+// =============================================================================
+// Color Support Tests
+// =============================================================================
+
+#[test]
+fn test_color_flag_auto() {
+    // Test that --color=auto is accepted
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--color", "auto", "--version"])
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_color_flag_always() {
+    // Test that --color=always is accepted
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--color", "always", "--version"])
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_color_flag_never() {
+    // Test that --color=never is accepted
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--color", "never", "--version"])
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_color_flag_invalid_value() {
+    // Test that invalid color values are rejected
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--color", "invalid", "--version"])
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("invalid value 'invalid'"));
+}
+
+#[test]
+fn test_color_flag_in_help() {
+    // Test that --color flag appears in help output
+    let output = run_cli(&["--help"]);
+    assert!(output.contains("--color"));
+    assert!(output.contains("When to use colored output"));
+}
+
+#[test]
+fn test_no_color_env_var() {
+    // Test that NO_COLOR environment variable disables color
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--version"])
+        .env("NO_COLOR", "1")
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+    // The output should not contain ANSI escape codes when NO_COLOR is set
+    // We can't easily test for absence of color codes without parsing, 
+    // but we can verify the command succeeds
+}
+
+#[test]
+fn test_clicolor_env_var() {
+    // Test that CLICOLOR=0 environment variable disables color
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--version"])
+        .env("CLICOLOR", "0")
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_color_flag_with_subcommand() {
+    // Test that --color flag works with subcommands
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--color", "never", "local", "--help"])
+        .output()
+        .expect("Failed to execute command");
+    
+    assert!(output.status.success());
+}

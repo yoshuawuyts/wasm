@@ -4,7 +4,7 @@ expression: output
 ---
 Detect and manage local WASM files
 
-Usage: wasm local <COMMAND>
+Usage: wasm local [OPTIONS] <COMMAND>
 
 Commands:
   list  List local WASM files in the current directory
@@ -13,3 +13,6 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]

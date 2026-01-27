@@ -13,3 +13,6 @@ Options:
       --json     Output in JSON encoding
   -h, --help     Print help
   -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]

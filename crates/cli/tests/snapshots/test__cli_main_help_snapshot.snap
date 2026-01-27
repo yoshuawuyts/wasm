@@ -4,7 +4,7 @@ expression: output
 ---
 Unified WebAssembly developer tools
 
-Usage: wasm [COMMAND]
+Usage: wasm [OPTIONS] [COMMAND]
 
 Commands:
   run      Execute a Wasm Component
@@ -19,3 +19,6 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]

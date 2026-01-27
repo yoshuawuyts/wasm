@@ -4,7 +4,7 @@ expression: output
 ---
 Configure the `wasm(1)` tool, generate completions, & manage state
 
-Usage: wasm self <COMMAND>
+Usage: wasm self [OPTIONS] <COMMAND>
 
 Commands:
   state  Print diagnostics about the local state
@@ -13,3 +13,6 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]

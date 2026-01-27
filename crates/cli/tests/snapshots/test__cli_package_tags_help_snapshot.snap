@@ -14,3 +14,6 @@ Options:
       --attestations  Include attestation tags (ending in .att)
   -h, --help          Print help
   -V, --version       Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]

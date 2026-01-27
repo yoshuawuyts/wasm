@@ -9,12 +9,22 @@ mod tui;
 
 use std::io::IsTerminal;
 
-use clap::{CommandFactory, Parser};
+use clap::{ColorChoice, CommandFactory, Parser};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
+    /// When to use colored output
+    #[arg(
+        long,
+        value_name = "WHEN",
+        default_value = "auto",
+        global = true,
+        help_heading = "Global Options"
+    )]
+    color: ColorChoice,
+
     #[command(subcommand)]
     command: Option<Command>,
 }

@@ -4,7 +4,7 @@ expression: output
 ---
 Package, push, and pull Wasm Components
 
-Usage: wasm package <COMMAND>
+Usage: wasm package [OPTIONS] <COMMAND>
 
 Commands:
   show  Fetch OCI metadata for a component
@@ -16,3 +16,6 @@ Commands:
 Options:
   -h, --help     Print help
   -V, --version  Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]
