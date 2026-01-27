@@ -146,8 +146,7 @@ mod tests {
         assert_eq!(state_info.layers_size(), 0);
         assert_eq!(state_info.metadata_size(), 0);
 
-        let state_info =
-            StateInfo::new_at(data_dir.clone(), test_migrations(), 1024 * 1024, 1024);
+        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024 * 1024, 1024);
         assert_eq!(state_info.layers_size(), 1024 * 1024);
         assert_eq!(state_info.metadata_size(), 1024);
     }

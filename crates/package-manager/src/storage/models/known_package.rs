@@ -361,14 +361,7 @@ mod tests {
         let conn = setup_test_db();
 
         // Insert a package with description
-        KnownPackage::upsert(
-            &conn,
-            "ghcr.io",
-            "user/repo",
-            None,
-            Some("A test package"),
-        )
-        .unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, Some("A test package")).unwrap();
 
         // Verify description was saved
         let packages = KnownPackage::get_all(&conn).unwrap();
@@ -415,8 +408,16 @@ mod tests {
         let packages = KnownPackage::get_all(&conn).unwrap();
         assert_eq!(packages.len(), 1);
         assert!(packages[0].tags.contains(&"v1.0.0".to_string()));
-        assert!(packages[0].signature_tags.contains(&"v1.0.0.sig".to_string()));
-        assert!(packages[0].attestation_tags.contains(&"v1.0.0.att".to_string()));
+        assert!(
+            packages[0]
+                .signature_tags
+                .contains(&"v1.0.0.sig".to_string())
+        );
+        assert!(
+            packages[0]
+                .attestation_tags
+                .contains(&"v1.0.0.att".to_string())
+        );
     }
 
     #[test]
