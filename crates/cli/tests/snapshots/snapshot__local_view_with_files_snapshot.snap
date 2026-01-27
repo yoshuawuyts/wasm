@@ -1,0 +1,18 @@
+---
+source: crates/cli/tests/snapshot.rs
+expression: output
+---
+                          Detected 3 local WASM file(s)
+
+┌Files─────────────────────────────────────────────────────────────────────────┐
+│1. ./target/wasm32-unknown-unknown/release/app.wasm                           │
+│2. ./pkg/component.wasm                                                       │
+│3. ./examples/hello.wasm                                                      │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+                       Press 'r' to refresh • 'q' to quit

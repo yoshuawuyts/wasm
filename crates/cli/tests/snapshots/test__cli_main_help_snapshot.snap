@@ -1,0 +1,21 @@
+---
+source: crates/cli/tests/test.rs
+expression: output
+---
+Unified WebAssembly developer tools
+
+Usage: wasm [COMMAND]
+
+Commands:
+  run      Execute a Wasm Component
+  inspect  Inspect a Wasm Component
+  convert  Convert a Wasm Component to another format
+  local    Detect and manage local WASM files
+  package  Package, push, and pull Wasm Components
+  compose  Compose Wasm Components with other components
+  self     Configure the `wasm(1)` tool, generate completions, & manage state
+  help     Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version

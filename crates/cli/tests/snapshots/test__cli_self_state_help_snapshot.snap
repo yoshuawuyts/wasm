@@ -1,0 +1,11 @@
+---
+source: crates/cli/tests/test.rs
+expression: output
+---
+Print diagnostics about the local state
+
+Usage: wasm self state
+
+Options:
+  -h, --help     Print help
+  -V, --version  Print version
