@@ -132,6 +132,7 @@ impl App {
         Ok(())
     }
 
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render_frame(&mut self, frame: &mut ratatui::Frame) {
         let area = frame.area();
         let status = match self.manager_state {
@@ -141,21 +142,15 @@ impl App {
 
         // Create main layout with tabs at top
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
-        let Some(tabs_area) = layout.first().copied() else {
-            return;
-        };
-        let Some(main_area) = layout.get(1).copied() else {
-            return;
-        };
 
         // Render tab bar
         let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
-        frame.render_widget(tab_bar, tabs_area);
+        frame.render_widget(tab_bar, layout[0]);
 
         // Render content based on current tab
         let content_block = Block::bordered();
-        let content_area = content_block.inner(main_area);
-        frame.render_widget(content_block, main_area);
+        let content_area = content_block.inner(layout[1]);
+        frame.render_widget(content_block, layout[1]);
 
         match self.current_tab {
             Tab::Local => frame.render_widget(LocalView, content_area),
@@ -206,6 +201,7 @@ impl App {
         }
     }
 
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect, state: PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));
@@ -252,23 +248,17 @@ impl App {
 
         // Label
         let label = Paragraph::new("Enter package reference (e.g., ghcr.io/user/pkg:tag):");
-        if let Some(label_area) = chunks.first().copied() {
-            frame.render_widget(label, label_area);
-        }
+        frame.render_widget(label, chunks[0]);
 
         // Input field with cursor
         let input_text = format!("{}_", state.input);
         let input = Paragraph::new(input_text).style(Style::default().fg(Color::Yellow));
-        if let Some(input_area) = chunks.get(1).copied() {
-            frame.render_widget(input, input_area);
-        }
+        frame.render_widget(input, chunks[1]);
 
         // Error message if present
         if let Some(ref error) = state.error {
             let error_msg = Paragraph::new(error.as_str()).style(Style::default().fg(Color::Red));
-            if let Some(error_area) = chunks.get(2).copied() {
-                frame.render_widget(error_msg, error_area);
-            }
+            frame.render_widget(error_msg, chunks[2]);
         }
     }
 

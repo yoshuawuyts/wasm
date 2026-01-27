@@ -68,6 +68,7 @@ impl<'a> PackagesView<'a> {
 impl StatefulWidget for PackagesView<'_> {
     type State = PackagesViewState;
 
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         // Split area into filter input, content, and shortcuts bar
         let layout = Layout::vertical([
@@ -76,15 +77,9 @@ impl StatefulWidget for PackagesView<'_> {
             Constraint::Length(1),
         ])
         .split(area);
-        let Some(filter_area) = layout.first().copied() else {
-            return;
-        };
-        let Some(content_area) = layout.get(1).copied() else {
-            return;
-        };
-        let Some(shortcuts_area) = layout.get(2).copied() else {
-            return;
-        };
+        let filter_area = layout[0];
+        let content_area = layout[1];
+        let shortcuts_area = layout[2];
 
         // Render filter input
         let filter_style = if state.filter_active {

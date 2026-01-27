@@ -66,6 +66,7 @@ impl<'a> SearchView<'a> {
 impl StatefulWidget for SearchView<'_> {
     type State = SearchViewState;
 
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         // Split area into search input, content, and shortcuts bar
         let layout = Layout::vertical([
@@ -74,15 +75,9 @@ impl StatefulWidget for SearchView<'_> {
             Constraint::Length(1),
         ])
         .split(area);
-        let Some(search_area) = layout.first().copied() else {
-            return;
-        };
-        let Some(content_area) = layout.get(1).copied() else {
-            return;
-        };
-        let Some(shortcuts_area) = layout.get(2).copied() else {
-            return;
-        };
+        let search_area = layout[0];
+        let content_area = layout[1];
+        let shortcuts_area = layout[2];
 
         // Render search input
         let search_style = if state.search_active {

@@ -19,18 +19,13 @@ impl<'a> SettingsView<'a> {
 }
 
 impl Widget for SettingsView<'_> {
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.state_info {
             Some(info) => {
                 // Split area for migrations section and storage table
                 let layout =
                     Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
-                let Some(migrations_area) = layout.first().copied() else {
-                    return;
-                };
-                let Some(storage_section_area) = layout.get(1).copied() else {
-                    return;
-                };
 
                 // Migrations section
                 let migrations = Text::from(vec![
@@ -44,23 +39,17 @@ impl Widget for SettingsView<'_> {
                         info.migration_total()
                     )),
                 ]);
-                Paragraph::new(migrations).render(migrations_area, buf);
+                Paragraph::new(migrations).render(layout[0], buf);
 
                 // Storage section with table
                 let storage_layout =
-                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(storage_section_area);
-                let Some(storage_header_area) = storage_layout.first().copied() else {
-                    return;
-                };
-                let Some(storage_table_area) = storage_layout.get(1).copied() else {
-                    return;
-                };
+                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(layout[1]);
 
                 let storage_header = Line::from(vec![Span::styled(
                     "Storage",
                     Style::default().bold().fg(Color::Yellow),
                 )]);
-                Paragraph::new(storage_header).render(storage_header_area, buf);
+                Paragraph::new(storage_header).render(storage_layout[0], buf);
 
                 // Compute column widths based on content
                 let executable_path = info.executable().display().to_string();
@@ -115,7 +104,7 @@ impl Widget for SettingsView<'_> {
                 )
                 .column_spacing(3);
 
-                Widget::render(table, storage_table_area, buf);
+                Widget::render(table, storage_layout[1], buf);
             }
             None => {
                 Paragraph::new("Loading state information...").render(area, buf);

@@ -19,27 +19,18 @@ impl<'a> PackageDetailView<'a> {
 }
 
 impl Widget for PackageDetailView<'_> {
+    #[allow(clippy::indexing_slicing)] // Layout always returns exact number of elements
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Split area into content and shortcuts bar
         let main_layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
-        let Some(content_area) = main_layout.first().copied() else {
-            return;
-        };
-        let Some(shortcuts_area) = main_layout.get(1).copied() else {
-            return;
-        };
+        let content_area = main_layout[0];
+        let shortcuts_area = main_layout[1];
 
         let layout = Layout::vertical([
             Constraint::Length(3), // Header
             Constraint::Min(0),    // Details
         ])
         .split(content_area);
-        let Some(header_area) = layout.first().copied() else {
-            return;
-        };
-        let Some(details_area) = layout.get(1).copied() else {
-            return;
-        };
 
         // Header with package name
         let header_text = format!(
@@ -49,7 +40,7 @@ impl Widget for PackageDetailView<'_> {
         Paragraph::new(header_text)
             .style(Style::default().bold().fg(Color::Yellow))
             .block(Block::default().borders(Borders::BOTTOM))
-            .render(header_area, buf);
+            .render(layout[0], buf);
 
         // Build details text
         let mut details = Vec::new();
@@ -141,7 +132,7 @@ impl Widget for PackageDetailView<'_> {
 
         Paragraph::new(details)
             .wrap(Wrap { trim: false })
-            .render(details_area, buf);
+            .render(layout[1], buf);
 
         // Render shortcuts bar
         let shortcuts = Line::from(vec![
