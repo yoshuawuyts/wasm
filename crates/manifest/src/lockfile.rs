@@ -34,6 +34,22 @@ pub struct Lockfile {
 ///
 /// Each package represents a dependency that has been resolved to a specific
 /// version with a content digest for integrity verification.
+///
+/// # Example with dependencies
+///
+/// ```toml
+/// [[package]]
+/// name = "wasi:key-value"
+/// version = "2.0.0"
+/// registry = "ghcr.io/webassembly/wasi-key-value"
+/// digest = "sha256:def456..."
+///
+/// [[package.dependencies]]
+/// name = "wasi:logging"
+/// version = "1.0.0"
+/// ```
+///
+/// Note: `[[package.dependencies]]` defines dependencies for the last `[[package]]` entry.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
 pub struct Package {
