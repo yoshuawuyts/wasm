@@ -26,9 +26,9 @@ impl Opts {
                 println!("Executable: \t{}", state_info.executable().display());
                 println!("Data storage: \t{}", state_info.data_dir().display());
                 println!(
-                    "Content store: \t{} ({})",
-                    state_info.store_dir().display(),
-                    format_size(state_info.store_size())
+                    "Image layers: \t{} ({})",
+                    state_info.layers_dir().display(),
+                    format_size(state_info.layers_size())
                 );
                 println!(
                     "Image metadata: {} ({})",

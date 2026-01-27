@@ -1,18 +1,15 @@
 mod interfaces;
-mod known_package_detail;
 mod local;
 mod package_detail;
-/// Packages view module
-pub mod packages;
+pub(crate) mod packages;
 mod search;
 mod settings;
 
-pub use interfaces::InterfacesView;
-pub use known_package_detail::KnownPackageDetailView;
-pub use local::LocalView;
-pub use package_detail::PackageDetailView;
-pub use packages::PackagesView;
-pub use search::{SearchView, SearchViewState};
-pub use settings::SettingsView;
+pub(crate) use interfaces::{InterfacesView, InterfacesViewState};
+pub(crate) use local::LocalView;
+pub(crate) use package_detail::PackageDetailView;
+pub(crate) use packages::PackagesView;
+pub(crate) use search::{SearchView, SearchViewState};
+pub(crate) use settings::SettingsView;
 
 pub(crate) use wasm_package_manager::format_size;

@@ -20,6 +20,7 @@ pub struct WitInterface {
 
 impl WitInterface {
     /// Returns the ID of this WIT interface.
+    #[must_use]
     pub fn id(&self) -> i64 {
         self.id
     }
@@ -70,6 +71,7 @@ impl WitInterface {
     }
 
     /// Get WIT interface for an image by image ID.
+    #[allow(dead_code)]
     pub(crate) fn get_for_image(conn: &Connection, image_id: i64) -> anyhow::Result<Option<Self>> {
         let result = conn.query_row(
             "SELECT w.id, w.package_name, w.wit_text, w.world_name, w.import_count, w.export_count, w.created_at
@@ -131,6 +133,7 @@ impl WitInterface {
     }
 
     /// Get all unique WIT interfaces.
+    #[allow(dead_code)]
     pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, package_name, wit_text, world_name, import_count, export_count, created_at

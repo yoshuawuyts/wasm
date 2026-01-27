@@ -270,6 +270,7 @@ impl Store {
     }
 
     /// Get all WIT interfaces.
+    #[allow(dead_code)]
     pub(crate) fn list_wit_interfaces(&self) -> anyhow::Result<Vec<WitInterface>> {
         WitInterface::get_all(&self.conn)
     }

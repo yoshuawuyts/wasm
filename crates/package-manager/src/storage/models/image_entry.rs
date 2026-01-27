@@ -205,7 +205,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(result, InsertResult::Inserted);
+        assert_eq!(result.0, InsertResult::Inserted);
+        assert!(result.1.is_some());
     }
 
     #[test]
@@ -223,7 +224,8 @@ mod tests {
             1024,
         )
         .unwrap();
-        assert_eq!(result1, InsertResult::Inserted);
+        assert_eq!(result1.0, InsertResult::Inserted);
+        assert!(result1.1.is_some());
 
         // Insert duplicate
         let result2 = ImageEntry::insert(
@@ -236,7 +238,8 @@ mod tests {
             1024,
         )
         .unwrap();
-        assert_eq!(result2, InsertResult::AlreadyExists);
+        assert_eq!(result2.0, InsertResult::AlreadyExists);
+        assert!(result2.1.is_none());
     }
 
     #[test]
@@ -254,7 +257,8 @@ mod tests {
             1024,
         )
         .unwrap();
-        assert_eq!(result1, InsertResult::Inserted);
+        assert_eq!(result1.0, InsertResult::Inserted);
+        assert!(result1.1.is_some());
 
         // Insert with tag v2 - should succeed (different tag)
         let result2 = ImageEntry::insert(
@@ -267,7 +271,8 @@ mod tests {
             2048,
         )
         .unwrap();
-        assert_eq!(result2, InsertResult::Inserted);
+        assert_eq!(result2.0, InsertResult::Inserted);
+        assert!(result2.1.is_some());
 
         // Verify both exist
         let entries = ImageEntry::get_all(&conn).unwrap();
