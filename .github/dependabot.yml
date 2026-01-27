@@ -11,10 +11,10 @@ updates:
     open-pull-requests-limit: 10
     # Minimum delay before upgrading to avoid issues with very new releases
     cooldown:
-      semver:
-        patch: "1d"
-        minor: "3d"
-        major: "7d"
+      days:
+        patch: 1
+        minor: 3
+        major: 7
     # Batched/grouped updates to reduce PR noise
     groups:
       rust-dependencies:
@@ -29,7 +29,7 @@ updates:
     open-pull-requests-limit: 5
     # Minimum delay before upgrading to avoid issues with very new releases
     cooldown:
-      default: "3d"
+      days: 3
     # Batched/grouped updates to reduce PR noise
     groups:
       github-actions:
