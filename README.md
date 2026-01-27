@@ -51,6 +51,7 @@ $ cargo add wasm
 ```bash
 wasm                            # launch interactive TUI
 wasm inspect file.wasm          # inspect a Wasm Component
+wasm local list                 # list local WASM files in current directory
 wasm package pull ghcr.io/...   # pull a package from a registry
 wasm package push ghcr.io/...   # push a package to a registry
 wasm package list               # list installed packages
