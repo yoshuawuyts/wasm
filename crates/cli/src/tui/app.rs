@@ -97,6 +97,8 @@ pub(crate) struct App {
     search_view_state: SearchViewState,
     /// Known packages for search results
     known_packages: Vec<KnownPackage>,
+    /// Local WASM files
+    local_wasm_files: Vec<wasm_detector::WasmEntry>,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -116,6 +118,7 @@ impl App {
             state_info: None,
             search_view_state: SearchViewState::new(),
             known_packages: Vec::new(),
+            local_wasm_files: Vec::new(),
             app_sender,
             manager_receiver,
         }
@@ -153,7 +156,9 @@ impl App {
         frame.render_widget(content_block, layout[1]);
 
         match self.current_tab {
-            Tab::Local => frame.render_widget(LocalView, content_area),
+            Tab::Local => {
+                frame.render_widget(LocalView::new(&self.local_wasm_files), content_area)
+            }
             Tab::Components => {
                 // Check if we're viewing a package detail
                 if let InputMode::PackageDetail(idx) = self.input_mode {
@@ -284,6 +289,7 @@ impl App {
                     let _ = self.app_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
                     let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
@@ -305,6 +311,9 @@ impl App {
                 }
                 ManagerEvent::RefreshTagsResult(_result) => {
                     // Tag refresh completed, packages list will be refreshed automatically
+                }
+                ManagerEvent::LocalWasmList(files) => {
+                    self.local_wasm_files = files;
                 }
             }
         }
@@ -492,6 +501,10 @@ impl App {
                 {
                     self.input_mode = InputMode::KnownPackageDetail(selected);
                 }
+            }
+            // Refresh local WASM files on Local tab
+            (KeyCode::Char('r'), _) if self.current_tab == Tab::Local && self.is_manager_ready() => {
+                let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
             }
             _ => {}
         }
