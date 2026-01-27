@@ -28,6 +28,7 @@ ratatui = { workspace = true }
 serde_json = { workspace = true }
 termcolor = { workspace = true }
 tokio = { workspace = true }
+wasm-detector = { workspace = true }
 wasm-metadata = { workspace = true }
 wasm-package-manager = { workspace = true }
 wasmtime = { workspace = true }

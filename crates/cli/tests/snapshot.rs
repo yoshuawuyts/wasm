@@ -67,7 +67,8 @@ fn buffer_to_string(buffer: &Buffer) -> String {
 
 #[test]
 fn test_local_view_snapshot() {
-    let output = render_to_string(LocalView, 40, 10);
+    let wasm_files = vec![];
+    let output = render_to_string(LocalView::new(&wasm_files), 40, 10);
     assert_snapshot!(output);
 }
 
