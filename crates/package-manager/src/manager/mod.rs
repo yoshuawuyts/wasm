@@ -71,7 +71,7 @@ impl Manager {
 
     /// Get data from the store
     pub async fn get(&self, key: &str) -> cacache::Result<Vec<u8>> {
-        cacache::read(self.store.state_info.layers_dir(), key).await
+        cacache::read(self.store.state_info.store_dir(), key).await
     }
 
     /// Get information about the current state of the package manager.
