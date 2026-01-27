@@ -111,6 +111,7 @@ fn test_detector_finds_dist_wasm_files() {
 }
 
 #[test]
+#[allow(clippy::indexing_slicing)] // Test function - panics are expected on assertion failures
 fn test_wasm_entry_methods() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
     let wasm_path = temp_dir.path().join("module.wasm");
