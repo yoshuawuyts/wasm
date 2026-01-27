@@ -36,22 +36,14 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
         override: true
 
-    - name: check
-      uses: actions-rs/cargo@v1
-      with:
-        command: check
-        args: --all --bins --examples
+    - name: Run xtask test
+      run: cargo xtask test
 
-    - name: tests
-      uses: actions-rs/cargo@v1
-      with:
-        command: test
-        args: --all
-
-  check_fmt_and_docs:
-    name: Checking fmt and docs
+  check_docs:
+    name: Checking docs
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@master
@@ -68,12 +60,8 @@ jobs:
 
     - uses: actions-rs/toolchain@v1
       with:
-        toolchain: nightly
-        components: rustfmt, clippy
+        toolchain: stable
         override: true
-
-    - name: fmt
-      run: cargo fmt --all -- --check
 
     - name: Docs
       run: cargo doc

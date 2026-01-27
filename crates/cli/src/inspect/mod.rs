@@ -76,7 +76,7 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
     find_range_max(&mut range_max, payload);
 
     // Recursively add all children to the table
-    write_summary_table_inner(&payload, "<root>", &mut 0, range_max, f, &mut table)?;
+    write_summary_table_inner(payload, "<root>", &mut 0, range_max, f, &mut table)?;
 
     // Write the table to the writer
     writeln!(f, "{table}")?;
@@ -90,7 +90,7 @@ fn write_summary_table_inner(
     parent: &str,
     unknown_id: &mut u16,
     range_max: usize,
-    f: &mut Stdout,
+    _f: &mut Stdout,
     table: &mut Table,
 ) -> Result<()> {
     let Metadata {
@@ -143,7 +143,7 @@ fn write_summary_table_inner(
     // Recursively print any children
     if let Payload::Component { children, .. } = payload {
         for payload in children {
-            write_summary_table_inner(payload, &name, unknown_id, range_max, f, table)?;
+            write_summary_table_inner(payload, &name, unknown_id, range_max, _f, table)?;
         }
     }
 
@@ -232,7 +232,7 @@ fn write_details_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         for (name, pairs) in producers.iter() {
             for (field, version) in pairs.iter() {
                 match version.len() {
-                    0 => table.add_row(vec![name, &format!("{field}")]),
+                    0 => table.add_row(vec![name, &field.to_string()]),
                     _ => table.add_row(vec![name, &format!("{field} [{version}]")]),
                 };
             }

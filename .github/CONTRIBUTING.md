@@ -11,6 +11,23 @@ Repository.
 
 - [Code of Conduct](#code-of-conduct)
 - [Bad Actors](#bad-actors)
+- [Development Workflow](#development-workflow)
+
+## Development Workflow
+
+This project uses `cargo xtask` to orchestrate common development tasks. This ensures
+consistent code quality and simplifies the contribution process.
+
+### Running Tests and Checks
+
+To run all tests, linting, and formatting checks, use:
+
+```sh
+cargo xtask test
+```
+
+Before submitting a pull request, always run `cargo xtask test` to ensure your
+changes meet the project's quality standards.
 
 ## Code of Conduct
 The project has a [Code of Conduct](./CODE_OF_CONDUCT.md) that *all*
