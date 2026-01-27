@@ -30,10 +30,8 @@ use std::path::{Path, PathBuf};
 /// to ensure important wasm output locations are always included.
 pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
     // Rust wasm targets (the target directory is scanned for wasm32-* subdirs)
-    "target",
-    // wasm-pack output
-    "pkg",
-    // JavaScript/jco output
+    "target", // wasm-pack output
+    "pkg", // JavaScript/jco output
     "dist",
 ];
 
@@ -517,6 +515,9 @@ mod tests {
 
         let results: Vec<_> = detector.into_iter().filter_map(Result::ok).collect();
 
-        assert!(results.is_empty(), "Empty directory should yield no results");
+        assert!(
+            results.is_empty(),
+            "Empty directory should yield no results"
+        );
     }
 }
