@@ -156,9 +156,7 @@ impl App {
         frame.render_widget(content_block, layout[1]);
 
         match self.current_tab {
-            Tab::Local => {
-                frame.render_widget(LocalView::new(&self.local_wasm_files), content_area)
-            }
+            Tab::Local => frame.render_widget(LocalView::new(&self.local_wasm_files), content_area),
             Tab::Components => {
                 // Check if we're viewing a package detail
                 if let InputMode::PackageDetail(idx) = self.input_mode {
@@ -503,7 +501,9 @@ impl App {
                 }
             }
             // Refresh local WASM files on Local tab
-            (KeyCode::Char('r'), _) if self.current_tab == Tab::Local && self.is_manager_ready() => {
+            (KeyCode::Char('r'), _)
+                if self.current_tab == Tab::Local && self.is_manager_ready() =>
+            {
                 let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
             }
             _ => {}
