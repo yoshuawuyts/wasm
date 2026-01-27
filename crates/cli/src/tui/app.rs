@@ -147,60 +147,65 @@ impl App {
 
         // Render tab bar
         let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
-        frame.render_widget(tab_bar, layout[0]);
+        if let Some(tab_area) = layout.first() {
+            frame.render_widget(tab_bar, *tab_area);
+        }
 
         // Render content based on current tab
         let content_block = Block::bordered();
-        let content_area = content_block.inner(layout[1]);
-        frame.render_widget(content_block, layout[1]);
+        if let Some(content_layout) = layout.get(1) {
+            let content_area = content_block.inner(*content_layout);
+            frame.render_widget(content_block, *content_layout);
 
-        match self.current_tab {
-            Tab::Local => {
-                let files = self.local_view_state.files.clone();
-                frame.render_stateful_widget(
-                    LocalView::new(&files),
-                    content_area,
-                    &mut self.local_view_state,
-                );
-            }
-            Tab::Components => {
-                // Check if we're viewing a package detail
-                if let InputMode::PackageDetail(idx) = self.input_mode {
-                    if let Some(package) = self.packages.get(idx) {
-                        frame.render_widget(PackageDetailView::new(package), content_area);
-                    }
-                } else {
-                    // Sync filter_active state for rendering
-                    self.packages_view_state.filter_active =
-                        self.input_mode == InputMode::FilterInput;
-                    let filtered: Vec<_> = self.filtered_packages().into_iter().cloned().collect();
+            match self.current_tab {
+                Tab::Local => {
+                    let files = self.local_view_state.files.clone();
                     frame.render_stateful_widget(
-                        PackagesView::new(&filtered),
+                        LocalView::new(&files),
                         content_area,
-                        &mut self.packages_view_state,
+                        &mut self.local_view_state,
                     );
                 }
-            }
-            Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
-            Tab::Search => {
-                // Check if we're viewing a known package detail
-                if let InputMode::KnownPackageDetail(idx) = self.input_mode {
-                    if let Some(package) = self.known_packages.get(idx) {
-                        frame.render_widget(KnownPackageDetailView::new(package), content_area);
+                Tab::Components => {
+                    // Check if we're viewing a package detail
+                    if let InputMode::PackageDetail(idx) = self.input_mode {
+                        if let Some(package) = self.packages.get(idx) {
+                            frame.render_widget(PackageDetailView::new(package), content_area);
+                        }
+                    } else {
+                        // Sync filter_active state for rendering
+                        self.packages_view_state.filter_active =
+                            self.input_mode == InputMode::FilterInput;
+                        let filtered: Vec<_> =
+                            self.filtered_packages().into_iter().cloned().collect();
+                        frame.render_stateful_widget(
+                            PackagesView::new(&filtered),
+                            content_area,
+                            &mut self.packages_view_state,
+                        );
                     }
-                } else {
-                    // Sync search_active state for rendering
-                    self.search_view_state.search_active =
-                        self.input_mode == InputMode::SearchInput;
-                    frame.render_stateful_widget(
-                        SearchView::new(&self.known_packages),
-                        content_area,
-                        &mut self.search_view_state,
-                    );
                 }
-            }
-            Tab::Settings => {
-                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
+                Tab::Interfaces => frame.render_widget(InterfacesView, content_area),
+                Tab::Search => {
+                    // Check if we're viewing a known package detail
+                    if let InputMode::KnownPackageDetail(idx) = self.input_mode {
+                        if let Some(package) = self.known_packages.get(idx) {
+                            frame.render_widget(KnownPackageDetailView::new(package), content_area);
+                        }
+                    } else {
+                        // Sync search_active state for rendering
+                        self.search_view_state.search_active =
+                            self.input_mode == InputMode::SearchInput;
+                        frame.render_stateful_widget(
+                            SearchView::new(&self.known_packages),
+                            content_area,
+                            &mut self.search_view_state,
+                        );
+                    }
+                }
+                Tab::Settings => {
+                    frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
+                }
             }
         }
 
@@ -256,17 +261,23 @@ impl App {
 
         // Label
         let label = Paragraph::new("Enter package reference (e.g., ghcr.io/user/pkg:tag):");
-        frame.render_widget(label, chunks[0]);
+        if let Some(label_area) = chunks.first() {
+            frame.render_widget(label, *label_area);
+        }
 
         // Input field with cursor
         let input_text = format!("{}_", state.input);
         let input = Paragraph::new(input_text).style(Style::default().fg(Color::Yellow));
-        frame.render_widget(input, chunks[1]);
+        if let Some(input_area) = chunks.get(1) {
+            frame.render_widget(input, *input_area);
+        }
 
         // Error message if present
         if let Some(ref error) = state.error {
             let error_msg = Paragraph::new(error.as_str()).style(Style::default().fg(Color::Red));
-            frame.render_widget(error_msg, chunks[2]);
+            if let Some(error_area) = chunks.get(2) {
+                frame.render_widget(error_msg, *error_area);
+            }
         }
     }
 

@@ -1,5 +1,13 @@
+//! TUI (Terminal User Interface) module
+//!
+//! This module is exposed publicly for integration tests.
+
+#![allow(unreachable_pub)]
+
 mod app;
+/// TUI components like tab bars
 pub mod components;
+/// TUI view widgets for different panels
 pub mod views;
 
 use app::App;
@@ -52,6 +60,7 @@ pub enum ManagerEvent {
     LocalWasmFiles(Vec<views::LocalWasmFile>),
 }
 
+/// Run the TUI application
 pub async fn run() -> anyhow::Result<()> {
     // Create channels for bidirectional communication
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);
@@ -176,14 +185,13 @@ async fn run_manager(
                 // Detect local WASM files in current directory
                 use wasm_detector::WasmDetector;
                 let detector = WasmDetector::new(std::path::Path::new("."));
-                let mut files = Vec::new();
-                for result in detector {
-                    if let Ok(entry) = result {
-                        files.push(views::LocalWasmFile {
-                            path: entry.into_path(),
-                        });
-                    }
-                }
+                let files: Vec<_> = detector
+                    .into_iter()
+                    .filter_map(Result::ok)
+                    .map(|entry| views::LocalWasmFile {
+                        path: entry.into_path(),
+                    })
+                    .collect();
                 sender.send(ManagerEvent::LocalWasmFiles(files)).await.ok();
             }
         }

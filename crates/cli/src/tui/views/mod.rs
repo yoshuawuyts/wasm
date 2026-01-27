@@ -2,6 +2,7 @@ mod interfaces;
 mod known_package_detail;
 mod local;
 mod package_detail;
+/// Package list view components
 pub mod packages;
 mod search;
 mod settings;

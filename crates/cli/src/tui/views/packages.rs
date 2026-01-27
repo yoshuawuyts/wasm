@@ -9,12 +9,17 @@ use super::format_size;
 /// State for the packages list view
 #[derive(Debug, Default)]
 pub struct PackagesViewState {
+    /// The state of the table widget
     pub table_state: TableState,
+    /// The current filter query string
     pub filter_query: String,
+    /// Whether the filter input is currently active
     pub filter_active: bool,
 }
 
 impl PackagesViewState {
+    /// Create a new packages view state
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -60,6 +65,8 @@ impl<'a> std::fmt::Debug for PackagesView<'a> {
 }
 
 impl<'a> PackagesView<'a> {
+    /// Create a new packages view
+    #[must_use]
     pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
@@ -76,9 +83,15 @@ impl StatefulWidget for PackagesView<'_> {
             Constraint::Length(1),
         ])
         .split(area);
-        let filter_area = layout[0];
-        let content_area = layout[1];
-        let shortcuts_area = layout[2];
+        let Some(filter_area) = layout.first() else {
+            return;
+        };
+        let Some(content_area) = layout.get(1) else {
+            return;
+        };
+        let Some(shortcuts_area) = layout.get(2) else {
+            return;
+        };
 
         // Render filter input
         let filter_style = if state.filter_active {
@@ -101,7 +114,7 @@ impl StatefulWidget for PackagesView<'_> {
         let filter_input = Paragraph::new(filter_text)
             .style(filter_style)
             .block(filter_block);
-        filter_input.render(filter_area, buf);
+        filter_input.render(*filter_area, buf);
 
         if self.packages.is_empty() {
             let message = if state.filter_query.is_empty() {
@@ -109,7 +122,9 @@ impl StatefulWidget for PackagesView<'_> {
             } else {
                 "No packages found matching your filter."
             };
-            Paragraph::new(message).centered().render(content_area, buf);
+            Paragraph::new(message)
+                .centered()
+                .render(*content_area, buf);
         } else {
             // Create header row
             let header = Row::new(vec![
@@ -159,7 +174,7 @@ impl StatefulWidget for PackagesView<'_> {
             .header(header)
             .row_highlight_style(Style::default().bg(Color::DarkGray));
 
-            StatefulWidget::render(table, content_area, buf, &mut state.table_state);
+            StatefulWidget::render(table, *content_area, buf, &mut state.table_state);
         }
 
         // Render shortcuts bar
@@ -180,7 +195,7 @@ impl StatefulWidget for PackagesView<'_> {
         ]);
         Paragraph::new(shortcuts)
             .style(Style::default().fg(Color::DarkGray))
-            .render(shortcuts_area, buf);
+            .render(*shortcuts_area, buf);
     }
 }
 

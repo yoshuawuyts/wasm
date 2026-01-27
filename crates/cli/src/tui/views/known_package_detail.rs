@@ -19,6 +19,7 @@ impl<'a> std::fmt::Debug for KnownPackageDetailView<'a> {
 
 impl<'a> KnownPackageDetailView<'a> {
     /// Creates a new known package detail view.
+    #[must_use]
     pub fn new(package: &'a KnownPackage) -> Self {
         Self { package }
     }
@@ -28,21 +29,27 @@ impl Widget for KnownPackageDetailView<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Split area into content and shortcuts bar
         let main_layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
-        let content_area = main_layout[0];
-        let shortcuts_area = main_layout[1];
+        let Some(content_area) = main_layout.first() else {
+            return;
+        };
+        let Some(shortcuts_area) = main_layout.get(1) else {
+            return;
+        };
 
         let layout = Layout::vertical([
             Constraint::Length(3), // Header
             Constraint::Min(0),    // Details
         ])
-        .split(content_area);
+        .split(*content_area);
 
         // Header with package name
         let header_text = format!("{}/{}", self.package.registry, self.package.repository);
-        Paragraph::new(header_text)
-            .style(Style::default().bold().fg(Color::Yellow))
-            .block(Block::default().borders(Borders::BOTTOM))
-            .render(layout[0], buf);
+        if let Some(header_area) = layout.first() {
+            Paragraph::new(header_text)
+                .style(Style::default().bold().fg(Color::Yellow))
+                .block(Block::default().borders(Borders::BOTTOM))
+                .render(*header_area, buf);
+        }
 
         // Build details text
         let mut details = Vec::new();
@@ -122,9 +129,11 @@ impl Widget for KnownPackageDetailView<'_> {
             Span::raw(&self.package.created_at),
         ]));
 
-        Paragraph::new(details)
-            .wrap(Wrap { trim: false })
-            .render(layout[1], buf);
+        if let Some(details_area) = layout.get(1) {
+            Paragraph::new(details)
+                .wrap(Wrap { trim: false })
+                .render(*details_area, buf);
+        }
 
         // Render shortcuts bar
         let shortcuts = Line::from(vec![
@@ -133,6 +142,6 @@ impl Widget for KnownPackageDetailView<'_> {
         ]);
         Paragraph::new(shortcuts)
             .style(Style::default().fg(Color::DarkGray))
-            .render(shortcuts_area, buf);
+            .render(*shortcuts_area, buf);
     }
 }

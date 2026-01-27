@@ -16,7 +16,9 @@ pub trait TabItem: Copy + PartialEq + 'static {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
         let next_idx = (current_idx + 1) % all.len();
-        all[next_idx]
+        all.get(next_idx)
+            .copied()
+            .unwrap_or_else(|| all.first().copied().unwrap_or(*self))
     }
 
     /// Returns the previous tab (wrapping around).
@@ -28,7 +30,9 @@ pub trait TabItem: Copy + PartialEq + 'static {
         } else {
             current_idx - 1
         };
-        all[prev_idx]
+        all.get(prev_idx)
+            .copied()
+            .unwrap_or_else(|| all.first().copied().unwrap_or(*self))
     }
 }
 

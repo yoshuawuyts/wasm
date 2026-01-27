@@ -7,12 +7,17 @@ use wasm_package_manager::KnownPackage;
 /// State for the search view
 #[derive(Debug, Default)]
 pub struct SearchViewState {
+    /// The state of the table widget
     pub table_state: TableState,
+    /// The current search query string
     pub search_query: String,
+    /// Whether the search input is currently active
     pub search_active: bool,
 }
 
 impl SearchViewState {
+    /// Create a new search view state
+    #[must_use]
     pub fn new() -> Self {
         Self {
             table_state: TableState::default().with_selected(Some(0)),
@@ -58,6 +63,8 @@ impl<'a> std::fmt::Debug for SearchView<'a> {
 }
 
 impl<'a> SearchView<'a> {
+    /// Create a new search view
+    #[must_use]
     pub fn new(packages: &'a [KnownPackage]) -> Self {
         Self { packages }
     }
@@ -74,9 +81,15 @@ impl StatefulWidget for SearchView<'_> {
             Constraint::Length(1),
         ])
         .split(area);
-        let search_area = layout[0];
-        let content_area = layout[1];
-        let shortcuts_area = layout[2];
+        let Some(search_area) = layout.first() else {
+            return;
+        };
+        let Some(content_area) = layout.get(1) else {
+            return;
+        };
+        let Some(shortcuts_area) = layout.get(2) else {
+            return;
+        };
 
         // Render search input
         let search_style = if state.search_active {
@@ -99,7 +112,7 @@ impl StatefulWidget for SearchView<'_> {
         let search_input = Paragraph::new(search_text)
             .style(search_style)
             .block(search_block);
-        search_input.render(search_area, buf);
+        search_input.render(*search_area, buf);
 
         // Render package list
         if self.packages.is_empty() {
@@ -108,7 +121,9 @@ impl StatefulWidget for SearchView<'_> {
             } else {
                 "No packages found matching your search."
             };
-            Paragraph::new(message).centered().render(content_area, buf);
+            Paragraph::new(message)
+                .centered()
+                .render(*content_area, buf);
         } else {
             // Create header row
             let header = Row::new(vec![
@@ -130,7 +145,8 @@ impl StatefulWidget for SearchView<'_> {
                     } else if entry.tags.len() <= 3 {
                         entry.tags.join(", ")
                     } else {
-                        format!("{}, +{}", entry.tags[..2].join(", "), entry.tags.len() - 2)
+                        let first_two: Vec<_> = entry.tags.iter().take(2).cloned().collect();
+                        format!("{}, +{}", first_two.join(", "), entry.tags.len() - 2)
                     };
                     // Format the date nicely (just show date part)
                     let last_seen = entry
@@ -159,7 +175,7 @@ impl StatefulWidget for SearchView<'_> {
             .header(header)
             .row_highlight_style(Style::default().bg(Color::DarkGray));
 
-            StatefulWidget::render(table, content_area, buf, &mut state.table_state);
+            StatefulWidget::render(table, *content_area, buf, &mut state.table_state);
         }
 
         // Render shortcuts bar
@@ -180,7 +196,7 @@ impl StatefulWidget for SearchView<'_> {
         ]);
         Paragraph::new(shortcuts)
             .style(Style::default().fg(Color::DarkGray))
-            .render(shortcuts_area, buf);
+            .render(*shortcuts_area, buf);
     }
 }
 
