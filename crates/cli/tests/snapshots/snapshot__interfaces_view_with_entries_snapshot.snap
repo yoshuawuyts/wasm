@@ -1,0 +1,23 @@
+---
+source: crates/cli/tests/snapshot.rs
+expression: output
+---
+                             Detected 5 interface(s) from 2 WASM file(s)
+
+┌Interfaces────────────────────────────────────────────────────────────────────────────────────────┐
+│1. wasi:cli/command (dep) from component.wasm [0.2.0]                                             │
+│2. wasi:http/proxy (dep) from component.wasm [0.2.0]                                              │
+│3. my-component (component) from component.wasm [1.0.0]                                           │
+│4. wasi:filesystem/types (dep) from example.wasm [0.2.0]                                          │
+│5. core-module (module) from example.wasm                                                         │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘
+                                 Press 'r' to refresh • 'q' to quit

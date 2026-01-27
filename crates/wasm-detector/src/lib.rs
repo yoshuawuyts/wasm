@@ -78,10 +78,30 @@ pub enum InterfaceKind {
     ChildModule,
 }
 
+impl InterfaceInfo {
+    /// Create a new InterfaceInfo for testing purposes.
+    #[must_use]
+    pub fn new_for_testing(name: String, version: Option<String>, kind: InterfaceKind) -> Self {
+        Self {
+            name,
+            version,
+            kind,
+        }
+    }
+}
+
 impl WasmEntry {
     /// Create a new WasmEntry from a path.
     fn new(path: PathBuf) -> Self {
         let interfaces = Self::extract_interfaces(&path);
+        Self { path, interfaces }
+    }
+
+    /// Create a new WasmEntry for testing purposes.
+    ///
+    /// This constructor allows creating test entries without requiring actual WASM files.
+    #[must_use]
+    pub fn new_for_testing(path: PathBuf, interfaces: Vec<InterfaceInfo>) -> Self {
         Self { path, interfaces }
     }
 

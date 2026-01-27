@@ -16,6 +16,7 @@
 
 use insta::assert_snapshot;
 use ratatui::prelude::*;
+use std::path::PathBuf;
 
 use wasm::tui::components::{TabBar, TabItem};
 use wasm::tui::views::packages::PackagesViewState;
@@ -23,6 +24,7 @@ use wasm::tui::views::{
     InterfacesView, KnownPackageDetailView, LocalView, PackagesView, SearchView, SearchViewState,
     SettingsView,
 };
+use wasm_detector::{InterfaceInfo, InterfaceKind, WasmEntry};
 use wasm_package_manager::KnownPackage;
 
 /// Helper function to render a widget to a string buffer.
@@ -80,6 +82,49 @@ fn test_local_view_snapshot() {
 fn test_interfaces_view_snapshot() {
     let wasm_files = vec![];
     let output = render_to_string(InterfacesView::new(&wasm_files), 60, 10);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn test_interfaces_view_with_entries_snapshot() {
+    let wasm_files = vec![
+        WasmEntry::new_for_testing(
+            PathBuf::from("target/wasm32-unknown-unknown/release/component.wasm"),
+            vec![
+                InterfaceInfo::new_for_testing(
+                    "wasi:cli/command".to_string(),
+                    Some("0.2.0".to_string()),
+                    InterfaceKind::Dependency,
+                ),
+                InterfaceInfo::new_for_testing(
+                    "wasi:http/proxy".to_string(),
+                    Some("0.2.0".to_string()),
+                    InterfaceKind::Dependency,
+                ),
+                InterfaceInfo::new_for_testing(
+                    "my-component".to_string(),
+                    Some("1.0.0".to_string()),
+                    InterfaceKind::ChildComponent,
+                ),
+            ],
+        ),
+        WasmEntry::new_for_testing(
+            PathBuf::from("pkg/example.wasm"),
+            vec![
+                InterfaceInfo::new_for_testing(
+                    "wasi:filesystem/types".to_string(),
+                    Some("0.2.0".to_string()),
+                    InterfaceKind::Dependency,
+                ),
+                InterfaceInfo::new_for_testing(
+                    "core-module".to_string(),
+                    None,
+                    InterfaceKind::ChildModule,
+                ),
+            ],
+        ),
+    ];
+    let output = render_to_string(InterfacesView::new(&wasm_files), 100, 20);
     assert_snapshot!(output);
 }
 
