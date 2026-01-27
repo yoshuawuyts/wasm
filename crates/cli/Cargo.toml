@@ -35,3 +35,4 @@ wasmtime-wasi = { workspace = true }
 
 [dev-dependencies]
 insta = { workspace = true }
+wasm-package-manager = { workspace = true, features = ["test-helpers"] }
