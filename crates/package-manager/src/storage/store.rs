@@ -207,7 +207,7 @@ impl Store {
         // Get all unique package IDs and their tags
         let mut stmt = self.conn.prepare(
             "SELECT DISTINCT kpt.known_package_id, kpt.tag 
-             FROM known_package_tag kpt"
+             FROM known_package_tag kpt",
         )?;
 
         let tags: Vec<(i64, String)> = stmt
