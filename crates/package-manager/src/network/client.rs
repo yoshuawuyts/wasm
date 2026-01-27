@@ -24,7 +24,7 @@ impl Client {
         Self { inner: client }
     }
 
-    pub async fn pull(&self, reference: &Reference) -> anyhow::Result<ImageData> {
+    pub(crate) async fn pull(&self, reference: &Reference) -> anyhow::Result<ImageData> {
         let auth = resolve_auth(reference)?;
         let image = self.inner.pull(reference, &auth).await?;
         Ok(image)
@@ -34,7 +34,7 @@ impl Client {
     ///
     /// This method handles pagination automatically, fetching all available tags
     /// by making multiple requests if necessary.
-    pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
+    pub(crate) async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         let auth = resolve_auth(reference)?;
         let mut all_tags = Vec::new();
         let mut last: Option<String> = None;

@@ -10,6 +10,8 @@ const LOGO: &str = "
            ▝▘  ▀ 
 ";
 
+/// View for the Local tab
+#[derive(Debug)]
 pub struct LocalView;
 
 impl Widget for LocalView {

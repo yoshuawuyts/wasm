@@ -4,17 +4,22 @@ use ratatui::{
 };
 use wasm_package_manager::StateInfo;
 
+/// View for displaying settings and state information
+#[derive(Debug)]
 pub struct SettingsView<'a> {
     state_info: Option<&'a StateInfo>,
 }
 
 impl<'a> SettingsView<'a> {
+    /// Creates a new settings view
+    #[must_use]
     pub fn new(state_info: Option<&'a StateInfo>) -> Self {
         Self { state_info }
     }
 }
 
 impl Widget for SettingsView<'_> {
+    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.state_info {
             Some(info) => {

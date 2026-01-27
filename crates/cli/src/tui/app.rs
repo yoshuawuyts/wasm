@@ -132,6 +132,7 @@ impl App {
         Ok(())
     }
 
+    #[allow(clippy::indexing_slicing)]
     fn render_frame(&mut self, frame: &mut ratatui::Frame) {
         let area = frame.area();
         let status = match self.manager_state {
@@ -200,6 +201,7 @@ impl App {
         }
     }
 
+    #[allow(clippy::indexing_slicing)]
     fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect, state: PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));

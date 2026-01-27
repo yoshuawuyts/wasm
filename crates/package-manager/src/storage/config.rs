@@ -26,6 +26,7 @@ pub struct StateInfo {
 }
 
 impl StateInfo {
+    /// Create a new StateInfo instance.
     pub fn new(
         migration_info: Migrations,
         store_size: u64,
@@ -42,6 +43,8 @@ impl StateInfo {
         ))
     }
 
+    /// Create a new StateInfo instance at a specific data directory.
+    #[must_use]
     pub fn new_at(
         data_dir: PathBuf,
         migration_info: Migrations,
@@ -61,41 +64,61 @@ impl StateInfo {
     }
 
     /// Get the path to the current executable
+    #[must_use]
     pub fn executable(&self) -> &Path {
         &self.executable
     }
 
     /// Get the location of the crate's data dir
+    #[must_use]
     pub fn data_dir(&self) -> &Path {
         &self.data_dir
     }
 
     /// Get the location of the crate's content-addressable store
+    #[must_use]
     pub fn store_dir(&self) -> &Path {
         &self.store_dir
     }
 
     /// Get the size of the store directory in bytes
+    #[must_use]
     pub fn store_size(&self) -> u64 {
         self.store_size
     }
 
+    /// Get the location of the crate's cache dir
+    #[must_use]
+    pub fn layers_dir(&self) -> &Path {
+        &self.layers_dir
+    }
+
+    /// Get the size of the layers directory in bytes
+    #[must_use]
+    pub fn layers_size(&self) -> u64 {
+        self.layers_size
+    }
+
     /// Get the location of the crate's metadata file
+    #[must_use]
     pub fn metadata_file(&self) -> &Path {
         &self.metadata_file
     }
 
     /// Get the size of the metadata file in bytes
+    #[must_use]
     pub fn metadata_size(&self) -> u64 {
         self.metadata_size
     }
 
     /// Get the current migration version
+    #[must_use]
     pub fn migration_current(&self) -> u32 {
         self.migration_current
     }
 
     /// Get the total number of migrations available
+    #[must_use]
     pub fn migration_total(&self) -> u32 {
         self.migration_total
     }

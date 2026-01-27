@@ -4,17 +4,22 @@ use ratatui::{
 };
 use wasm_package_manager::ImageEntry;
 
+/// View for displaying details of an installed package
+#[derive(Debug)]
 pub struct PackageDetailView<'a> {
     package: &'a ImageEntry,
 }
 
 impl<'a> PackageDetailView<'a> {
+    /// Creates a new package detail view
+    #[must_use]
     pub fn new(package: &'a ImageEntry) -> Self {
         Self { package }
     }
 }
 
 impl Widget for PackageDetailView<'_> {
+    #[allow(clippy::indexing_slicing)]
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Split area into content and shortcuts bar
         let main_layout = Layout::vertical([Constraint::Min(0), Constraint::Length(1)]).split(area);
