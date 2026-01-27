@@ -1,8 +1,8 @@
 #![allow(unreachable_pub)]
 
 mod app;
-mod components;
-mod views;
+pub mod components;
+pub mod views;
 
 use app::App;
 use tokio::sync::mpsc;

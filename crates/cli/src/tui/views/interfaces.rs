@@ -9,7 +9,7 @@ use wasm_package_manager::WitInterface;
 
 /// State for the interfaces view
 #[derive(Debug, Default)]
-pub(crate) struct InterfacesViewState {
+pub struct InterfacesViewState {
     /// Table state for list selection
     pub table_state: TableState,
     /// Scroll offset for the detail view
@@ -57,11 +57,14 @@ impl InterfacesViewState {
     }
 }
 
-pub(crate) struct InterfacesView<'a> {
+/// View for displaying WIT interfaces
+#[derive(Debug)]
+pub struct InterfacesView<'a> {
     interfaces: &'a [(WitInterface, String)],
 }
 
 impl<'a> InterfacesView<'a> {
+    /// Create a new InterfacesView with the given interfaces
     pub fn new(interfaces: &'a [(WitInterface, String)]) -> Self {
         Self { interfaces }
     }

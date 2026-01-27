@@ -10,7 +10,9 @@ const LOGO: &str = "
            ▝▘  ▀ 
 ";
 
-pub(crate) struct LocalView;
+/// View for the Local tab showing detected WASM files
+#[derive(Debug)]
+pub struct LocalView;
 
 impl Widget for LocalView {
     fn render(self, area: Rect, buf: &mut Buffer) {
