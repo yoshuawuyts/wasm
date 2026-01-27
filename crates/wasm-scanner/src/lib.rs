@@ -29,7 +29,7 @@ use std::path::{Path, PathBuf};
 /// These directories are scanned separately without respecting `.gitignore` rules
 /// to ensure important wasm output locations are always included.
 pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
-    // Rust wasm targets (these are glob patterns, we'll expand them)
+    // Rust wasm targets (the target directory is scanned for wasm32-* and wasm-gc-* subdirs)
     "target",
     // wasm-pack output
     "pkg",
@@ -160,7 +160,7 @@ impl WasmScanner {
                 {
                     for prefix in TARGET_WASM_PREFIXES {
                         if name.starts_with(prefix) {
-                            dirs.push(path.clone());
+                            dirs.push(path);
                             break;
                         }
                     }
