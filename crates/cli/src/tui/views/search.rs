@@ -136,9 +136,10 @@ impl StatefulWidget for SearchView<'_> {
                     } else if entry.tags.len() <= 3 {
                         entry.tags.join(", ")
                     } else {
-                        // Use get() to safely access first two elements
-                        let first_two: Vec<_> = entry.tags.iter().take(2).cloned().collect();
-                        format!("{}, +{}", first_two.join(", "), entry.tags.len() - 2)
+                        // Safely format first two tags using get() to avoid panics
+                        let first = entry.tags.first().map(String::as_str).unwrap_or("");
+                        let second = entry.tags.get(1).map(String::as_str).unwrap_or("");
+                        format!("{}, {}, +{}", first, second, entry.tags.len() - 2)
                     };
                     // Format the date nicely (just show date part)
                     let last_seen = entry
