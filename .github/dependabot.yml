@@ -1,0 +1,36 @@
+# Dependabot configuration file
+# See: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Rust dependencies (Cargo)
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    # Minimum delay before upgrading to avoid issues with very new releases
+    cooldown:
+      semver-patch-days: 1
+      semver-minor-days: 3
+      semver-major-days: 7
+    # Batched/grouped updates to reduce PR noise
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    # Minimum delay before upgrading to avoid issues with very new releases
+    cooldown:
+      default-days: 3
+    # Batched/grouped updates to reduce PR noise
+    groups:
+      github-actions:
+        patterns:
+          - "*"
