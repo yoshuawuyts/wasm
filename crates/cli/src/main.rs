@@ -15,7 +15,12 @@ use clap::{ColorChoice, CommandFactory, Parser};
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
-    /// When to use colored output
+    /// When to use colored output.
+    ///
+    /// Can also be controlled via environment variables:
+    /// - NO_COLOR=1 (disables color)
+    /// - CLICOLOR=0 (disables color)
+    /// - CLICOLOR_FORCE=1 (forces color)
     #[arg(
         long,
         value_name = "WHEN",

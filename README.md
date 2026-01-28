@@ -69,10 +69,7 @@ wasm --color always ...   # always use color
 wasm --color never ...    # never use color
 ```
 
-Color output can also be controlled via environment variables:
-- `NO_COLOR=1` - disable color
-- `CLICOLOR=0` - disable color
-- `CLICOLOR_FORCE=1` - force color even when output is redirected
+For more details including environment variable support, run `wasm --help`.
 
 ## Storage Layout
 
