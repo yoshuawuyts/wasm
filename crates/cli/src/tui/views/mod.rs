@@ -1,5 +1,6 @@
 mod interfaces;
-mod known_package_detail;
+/// Known package detail view module
+pub mod known_package_detail;
 mod local;
 mod package_detail;
 /// Packages view module
@@ -7,7 +8,8 @@ pub mod packages;
 mod search;
 mod settings;
 
-pub use interfaces::InterfacesView;
+pub use interfaces::{InterfacesView, InterfacesViewState};
+#[allow(unused_imports)]
 pub use known_package_detail::KnownPackageDetailView;
 pub use local::LocalView;
 pub use package_detail::PackageDetailView;

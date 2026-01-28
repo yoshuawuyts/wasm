@@ -1,7 +1,7 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store};
+use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -118,5 +118,12 @@ impl Manager {
     /// Returns the number of tags that were updated.
     pub fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
         self.store.rescan_known_package_tags()
+    }
+
+    /// Get all WIT interfaces with their associated component references.
+    pub fn list_wit_interfaces_with_components(
+        &self,
+    ) -> anyhow::Result<Vec<(WitInterface, String)>> {
+        self.store.list_wit_interfaces_with_components()
     }
 }

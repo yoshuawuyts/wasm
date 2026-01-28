@@ -3,7 +3,8 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType};
+use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface};
+use super::wit_parser::extract_wit_metadata;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
 use rusqlite::Connection;
@@ -89,7 +90,7 @@ impl Store {
         // Calculate total size on disk from all layers
         let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
 
-        let result = ImageEntry::insert(
+        let (result, image_id) = ImageEntry::insert(
             &self.conn,
             reference.registry(),
             reference.repository(),
@@ -115,10 +116,39 @@ impl Store {
                         .unwrap_or(&fallback_key);
                     let data = &layer.data;
                     let _integrity = cacache::write(&cache, key, data).await?;
+
+                    // Try to extract WIT interface from this layer
+                    if let Some(image_id) = image_id {
+                        self.try_extract_wit_interface(image_id, data);
+                    }
                 }
             }
         }
         Ok(result)
+    }
+
+    /// Attempt to extract WIT interface from wasm component bytes.
+    /// This is best-effort - if extraction fails, we silently skip.
+    fn try_extract_wit_interface(&self, image_id: i64, wasm_bytes: &[u8]) {
+        let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
+            return; // Not a valid wasm component, skip
+        };
+
+        // Insert the WIT interface
+        let wit_id = match WitInterface::insert(
+            &self.conn,
+            &metadata.wit_text,
+            metadata.package_name.as_deref(),
+            Some(&metadata.world_name),
+            metadata.import_count,
+            metadata.export_count,
+        ) {
+            Ok(id) => id,
+            Err(_) => return, // Failed to insert, skip
+        };
+
+        // Link to image
+        let _ = WitInterface::link_to_image(&self.conn, image_id, wit_id);
     }
 
     /// Returns all currently stored images and their metadata.
@@ -239,5 +269,18 @@ impl Store {
         }
 
         Ok(updated_count)
+    }
+
+    /// Get all WIT interfaces.
+    #[allow(dead_code)]
+    pub(crate) fn list_wit_interfaces(&self) -> anyhow::Result<Vec<WitInterface>> {
+        WitInterface::get_all(&self.conn)
+    }
+
+    /// Get all WIT interfaces with their associated component references.
+    pub(crate) fn list_wit_interfaces_with_components(
+        &self,
+    ) -> anyhow::Result<Vec<(WitInterface, String)>> {
+        WitInterface::get_all_with_images(&self.conn)
     }
 }

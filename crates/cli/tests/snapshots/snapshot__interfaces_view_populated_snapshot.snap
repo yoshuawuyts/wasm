@@ -1,0 +1,19 @@
+---
+source: crates/cli/tests/snapshot.rs
+expression: output
+---
+   Package                  Component                     World                Imports    Exports
+
+ ▶ wasi:http@0.2.0          ghcr.io/example/http-proxy:v1 proxy                1          1
+   wasi:cli@0.2.0           ghcr.io/example/cli-tool:late command              2          1
+
+
+
+
+
+
+
+
+
+
+ ↑/↓ navigate │ Enter view WIT │ q quit

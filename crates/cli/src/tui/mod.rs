@@ -8,11 +8,13 @@ pub mod views;
 
 use app::App;
 use tokio::sync::mpsc;
-use wasm_package_manager::{ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo};
+use wasm_package_manager::{
+    ImageEntry, InsertResult, KnownPackage, Manager, Reference, StateInfo, WitInterface,
+};
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
-pub(crate) enum AppEvent {
+pub enum AppEvent {
     /// Request to quit the application
     Quit,
     /// Request the list of packages
@@ -29,13 +31,15 @@ pub(crate) enum AppEvent {
     RequestKnownPackages,
     /// Refresh tags for a package (registry, repository)
     RefreshTags(String, String),
+    /// Request all WIT interfaces
+    RequestWitInterfaces,
     /// Request to detect local WASM files
     DetectLocalWasm,
 }
 
 /// Events sent from the Manager to the TUI
 #[derive(Debug)]
-pub(crate) enum ManagerEvent {
+pub enum ManagerEvent {
     /// Manager has finished initializing
     Ready,
     /// List of packages
@@ -52,6 +56,8 @@ pub(crate) enum ManagerEvent {
     KnownPackagesList(Vec<KnownPackage>),
     /// Result of refreshing tags for a package
     RefreshTagsResult(Result<usize, String>),
+    /// List of WIT interfaces with their component references
+    WitInterfacesList(Vec<(WitInterface, String)>),
     /// List of local WASM files
     LocalWasmList(Vec<wasm_detector::WasmEntry>),
 }
@@ -173,6 +179,14 @@ async fn run_manager(
                 if let Ok(packages) = manager.list_known_packages() {
                     sender
                         .send(ManagerEvent::KnownPackagesList(packages))
+                        .await
+                        .ok();
+                }
+            }
+            AppEvent::RequestWitInterfaces => {
+                if let Ok(interfaces) = manager.list_wit_interfaces_with_components() {
+                    sender
+                        .send(ManagerEvent::WitInterfacesList(interfaces))
                         .await
                         .ok();
                 }
