@@ -31,8 +31,8 @@ use ratatui::prelude::*;
 use wasm::tui::components::{TabBar, TabItem};
 use wasm::tui::views::packages::PackagesViewState;
 use wasm::tui::views::{
-    InterfacesView, InterfacesViewState, LocalView, PackageDetailView, PackagesView, SearchView,
-    SearchViewState, SettingsView,
+    InterfacesView, InterfacesViewState, KnownPackageDetailView, LocalView, PackageDetailView,
+    PackagesView, SearchView, SearchViewState, SettingsView,
 };
 use wasm_detector::WasmEntry;
 use wasm_package_manager::{ImageEntry, KnownPackage, StateInfo};
@@ -307,6 +307,46 @@ fn test_search_view_with_many_tags_snapshot() {
         "2023-06-01T08:00:00Z".to_string(),
     )];
     let output = render_to_string(SearchView::new(&packages), 100, 12);
+    assert_snapshot!(output);
+}
+
+// =============================================================================
+// KnownPackageDetailView Snapshot Tests
+// =============================================================================
+
+#[test]
+fn test_known_package_detail_view_snapshot() {
+    let package = KnownPackage::new_for_testing(
+        "ghcr.io".to_string(),
+        "user/example-package".to_string(),
+        Some("An example WASM component package".to_string()),
+        vec![
+            "v1.0.0".to_string(),
+            "v0.9.0".to_string(),
+            "latest".to_string(),
+        ],
+        vec!["v1.0.0.sig".to_string()],
+        vec!["v1.0.0.att".to_string()],
+        "2024-01-15T10:30:00Z".to_string(),
+        "2024-01-01T08:00:00Z".to_string(),
+    );
+    let output = render_to_string(KnownPackageDetailView::new(&package), 80, 20);
+    assert_snapshot!(output);
+}
+
+#[test]
+fn test_known_package_detail_view_minimal_snapshot() {
+    let package = KnownPackage::new_for_testing(
+        "docker.io".to_string(),
+        "library/minimal".to_string(),
+        None,
+        vec!["latest".to_string()],
+        vec![],
+        vec![],
+        "2024-02-01T12:00:00Z".to_string(),
+        "2024-02-01T12:00:00Z".to_string(),
+    );
+    let output = render_to_string(KnownPackageDetailView::new(&package), 80, 15);
     assert_snapshot!(output);
 }
 
