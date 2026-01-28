@@ -9,6 +9,8 @@ mod search;
 mod settings;
 
 pub use interfaces::{InterfacesView, InterfacesViewState};
+#[allow(unused_imports)]
+pub use known_package_detail::KnownPackageDetailView;
 pub use local::LocalView;
 pub use package_detail::PackageDetailView;
 pub use packages::PackagesView;
