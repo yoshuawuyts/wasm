@@ -4,17 +4,17 @@
 
 ## Overview
 
-The tool integrates with your system's Docker credential store to authenticate with container registries. This means if you've already authenticated with a registry using Docker or Podman, `wasm` will automatically use those credentials.
+`wasm(1)` integrates with your system's Docker credential store to authenticate with container registries. This means if you've already authenticated with a registry using Docker or Podman, `wasm(1)` will automatically use those credentials.
 
 ## Authentication Methods
 
 ### Docker Credential Store
 
-`wasm` uses the [`docker_credential`](https://docs.rs/docker_credential/) crate to access credentials stored by Docker/Podman credential helpers.
+`wasm(1)` uses the [`docker_credential`](https://docs.rs/docker_credential/) crate to access credentials stored by Docker/Podman credential helpers.
 
 The authentication flow:
 
-1. When pulling or pushing a package, `wasm` extracts the registry hostname from the reference
+1. When pulling or pushing a package, `wasm(1)` extracts the registry hostname from the reference
 2. It queries the Docker credential store for credentials associated with that registry
 3. If credentials are found, they're used for authentication
 4. If no credentials are found, anonymous access is attempted
@@ -25,29 +25,6 @@ The authentication flow:
 - **Anonymous**: No authentication (for public registries)
 
 **Note**: Identity tokens are currently not supported.
-
-## Registry-Specific Configuration
-
-### Docker Hub
-
-Docker Hub uses a special registry URL for credential lookups:
-
-```
-Registry: index.docker.io
-Credential Key: https://index.docker.io/v1/
-```
-
-### Other Registries
-
-For all other registries (like GitHub Container Registry, Azure Container Registry, etc.), the registry domain name is used directly as the credential key:
-
-```
-Registry: ghcr.io
-Credential Key: ghcr.io
-
-Registry: myregistry.azurecr.io
-Credential Key: myregistry.azurecr.io
-```
 
 ## Setting Up Authentication
 
@@ -103,18 +80,6 @@ If credential lookups fail:
 - Verify you've logged in to the registry at least once
 - Check that credential helpers are properly configured in `~/.docker/config.json`
 
-## Security Best Practices
-
-- Never commit credentials to version control
-- Use credential helpers instead of storing passwords in plaintext
-- Regularly rotate registry credentials
-- Use scoped tokens with minimal required permissions when available
-- Consider using separate credentials for CI/CD pipelines
-
 ## Future Enhancements
 
-Planned authentication improvements include:
-- Support for identity tokens
-- OAuth2/OIDC authentication flows
-- Custom credential provider plugins
-- Enhanced error messages and diagnostics
+Planned authentication improvement: [Support for identity tokens](https://github.com/yoshuawuyts/wasm/issues/56)

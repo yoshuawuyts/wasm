@@ -196,19 +196,15 @@ Packages are referenced using OCI-style references:
 # Full reference with registry and tag
 ghcr.io/owner/repo:latest
 
-# Docker Hub shorthand (owner/repo implies docker.io registry)
-owner/repo:v1.0.0
-
 # With digest instead of tag
 ghcr.io/owner/repo@sha256:abcd1234...
 
-# Custom registry with port
+# Custom registry with port (untested)
 localhost:5000/myrepo:dev
 ```
 
 ### Registry Resolution
 
-- If no registry is specified, Docker Hub (`index.docker.io`) is assumed
 - Common registries: `ghcr.io`, `docker.io`, `mcr.microsoft.com`, `quay.io`
 - Private registries require full domain specification
 
@@ -228,23 +224,11 @@ wasm package pull --help
 wasm self --help
 ```
 
-## Exit Codes
-
-- `0`: Success
-- `1`: General error
-- `101`: Authentication error
-- `102`: Network error
-- Other non-zero: Specific error conditions
-
 ## Tips and Tricks
 
 ### Tab Completion
 
-Generate shell completions (coming soon):
-
-```bash
-wasm self completions bash > ~/.local/share/bash-completion/completions/wasm
-```
+Generate shell completions: [issue #54](https://github.com/yoshuawuyts/wasm/issues/54)
 
 ### Quick Package Inspection
 
