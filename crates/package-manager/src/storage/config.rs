@@ -11,10 +11,10 @@ pub struct StateInfo {
     executable: PathBuf,
     /// Path to the data storage directory
     data_dir: PathBuf,
-    /// Path to the image layers directory
-    layers_dir: PathBuf,
-    /// Size of the layers directory in bytes
-    layers_size: u64,
+    /// Path to the content-addressable store directory
+    store_dir: PathBuf,
+    /// Size of the store directory in bytes
+    store_size: u64,
     /// Path to the metadata database file
     metadata_file: PathBuf,
     /// Size of the metadata file in bytes
@@ -29,7 +29,7 @@ impl StateInfo {
     /// Create a new StateInfo instance.
     pub fn new(
         migration_info: Migrations,
-        layers_size: u64,
+        store_size: u64,
         metadata_size: u64,
     ) -> anyhow::Result<Self> {
         let data_dir = dirs::data_local_dir()
@@ -38,7 +38,7 @@ impl StateInfo {
         Ok(Self::new_at(
             data_dir,
             migration_info,
-            layers_size,
+            store_size,
             metadata_size,
         ))
     }
@@ -48,14 +48,14 @@ impl StateInfo {
     pub fn new_at(
         data_dir: PathBuf,
         migration_info: Migrations,
-        layers_size: u64,
+        store_size: u64,
         metadata_size: u64,
     ) -> Self {
         Self {
             executable: env::current_exe().unwrap_or_else(|_| PathBuf::from("unknown")),
-            layers_dir: data_dir.join("layers"),
-            layers_size,
-            metadata_file: data_dir.join("metadata.db3"),
+            store_dir: data_dir.join("store"),
+            store_size,
+            metadata_file: data_dir.join("db").join("metadata.db3"),
             metadata_size,
             data_dir,
             migration_current: migration_info.current,
@@ -75,16 +75,16 @@ impl StateInfo {
         &self.data_dir
     }
 
-    /// Get the location of the crate's cache dir
+    /// Get the location of the crate's content-addressable store
     #[must_use]
-    pub fn layers_dir(&self) -> &Path {
-        &self.layers_dir
+    pub fn store_dir(&self) -> &Path {
+        &self.store_dir
     }
 
-    /// Get the size of the layers directory in bytes
+    /// Get the size of the store directory in bytes
     #[must_use]
-    pub fn layers_size(&self) -> u64 {
-        self.layers_size
+    pub fn store_size(&self) -> u64 {
+        self.store_size
     }
 
     /// Get the location of the crate's metadata file
@@ -118,9 +118,9 @@ impl StateInfo {
         Self {
             executable: PathBuf::from("/usr/local/bin/wasm"),
             data_dir: PathBuf::from("/home/user/.local/share/wasm"),
-            layers_dir: PathBuf::from("/home/runner/.local/share/wasm/layers"),
-            layers_size: 1024 * 1024 * 10, // 10 MB
-            metadata_file: PathBuf::from("/home/user/.local/share/wasm/metadata.db3"),
+            store_dir: PathBuf::from("/home/user/.local/share/wasm/store"),
+            store_size: 1024 * 1024 * 10, // 10 MB
+            metadata_file: PathBuf::from("/home/user/.local/share/wasm/db/metadata.db3"),
             metadata_size: 1024 * 64, // 64 KB
             migration_current: 3,
             migration_total: 3,
@@ -146,9 +146,12 @@ mod tests {
         let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024, 512);
 
         assert_eq!(state_info.data_dir(), data_dir);
-        assert_eq!(state_info.layers_dir(), data_dir.join("layers"));
-        assert_eq!(state_info.metadata_file(), data_dir.join("metadata.db3"));
-        assert_eq!(state_info.layers_size(), 1024);
+        assert_eq!(state_info.store_dir(), data_dir.join("store"));
+        assert_eq!(
+            state_info.metadata_file(),
+            data_dir.join("db").join("metadata.db3")
+        );
+        assert_eq!(state_info.store_size(), 1024);
         assert_eq!(state_info.metadata_size(), 512);
         assert_eq!(state_info.migration_current(), 3);
         assert_eq!(state_info.migration_total(), 5);
@@ -170,11 +173,11 @@ mod tests {
 
         // Test with various sizes
         let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 0, 0);
-        assert_eq!(state_info.layers_size(), 0);
+        assert_eq!(state_info.store_size(), 0);
         assert_eq!(state_info.metadata_size(), 0);
 
         let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024 * 1024, 1024);
-        assert_eq!(state_info.layers_size(), 1024 * 1024);
+        assert_eq!(state_info.store_size(), 1024 * 1024);
         assert_eq!(state_info.metadata_size(), 1024);
     }
 }
