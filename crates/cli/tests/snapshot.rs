@@ -31,8 +31,8 @@ use ratatui::prelude::*;
 use wasm::tui::components::{TabBar, TabItem};
 use wasm::tui::views::packages::PackagesViewState;
 use wasm::tui::views::{
-    InterfacesView, InterfacesViewState, KnownPackageDetailView, LocalView, PackageDetailView,
-    PackagesView, SearchView, SearchViewState, SettingsView,
+    InterfacesView, InterfacesViewState, LocalView, PackageDetailView, PackagesView, SearchView,
+    SearchViewState, SettingsView,
 };
 use wasm_detector::WasmEntry;
 use wasm_package_manager::{ImageEntry, KnownPackage, StateInfo};
