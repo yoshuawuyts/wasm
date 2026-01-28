@@ -4,11 +4,24 @@ expression: output
 ---
 Pull a component from the registry
 
-Usage: wasm package pull <REFERENCE>
+Usage: wasm package pull [OPTIONS] <REFERENCE>
 
 Arguments:
-  <REFERENCE>  The reference to pull
+  <REFERENCE>
+          The reference to pull
 
 Options:
-  -h, --help     Print help
-  -V, --version  Print version
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+Global Options:
+      --color <WHEN>
+          When to use colored output.
+          
+          Can also be controlled via environment variables: - NO_COLOR=1 (disables color) - CLICOLOR=0 (disables color) - CLICOLOR_FORCE=1 (forces color)
+          
+          [default: auto]
+          [possible values: auto, always, never]

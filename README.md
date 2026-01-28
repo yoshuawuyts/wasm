@@ -59,6 +59,18 @@ wasm self state                 # show storage state info
 wasm self clean                 # clean up storage
 ```
 
+### Color Support
+
+The CLI supports colored output via the `--color` flag:
+
+```bash
+wasm --color auto ...     # automatic color (default)
+wasm --color always ...   # always use color
+wasm --color never ...    # never use color
+```
+
+For more details including environment variable support, run `wasm --help`.
+
 ## Storage Layout
 
 ```

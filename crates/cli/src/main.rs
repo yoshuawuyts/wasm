@@ -9,12 +9,27 @@ mod tui;
 
 use std::io::IsTerminal;
 
-use clap::{CommandFactory, Parser};
+use clap::{ColorChoice, CommandFactory, Parser};
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
+    /// When to use colored output.
+    ///
+    /// Can also be controlled via environment variables:
+    /// - NO_COLOR=1 (disables color)
+    /// - CLICOLOR=0 (disables color)
+    /// - CLICOLOR_FORCE=1 (forces color)
+    #[arg(
+        long,
+        value_name = "WHEN",
+        default_value = "auto",
+        global = true,
+        help_heading = "Global Options"
+    )]
+    color: ColorChoice,
+
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -30,7 +45,10 @@ impl Cli {
             Some(Command::Compose) => todo!(),
             Some(Command::Self_(opts)) => opts.run().await?,
             None if std::io::stdin().is_terminal() => tui::run().await?,
-            None => Cli::command().print_help()?,
+            None => {
+                // Apply the parsed color choice when printing help
+                Cli::command().color(self.color).print_help()?;
+            }
         }
         Ok(())
     }

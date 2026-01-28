@@ -4,8 +4,20 @@ expression: output
 ---
 Print diagnostics about the local state
 
-Usage: wasm self state
+Usage: wasm self state [OPTIONS]
 
 Options:
-  -h, --help     Print help
-  -V, --version  Print version
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+Global Options:
+      --color <WHEN>
+          When to use colored output.
+          
+          Can also be controlled via environment variables: - NO_COLOR=1 (disables color) - CLICOLOR=0 (disables color) - CLICOLOR_FORCE=1 (forces color)
+          
+          [default: auto]
+          [possible values: auto, always, never]
