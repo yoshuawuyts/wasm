@@ -33,6 +33,9 @@ impl TagType {
     }
 }
 
+/// Cached tags separated by type: (release_tags, signature_tags, attestation_tags).
+pub type CachedTags = (Vec<String>, Vec<String>, Vec<String>);
+
 /// A known package that persists in the database even after local deletion.
 /// This is used to track packages the user has seen or searched for.
 #[derive(Debug, Clone)]
@@ -228,6 +231,35 @@ impl KnownPackage {
             });
         }
         Ok(packages)
+    }
+
+    /// Get cached tags for a specific registry and repository.
+    /// Returns a tuple of (release_tags, signature_tags, attestation_tags).
+    pub(crate) fn get_cached_tags(
+        conn: &Connection,
+        registry: &str,
+        repository: &str,
+    ) -> anyhow::Result<Option<CachedTags>> {
+        let package_id: Option<i64> = conn
+            .query_row(
+                "SELECT id FROM known_package WHERE registry = ?1 AND repository = ?2",
+                (registry, repository),
+                |row| row.get(0),
+            )
+            .ok();
+
+        match package_id {
+            Some(id) => {
+                let tags = Self::fetch_tags_by_type(conn, id);
+                // Only return Some if we have at least one tag
+                if tags.0.is_empty() && tags.1.is_empty() && tags.2.is_empty() {
+                    Ok(None)
+                } else {
+                    Ok(Some(tags))
+                }
+            }
+            None => Ok(None),
+        }
     }
 
     /// Get a known package by registry and repository.
@@ -528,5 +560,31 @@ mod tests {
         KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
         let packages = KnownPackage::get_all(&conn).unwrap();
         assert_eq!(packages[0].reference_with_tag(), "ghcr.io/user/repo:v1.0.0");
+    }
+
+    #[test]
+    fn test_known_package_get_cached_tags() {
+        let conn = setup_test_db();
+
+        // Non-existent package returns None
+        let result = KnownPackage::get_cached_tags(&conn, "ghcr.io", "nonexistent").unwrap();
+        assert!(result.is_none());
+
+        // Package without tags returns None
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        let result = KnownPackage::get_cached_tags(&conn, "ghcr.io", "user/repo").unwrap();
+        assert!(result.is_none());
+
+        // Package with tags returns the tags separated by type
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0.sig"), None).unwrap();
+        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", Some("v1.0.0.att"), None).unwrap();
+
+        let result = KnownPackage::get_cached_tags(&conn, "ghcr.io", "user/repo").unwrap();
+        assert!(result.is_some());
+        let (release_tags, signature_tags, attestation_tags) = result.unwrap();
+        assert!(release_tags.contains(&"v1.0.0".to_string()));
+        assert!(signature_tags.contains(&"v1.0.0.sig".to_string()));
+        assert!(attestation_tags.contains(&"v1.0.0.att".to_string()));
     }
 }

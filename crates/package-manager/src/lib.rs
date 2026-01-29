@@ -9,7 +9,7 @@ mod storage;
 
 pub use manager::Manager;
 pub use oci_client::Reference;
-pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};
+pub use storage::{CachedTags, ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};
 
 /// Format a byte size as a human-readable string (B, KB, MB, GB).
 #[must_use]

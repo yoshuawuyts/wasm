@@ -3,7 +3,9 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface};
+use super::models::{
+    CachedTags, ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface,
+};
 use super::wit_parser::extract_wit_metadata;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData};
@@ -269,6 +271,16 @@ impl Store {
         }
 
         Ok(updated_count)
+    }
+
+    /// Get cached tags for a specific registry and repository.
+    /// Returns a tuple of (release_tags, signature_tags, attestation_tags).
+    pub(crate) fn get_cached_tags(
+        &self,
+        registry: &str,
+        repository: &str,
+    ) -> anyhow::Result<Option<CachedTags>> {
+        KnownPackage::get_cached_tags(&self.conn, registry, repository)
     }
 
     /// Get all WIT interfaces.

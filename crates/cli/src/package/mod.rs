@@ -48,29 +48,60 @@ impl Opts {
             }
             Opts::Push => todo!(),
             Opts::Tags(opts) => {
-                let all_tags = store.list_tags(&opts.reference).await?;
+                // Try to fetch tags from the network first
+                let network_result = store.list_tags(&opts.reference).await;
 
-                // Filter tags based on flags
-                let tags: Vec<_> = all_tags
-                    .into_iter()
-                    .filter(|tag| {
-                        let is_sig = tag.ends_with(".sig");
-                        let is_att = tag.ends_with(".att");
+                let (tags, from_cache) = match network_result {
+                    Ok(all_tags) => {
+                        // Filter tags based on flags
+                        let filtered: Vec<_> = all_tags
+                            .into_iter()
+                            .filter(|tag| {
+                                let is_sig = tag.ends_with(".sig");
+                                let is_att = tag.ends_with(".att");
 
-                        if is_sig {
-                            opts.signatures
-                        } else if is_att {
-                            opts.attestations
-                        } else {
-                            true // Always include release tags
+                                if is_sig {
+                                    opts.signatures
+                                } else if is_att {
+                                    opts.attestations
+                                } else {
+                                    true // Always include release tags
+                                }
+                            })
+                            .collect();
+                        (filtered, false)
+                    }
+                    Err(_) => {
+                        // Network failed, try cached tags
+                        match store.get_cached_tags(&opts.reference)? {
+                            Some((release_tags, signature_tags, attestation_tags)) => {
+                                let mut tags = release_tags;
+                                if opts.signatures {
+                                    tags.extend(signature_tags);
+                                }
+                                if opts.attestations {
+                                    tags.extend(attestation_tags);
+                                }
+                                (tags, true)
+                            }
+                            None => {
+                                anyhow::bail!(
+                                    "Failed to fetch tags for '{}' and no cached tags available",
+                                    opts.reference.whole()
+                                );
+                            }
                         }
-                    })
-                    .collect();
+                    }
+                };
 
                 if tags.is_empty() {
                     println!("No tags found for '{}'", opts.reference.whole());
                 } else {
-                    println!("Tags for '{}':", opts.reference.whole());
+                    if from_cache {
+                        println!("Tags for '{}' (cached):", opts.reference.whole());
+                    } else {
+                        println!("Tags for '{}':", opts.reference.whole());
+                    }
                     for tag in tags {
                         println!("  {}", tag);
                     }

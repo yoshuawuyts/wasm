@@ -4,6 +4,7 @@ mod store;
 mod wit_parser;
 
 pub use config::StateInfo;
+pub use models::CachedTags;
 pub use models::ImageEntry;
 pub use models::InsertResult;
 pub use models::KnownPackage;

@@ -1,7 +1,9 @@
 use oci_client::Reference;
 
 use crate::network::Client;
-use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface};
+use crate::storage::{
+    CachedTags, ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface,
+};
 
 /// A cache on disk
 #[derive(Debug)]
@@ -110,6 +112,14 @@ impl Manager {
     /// List all tags for a given reference from the registry.
     pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         self.client.list_tags(reference).await
+    }
+
+    /// Get cached tags for a given reference from the local database.
+    /// Returns a tuple of (release_tags, signature_tags, attestation_tags).
+    /// Returns None if no cached tags are available.
+    pub fn get_cached_tags(&self, reference: &Reference) -> anyhow::Result<Option<CachedTags>> {
+        self.store
+            .get_cached_tags(reference.registry(), reference.repository())
     }
 
     /// Re-scan known package tags to update derived data (e.g., tag types).
