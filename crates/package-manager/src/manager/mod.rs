@@ -110,16 +110,25 @@ impl Manager {
     /// List all tags for a given reference.
     /// First checks the local cache, then falls back to fetching from the registry.
     /// This enables offline operation when tags have been previously cached.
-    pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
-        // Try to get cached tags first (offline mode)
-        if let Some(cached_tags) = self
-            .store
-            .get_cached_tags(reference.registry(), reference.repository())?
+    ///
+    /// # Arguments
+    /// * `reference` - The OCI reference to list tags for
+    /// * `force_refresh` - If true, bypasses the cache and fetches from the network
+    pub async fn list_tags(
+        &self,
+        reference: &Reference,
+        force_refresh: bool,
+    ) -> anyhow::Result<Vec<String>> {
+        // Try to get cached tags first (offline mode) unless force refresh is requested
+        if !force_refresh
+            && let Some(cached_tags) = self
+                .store
+                .get_cached_tags(reference.registry(), reference.repository())?
         {
             return Ok(cached_tags);
         }
 
-        // Fall back to network fetch if not cached
+        // Fetch from network if force refresh or not cached
         self.client.list_tags(reference).await
     }
 
