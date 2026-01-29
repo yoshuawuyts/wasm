@@ -19,7 +19,7 @@ impl Manager {
         Self::open_with_offline(false).await
     }
 
-    /// Create a new store at a location on disk with offline mode.
+    /// Create a new Manager at a location on disk with offline mode.
     ///
     /// When offline is true, network operations will fail with an error.
     /// This may return an error if it fails to create the cache location on disk.
@@ -27,7 +27,7 @@ impl Manager {
         Self::open_with_offline(true).await
     }
 
-    /// Create a new store with the specified offline mode.
+    /// Create a new Manager with the specified offline mode.
     async fn open_with_offline(offline: bool) -> anyhow::Result<Self> {
         let client = Client::new();
         let store = Store::open().await?;
@@ -152,6 +152,10 @@ impl Manager {
     }
 
     /// List tags from the local cache for a given reference.
+    ///
+    /// This is a private helper method used by `list_tags` when in offline mode.
+    /// Returns all cached tags (release, signature, and attestation) for the given
+    /// reference from the local known packages database.
     fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
         let known_packages = self.store.list_known_packages()?;
         let tags: Vec<String> = known_packages
@@ -159,7 +163,13 @@ impl Manager {
             .filter(|pkg| {
                 pkg.registry == reference.registry() && pkg.repository == reference.repository()
             })
-            .flat_map(|pkg| pkg.tags)
+            .flat_map(|pkg| {
+                // Combine all tag types: release, signature, and attestation
+                pkg.tags
+                    .into_iter()
+                    .chain(pkg.signature_tags)
+                    .chain(pkg.attestation_tags)
+            })
             .collect();
         Ok(tags)
     }
