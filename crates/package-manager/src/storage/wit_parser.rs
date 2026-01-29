@@ -68,74 +68,54 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
 /// Generate WIT text representation from decoded component.
 fn generate_wit_text(decoded: &DecodedWasm) -> String {
     let resolve = decoded.resolve();
-    let mut output = String::new();
 
     match decoded {
         DecodedWasm::WitPackage(_, package_id) => {
-            let package = resolve
-                .packages
-                .get(*package_id)
-                .expect("Package ID should be valid");
-            output.push_str(&format!("package {};\n\n", package.name));
+            // Use wit-encoder to convert from wit-parser to WIT text
+            let packages = wit_encoder::packages_from_parsed(resolve);
 
-            // Print interfaces
-            for (name, interface_id) in &package.interfaces {
-                output.push_str(&format!("interface {} {{\n", name));
-                let interface = resolve
-                    .interfaces
-                    .get(*interface_id)
-                    .expect("Interface ID should be valid");
-
-                // Print types
-                for (type_name, type_id) in &interface.types {
-                    let type_def = resolve
-                        .types
-                        .get(*type_id)
-                        .expect("Type ID should be valid");
-                    output.push_str(&format!(
-                        "  type {}: {:?};\n",
-                        type_name,
-                        type_def.kind.as_str()
-                    ));
+            // Find the package with the matching ID
+            for package in &packages {
+                let parser_package = resolve
+                    .packages
+                    .get(*package_id)
+                    .expect("Package ID should be valid");
+                // Match by comparing package names
+                if package.name().namespace() == parser_package.name.namespace
+                    && package.name().name().as_ref() == parser_package.name.name
+                {
+                    return package.to_string();
                 }
-
-                // Print functions
-                for (func_name, func) in &interface.functions {
-                    let params: Vec<String> =
-                        func.params.iter().map(|(name, _ty)| name.clone()).collect();
-                    let has_result = func.result.is_some();
-                    output.push_str(&format!(
-                        "  func {}({}){};\n",
-                        func_name,
-                        params.join(", "),
-                        if has_result { " -> ..." } else { "" }
-                    ));
-                }
-                output.push_str("}\n\n");
             }
 
-            // Print worlds
-            for (name, world_id) in &package.worlds {
-                let world = resolve
-                    .worlds
-                    .get(*world_id)
-                    .expect("World ID should be valid");
-                output.push_str(&format!("world {} {{\n", name));
-
-                for (key, _item) in &world.imports {
-                    output.push_str(&format!("  import {};\n", world_key_to_string(key)));
-                }
-                for (key, _item) in &world.exports {
-                    output.push_str(&format!("  export {};\n", world_key_to_string(key)));
-                }
-                output.push_str("}\n\n");
-            }
+            // Fallback: if no match, use the first package
+            packages.first().map(|p| p.to_string()).unwrap_or_default()
         }
         DecodedWasm::Component(_, world_id) => {
+            // For components, encode all packages and find the one containing our world
+            let packages = wit_encoder::packages_from_parsed(resolve);
             let world = resolve
                 .worlds
                 .get(*world_id)
                 .expect("World ID should be valid");
+
+            // If the world has a package, find it
+            if let Some(package_id) = world.package {
+                let parser_package = resolve
+                    .packages
+                    .get(package_id)
+                    .expect("Package ID should be valid");
+                for package in &packages {
+                    if package.name().namespace() == parser_package.name.namespace
+                        && package.name().name().as_ref() == parser_package.name.name
+                    {
+                        return package.to_string();
+                    }
+                }
+            }
+
+            // Fallback for components without a proper package: manual generation
+            let mut output = String::new();
             output.push_str("// Inferred component interface\n");
             output.push_str(&format!("world {} {{\n", world.name));
 
@@ -146,10 +126,9 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                 output.push_str(&format!("  export {};\n", world_key_to_string(key)));
             }
             output.push_str("}\n");
+            output
         }
     }
-
-    output
 }
 
 /// Convert a WorldKey to a string representation.

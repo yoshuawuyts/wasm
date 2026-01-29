@@ -38,6 +38,9 @@ wasmtime-wasi = { workspace = true }
 insta = { workspace = true }
 wasm-detector = { workspace = true, features = ["test-helpers"] }
 wasm-package-manager = { workspace = true, features = ["test-helpers"] }
+wit-encoder = { workspace = true }
+wit-parser = { workspace = true }
+semver = "1.0"
 
 [lints]
 workspace = true

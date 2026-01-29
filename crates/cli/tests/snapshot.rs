@@ -111,14 +111,153 @@ fn test_interfaces_view_snapshot() {
 
 #[test]
 fn test_interfaces_view_populated_snapshot() {
+    use semver::Version;
     use wasm_package_manager::WitInterface;
+    use wit_parser::{
+        Function, FunctionKind, Package, PackageName, Resolve, World, WorldItem, WorldKey,
+    };
+
+    // Create a proper WIT package structure using wit-parser
+    let mut resolve = Resolve::default();
+
+    // Create first package: wasi:http@0.2.0 with proxy world
+    let http_package = Package {
+        name: PackageName {
+            namespace: "wasi".to_string(),
+            name: "http".to_string(),
+            version: Some(Version::new(0, 2, 0)),
+        },
+        docs: Default::default(),
+        interfaces: Default::default(),
+        worlds: Default::default(),
+    };
+    let http_package_id = resolve.packages.alloc(http_package);
+
+    // Create proxy world
+    let mut proxy_world = World {
+        name: "proxy".to_string(),
+        docs: Default::default(),
+        imports: Default::default(),
+        exports: Default::default(),
+        includes: Default::default(),
+        include_names: Default::default(),
+        package: Some(http_package_id),
+        stability: Default::default(),
+    };
+
+    // Add imports/exports
+    proxy_world.imports.insert(
+        WorldKey::Name("wasi:http/types".to_string()),
+        WorldItem::Function(Function {
+            name: "types".to_string(),
+            kind: FunctionKind::Freestanding,
+            params: vec![],
+            result: None,
+            docs: Default::default(),
+            stability: Default::default(),
+        }),
+    );
+    proxy_world.exports.insert(
+        WorldKey::Name("wasi:http/handler".to_string()),
+        WorldItem::Function(Function {
+            name: "handler".to_string(),
+            kind: FunctionKind::Freestanding,
+            params: vec![],
+            result: None,
+            docs: Default::default(),
+            stability: Default::default(),
+        }),
+    );
+
+    let proxy_world_id = resolve.worlds.alloc(proxy_world);
+    resolve.packages[http_package_id]
+        .worlds
+        .insert("proxy".to_string(), proxy_world_id);
+
+    // Generate WIT text using wit-encoder
+    let packages = wit_encoder::packages_from_parsed(&resolve);
+    let http_wit_text = packages[0].to_string();
+
+    // Create second package: wasi:cli@0.2.0 with command world
+    let cli_package = Package {
+        name: PackageName {
+            namespace: "wasi".to_string(),
+            name: "cli".to_string(),
+            version: Some(Version::new(0, 2, 0)),
+        },
+        docs: Default::default(),
+        interfaces: Default::default(),
+        worlds: Default::default(),
+    };
+    let cli_package_id = resolve.packages.alloc(cli_package);
+
+    // Create command world
+    let mut command_world = World {
+        name: "command".to_string(),
+        docs: Default::default(),
+        imports: Default::default(),
+        exports: Default::default(),
+        includes: Default::default(),
+        include_names: Default::default(),
+        package: Some(cli_package_id),
+        stability: Default::default(),
+    };
+
+    // Add imports/exports
+    command_world.imports.insert(
+        WorldKey::Name("wasi:cli/stdin".to_string()),
+        WorldItem::Function(Function {
+            name: "stdin".to_string(),
+            kind: FunctionKind::Freestanding,
+            params: vec![],
+            result: None,
+            docs: Default::default(),
+            stability: Default::default(),
+        }),
+    );
+    command_world.imports.insert(
+        WorldKey::Name("wasi:cli/stdout".to_string()),
+        WorldItem::Function(Function {
+            name: "stdout".to_string(),
+            kind: FunctionKind::Freestanding,
+            params: vec![],
+            result: None,
+            docs: Default::default(),
+            stability: Default::default(),
+        }),
+    );
+    command_world.exports.insert(
+        WorldKey::Name("run".to_string()),
+        WorldItem::Function(Function {
+            name: "run".to_string(),
+            kind: FunctionKind::Freestanding,
+            params: vec![],
+            result: None,
+            docs: Default::default(),
+            stability: Default::default(),
+        }),
+    );
+
+    let command_world_id = resolve.worlds.alloc(command_world);
+    resolve.packages[cli_package_id]
+        .worlds
+        .insert("command".to_string(), command_world_id);
+
+    // Generate WIT text using wit-encoder for the second package
+    let packages2 = wit_encoder::packages_from_parsed(&resolve);
+    // Find the cli package (it should be the second one)
+    let cli_wit_text = packages2
+        .iter()
+        .find(|p| p.name().namespace() == "wasi" && p.name().name().as_ref() == "cli")
+        .map(|p| p.to_string())
+        .unwrap_or_default();
 
     let interfaces = vec![
         (
             WitInterface::new_for_testing(
                 1,
                 Some("wasi:http@0.2.0".to_string()),
-                "package wasi:http@0.2.0;\n\nworld proxy {\n  import wasi:http/types;\n  export wasi:http/handler;\n}".to_string(),
+                http_wit_text,
                 Some("proxy".to_string()),
                 1,
                 1,
@@ -130,7 +269,7 @@ fn test_interfaces_view_populated_snapshot() {
             WitInterface::new_for_testing(
                 2,
                 Some("wasi:cli@0.2.0".to_string()),
-                "package wasi:cli@0.2.0;\n\nworld command {\n  import wasi:cli/stdin;\n  import wasi:cli/stdout;\n  export run;\n}".to_string(),
+                cli_wit_text,
                 Some("command".to_string()),
                 2,
                 1,
