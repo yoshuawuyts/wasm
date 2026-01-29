@@ -230,6 +230,32 @@ impl Store {
         KnownPackage::upsert(&self.conn, registry, repository, tag, description)
     }
 
+    /// Get cached tags for a given reference.
+    /// Returns all tag types (release, signature, attestation) combined.
+    pub(crate) fn get_cached_tags(
+        &self,
+        registry: &str,
+        repository: &str,
+    ) -> anyhow::Result<Option<Vec<String>>> {
+        // Try to get the known package
+        let package = KnownPackage::get(&self.conn, registry, repository)?;
+
+        if let Some(pkg) = package {
+            // Combine all tag types
+            let mut all_tags = pkg.tags;
+            all_tags.extend(pkg.signature_tags);
+            all_tags.extend(pkg.attestation_tags);
+
+            if all_tags.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(all_tags))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
     /// Re-scan known package tags to update derived data after migrations.
     /// This re-classifies tag types based on tag naming conventions:
     /// - Tags ending in ".sig" are classified as "signature"
