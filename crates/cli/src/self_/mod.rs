@@ -62,20 +62,12 @@ impl Opts {
                 // Load the config to show current settings
                 let config = Config::load()?;
                 println!();
-                println!("[Settings]");
-
-                // Show default registry if set
-                if let Some(ref registry) = config.default_registry {
-                    println!("Default registry:\t{registry}");
-                } else {
-                    println!("Default registry:\t(not set)");
-                }
+                println!("[Registries]");
 
                 // Show configured registries
                 if config.registries.is_empty() {
-                    println!("Registries:\t\t(none configured)");
+                    println!("(none configured)");
                 } else {
-                    println!("Registries:");
                     for (name, registry_config) in &config.registries {
                         let helper_status = if registry_config.credential_helper.is_some() {
                             "credential-helper configured"

@@ -9,8 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::RwLock;
+
+use crate::credential_helper::CredentialHelper;
 
 /// Default configuration file content with commented examples.
 const DEFAULT_CONFIG: &str = r#"# wasm(1) configuration file
@@ -39,10 +40,6 @@ const DEFAULT_CONFIG: &str = r#"# wasm(1) configuration file
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    /// Default registry to use when no registry is specified.
-    #[serde(rename = "default-registry")]
-    pub default_registry: Option<String>,
-
     /// Per-registry configuration.
     #[serde(default)]
     pub registries: HashMap<String, RegistryConfig>,
@@ -79,38 +76,6 @@ pub struct RegistryConfig {
     /// Credential helper configuration for this registry.
     #[serde(rename = "credential-helper")]
     pub credential_helper: Option<CredentialHelper>,
-}
-
-/// Credential helper configuration.
-///
-/// Supports two formats:
-/// - JSON: Single command that outputs JSON with username and password
-/// - Split: Separate commands for username and password
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum CredentialHelper {
-    /// Single command that outputs JSON with fields for username and password.
-    ///
-    /// Expected output format:
-    /// ```json
-    /// [{"id": "username", "value": "..."}, {"id": "password", "value": "..."}]
-    /// ```
-    Json(String),
-
-    /// Separate commands for username and password.
-    Split {
-        /// Command to get the username (output is trimmed).
-        username: String,
-        /// Command to get the password (output is trimmed).
-        password: String,
-    },
-}
-
-/// A field from the JSON credential helper output.
-#[derive(Debug, Deserialize)]
-struct CredentialField {
-    id: String,
-    value: String,
 }
 
 impl Config {
@@ -242,12 +207,7 @@ impl Config {
         };
 
         // Execute credential helper
-        let credentials = match helper {
-            CredentialHelper::Json(cmd) => execute_json_helper(cmd)?,
-            CredentialHelper::Split { username, password } => {
-                execute_split_helper(username, password)?
-            }
-        };
+        let credentials = helper.execute()?;
 
         // Cache the result - if lock is poisoned, skip caching but still return credentials
         if let Ok(mut cache) = self.credential_cache.cache.write() {
@@ -266,84 +226,6 @@ impl Config {
     }
 }
 
-/// Execute a JSON credential helper command.
-///
-/// The command should output JSON with username and password fields:
-/// ```json
-/// [{"id": "username", "value": "..."}, {"id": "password", "value": "..."}]
-/// ```
-fn execute_json_helper(cmd: &str) -> Result<(String, String)> {
-    let output = execute_shell_command(cmd)
-        .with_context(|| format!("Failed to execute credential helper: {cmd}"))?;
-
-    // Trim whitespace for consistent parsing
-    let output = output.trim();
-
-    let fields: Vec<CredentialField> = serde_json::from_str(output).with_context(|| {
-        // Truncate output in error message to avoid leaking credentials
-        let preview = if output.len() > 100 {
-            format!("{}...", &output[..100])
-        } else {
-            output.to_string()
-        };
-        format!("Failed to parse credential helper output as JSON: {preview}")
-    })?;
-
-    let mut username = None;
-    let mut password = None;
-
-    for field in fields {
-        match field.id.as_str() {
-            "username" => username = Some(field.value),
-            "password" => password = Some(field.value),
-            _ => {} // Ignore other fields
-        }
-    }
-
-    let username = username.context("Credential helper output missing 'username' field")?;
-    let password = password.context("Credential helper output missing 'password' field")?;
-
-    Ok((username, password))
-}
-
-/// Execute split credential helper commands.
-fn execute_split_helper(username_cmd: &str, password_cmd: &str) -> Result<(String, String)> {
-    let username = execute_shell_command(username_cmd)
-        .with_context(|| format!("Failed to execute username credential helper: {username_cmd}"))?
-        .trim()
-        .to_string();
-
-    let password = execute_shell_command(password_cmd)
-        .with_context(|| format!("Failed to execute password credential helper: {password_cmd}"))?
-        .trim()
-        .to_string();
-
-    Ok((username, password))
-}
-
-/// Execute a shell command and return its stdout as a string.
-fn execute_shell_command(cmd: &str) -> Result<String> {
-    let output = if cfg!(target_os = "windows") {
-        Command::new("cmd").args(["/C", cmd]).output()
-    } else {
-        Command::new("sh").args(["-c", cmd]).output()
-    }
-    .with_context(|| format!("Failed to spawn command: {cmd}"))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!(
-            "Command exited with status {}: {}",
-            output.status,
-            stderr.trim()
-        );
-    }
-
-    let stdout = String::from_utf8(output.stdout).context("Command output was not valid UTF-8")?;
-
-    Ok(stdout)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,7 +235,6 @@ mod tests {
     #[test]
     fn test_config_default() {
         let config = Config::default();
-        assert!(config.default_registry.is_none());
         assert!(config.registries.is_empty());
     }
 
@@ -361,7 +242,6 @@ mod tests {
     fn test_config_load_nonexistent() {
         let temp_dir = TempDir::new().unwrap();
         let config = Config::load_from(Some(temp_dir.path().to_path_buf())).unwrap();
-        assert!(config.default_registry.is_none());
         assert!(config.registries.is_empty());
     }
 
@@ -373,15 +253,12 @@ mod tests {
 
         let config_path = config_dir.join("config.toml");
         let toml_content = r#"
-default-registry = "ghcr.io"
-
 [registries."ghcr.io"]
 credential-helper = "echo test"
 "#;
         fs::write(&config_path, toml_content).unwrap();
 
         let config = Config::load_from(Some(temp_dir.path().to_path_buf())).unwrap();
-        assert_eq!(config.default_registry, Some("ghcr.io".to_string()));
         assert!(config.registries.contains_key("ghcr.io"));
     }
 
@@ -439,25 +316,6 @@ credential-helper.password = "/path/to/get-pass.sh"
 
         let content = fs::read_to_string(&path2).unwrap();
         assert!(content.contains("# custom comment"));
-    }
-
-    #[test]
-    fn test_execute_json_helper() {
-        // Create a simple echo command that outputs valid JSON
-        let json =
-            r#"[{"id": "username", "value": "testuser"}, {"id": "password", "value": "testpass"}]"#;
-        let cmd = format!("echo '{}'", json);
-
-        let (username, password) = execute_json_helper(&cmd).unwrap();
-        assert_eq!(username, "testuser");
-        assert_eq!(password, "testpass");
-    }
-
-    #[test]
-    fn test_execute_split_helper() {
-        let (username, password) = execute_split_helper("echo testuser", "echo testpass").unwrap();
-        assert_eq!(username, "testuser");
-        assert_eq!(password, "testpass");
     }
 
     #[test]

@@ -114,8 +114,8 @@ fn resolve_auth(reference: &Reference, config: &Config) -> anyhow::Result<Regist
     // Fall back to Docker credential store
     // NOTE: copied approach from https://github.com/bytecodealliance/wasm-pkg-tools/blob/48c28825a7dfb585b3fe1d42be65fe73a17d84fe/crates/wkg/src/oci.rs#L59-L66
     let server_url = match registry {
-        "index.docker.io" => "https://index.docker.io/v1/", // Default registry uses this key.
-        other => other, // All other registries are keyed by their domain name without the `https://` prefix or any path suffix.
+        "index.docker.io" => "https://index.docker.io/v1/",
+        other => other,
     };
 
     match docker_credential::get_credential(server_url) {

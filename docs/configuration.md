@@ -12,13 +12,7 @@
 | `$XDG_DATA_HOME`   | User-specific data files                               | `~/.local/share`              | `~/Library/Application Support`   | `%LOCALAPPDATA%`      |
 | `$XDG_STATE_HOME`  | User-specific state data (logs, history, recent files) | `~/.local/state`              | `~/Library/Application Support`   | `%LOCALAPPDATA%`      |
 
-## Configuration File
-
-The configuration file is located at `$XDG_CONFIG_HOME/wasm/config.toml`. On most systems, this is:
-
-- **Linux/BSD**: `~/.config/wasm/config.toml`
-- **macOS**: `~/Library/Preferences/wasm/config.toml`
-- **Windows**: `%LOCALAPPDATA%\wasm\config.toml`
+The configuration file is located at `$XDG_CONFIG_HOME/wasm/config.toml`.
 
 To view the current configuration and file location:
 
@@ -32,9 +26,6 @@ The configuration file uses TOML format. Here's an example with all available op
 
 ```toml
 # ~/.config/wasm/config.toml
-
-# Default registry to use when no registry is specified (optional)
-default-registry = "ghcr.io"
 
 # Per-registry credential helpers
 # These allow you to securely retrieve credentials from password managers
