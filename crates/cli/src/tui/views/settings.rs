@@ -23,9 +23,13 @@ impl Widget for SettingsView<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         match self.state_info {
             Some(info) => {
-                // Split area for migrations section and storage table
-                let layout =
-                    Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
+                // Split area for migrations, configuration, and storage sections
+                let layout = Layout::vertical([
+                    Constraint::Length(3), // Migrations
+                    Constraint::Length(4), // Configuration
+                    Constraint::Min(0),    // Storage
+                ])
+                .split(area);
 
                 // Migrations section
                 let migrations = Text::from(vec![
@@ -41,9 +45,29 @@ impl Widget for SettingsView<'_> {
                 ]);
                 Paragraph::new(migrations).render(layout[0], buf);
 
+                // Configuration section
+                let config_path = info.config_file();
+                let config_status = if config_path.exists() {
+                    "exists"
+                } else {
+                    "not created"
+                };
+                let configuration = Text::from(vec![
+                    Line::from(vec![Span::styled(
+                        "Configuration",
+                        Style::default().bold().fg(Color::Yellow),
+                    )]),
+                    Line::from(format!(
+                        "  Config file: {} ({})",
+                        config_path.display(),
+                        config_status
+                    )),
+                ]);
+                Paragraph::new(configuration).render(layout[1], buf);
+
                 // Storage section with table
                 let storage_layout =
-                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(layout[1]);
+                    Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(layout[2]);
 
                 let storage_header = Line::from(vec![Span::styled(
                     "Storage",

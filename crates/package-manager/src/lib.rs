@@ -3,10 +3,14 @@
 //! This crate provides functionality to pull, store, and manage WebAssembly
 //! component packages from OCI registries.
 
+mod config;
+mod credential_helper;
 mod manager;
 mod network;
 mod storage;
 
+pub use config::{Config, RegistryConfig};
+pub use credential_helper::CredentialHelper;
 pub use manager::Manager;
 pub use oci_client::Reference;
 pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};
