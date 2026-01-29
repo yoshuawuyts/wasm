@@ -10,6 +10,7 @@ pub struct Manager {
     client: Client,
     store: Store,
     config: Config,
+    offline: bool,
 }
 
 impl Manager {
@@ -18,6 +19,19 @@ impl Manager {
     /// This may return an error if it fails to create the cache location on disk.
     /// Loads configuration from the default config location.
     pub async fn open() -> anyhow::Result<Self> {
+        Self::open_with_offline(false).await
+    }
+
+    /// Create a new Manager at a location on disk with offline mode.
+    ///
+    /// When offline is true, network operations will fail with an error.
+    /// This may return an error if it fails to create the cache location on disk.
+    pub async fn open_offline() -> anyhow::Result<Self> {
+        Self::open_with_offline(true).await
+    }
+
+    /// Create a new Manager with the specified offline mode.
+    async fn open_with_offline(offline: bool) -> anyhow::Result<Self> {
         let config = Config::load()?;
         let client = Client::new(config.clone());
         let store = Store::open().await?;
@@ -26,7 +40,14 @@ impl Manager {
             client,
             store,
             config,
+            offline,
         })
+    }
+
+    /// Returns whether the manager is in offline mode.
+    #[must_use]
+    pub fn is_offline(&self) -> bool {
+        self.offline
     }
 
     /// Create a new store with a specific configuration.
@@ -49,7 +70,15 @@ impl Manager {
     ///
     /// This method also fetches all related tags for the package and stores them
     /// as known packages for discovery purposes.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error if offline mode is enabled.
     pub async fn pull(&self, reference: Reference) -> anyhow::Result<InsertResult> {
+        if self.offline {
+            anyhow::bail!("cannot pull packages in offline mode");
+        }
+
         let image = self.client.pull(&reference).await?;
         let result = self.store.insert(&reference, image).await?;
 
@@ -126,8 +155,38 @@ impl Manager {
     }
 
     /// List all tags for a given reference from the registry.
+    ///
+    /// In offline mode, returns cached tags from the local database instead of
+    /// fetching from the registry.
     pub async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
+        if self.offline {
+            // Return cached tags from known packages
+            return self.list_cached_tags(reference);
+        }
         self.client.list_tags(reference).await
+    }
+
+    /// List tags from the local cache for a given reference.
+    ///
+    /// This is a private helper method used by `list_tags` when in offline mode.
+    /// Returns all cached tags (release, signature, and attestation) for the given
+    /// reference from the local known packages database.
+    fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
+        let known_packages = self.store.list_known_packages()?;
+        let tags: Vec<String> = known_packages
+            .into_iter()
+            .filter(|pkg| {
+                pkg.registry == reference.registry() && pkg.repository == reference.repository()
+            })
+            .flat_map(|pkg| {
+                // Combine all tag types: release, signature, and attestation
+                pkg.tags
+                    .into_iter()
+                    .chain(pkg.signature_tags)
+                    .chain(pkg.attestation_tags)
+            })
+            .collect();
+        Ok(tags)
     }
 
     /// Re-scan known package tags to update derived data (e.g., tag types).

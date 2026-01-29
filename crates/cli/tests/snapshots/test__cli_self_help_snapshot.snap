@@ -26,3 +26,8 @@ Global Options:
           
           [default: auto]
           [possible values: auto, always, never]
+
+      --offline
+          Run in offline mode.
+          
+          Disables all network operations. Commands that require network access will fail with an error. Local-only commands will continue to work.
