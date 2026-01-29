@@ -310,3 +310,83 @@ impl Store {
         WitInterface::get_all_with_images(&self.conn)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::models::Migrations;
+
+    /// Create an in-memory database with migrations applied for testing.
+    fn setup_test_store() -> Store {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+        let state_info = StateInfo::new_at(
+            std::path::PathBuf::from("/tmp/test"),
+            Migrations::get(&conn).unwrap(),
+            0,
+            0,
+        );
+        Store { state_info, conn }
+    }
+
+    #[test]
+    fn test_get_cached_tags_returns_none_for_unknown_package() {
+        let store = setup_test_store();
+        let result = store.get_cached_tags("ghcr.io", "unknown/package").unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_cached_tags_returns_none_for_package_without_tags() {
+        let store = setup_test_store();
+        // Add package without tags
+        store
+            .add_known_package("ghcr.io", "user/repo", None, None)
+            .unwrap();
+
+        let result = store.get_cached_tags("ghcr.io", "user/repo").unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_get_cached_tags_returns_release_tags() {
+        let store = setup_test_store();
+        // Add package with release tags
+        store
+            .add_known_package("ghcr.io", "user/repo", Some("v1.0.0"), None)
+            .unwrap();
+        store
+            .add_known_package("ghcr.io", "user/repo", Some("v2.0.0"), None)
+            .unwrap();
+
+        let result = store.get_cached_tags("ghcr.io", "user/repo").unwrap();
+        assert!(result.is_some());
+        let tags = result.unwrap();
+        assert_eq!(tags.len(), 2);
+        assert!(tags.contains(&"v1.0.0".to_string()));
+        assert!(tags.contains(&"v2.0.0".to_string()));
+    }
+
+    #[test]
+    fn test_get_cached_tags_returns_all_tag_types() {
+        let store = setup_test_store();
+        // Add package with different tag types
+        store
+            .add_known_package("ghcr.io", "user/repo", Some("v1.0.0"), None)
+            .unwrap();
+        store
+            .add_known_package("ghcr.io", "user/repo", Some("v1.0.0.sig"), None)
+            .unwrap();
+        store
+            .add_known_package("ghcr.io", "user/repo", Some("v1.0.0.att"), None)
+            .unwrap();
+
+        let result = store.get_cached_tags("ghcr.io", "user/repo").unwrap();
+        assert!(result.is_some());
+        let tags = result.unwrap();
+        assert_eq!(tags.len(), 3);
+        assert!(tags.contains(&"v1.0.0".to_string()));
+        assert!(tags.contains(&"v1.0.0.sig".to_string()));
+        assert!(tags.contains(&"v1.0.0.att".to_string()));
+    }
+}
