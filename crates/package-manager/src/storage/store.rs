@@ -58,6 +58,15 @@ impl Store {
             .context("Could not create config directories on disk")?;
 
         let conn = Connection::open(&metadata_file)?;
+
+        // Configure SQLite for better concurrency, data integrity, and performance
+        conn.execute_batch(
+            "PRAGMA foreign_keys = ON;
+             PRAGMA journal_mode = WAL;
+             PRAGMA synchronous = NORMAL;
+             PRAGMA busy_timeout = 5000;",
+        )?;
+
         Migrations::run_all(&conn)?;
 
         let migration_info = Migrations::get(&conn)?;
@@ -128,7 +137,7 @@ impl Store {
     }
 
     /// Attempt to extract WIT interface from wasm component bytes.
-    /// This is best-effort - if extraction fails, we silently skip.
+    /// This is best-effort - if extraction fails, we log a warning and skip.
     fn try_extract_wit_interface(&self, image_id: i64, wasm_bytes: &[u8]) {
         let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
             return; // Not a valid wasm component, skip
@@ -144,11 +153,22 @@ impl Store {
             metadata.export_count,
         ) {
             Ok(id) => id,
-            Err(_) => return, // Failed to insert, skip
+            Err(e) => {
+                eprintln!(
+                    "Warning: Failed to insert WIT interface for image {}: {}",
+                    image_id, e
+                );
+                return;
+            }
         };
 
         // Link to image
-        let _ = WitInterface::link_to_image(&self.conn, image_id, wit_id);
+        if let Err(e) = WitInterface::link_to_image(&self.conn, image_id, wit_id) {
+            eprintln!(
+                "Warning: Failed to link WIT interface {} to image {}: {}",
+                wit_id, image_id, e
+            );
+        }
     }
 
     /// Returns all currently stored images and their metadata.
@@ -210,13 +230,33 @@ impl Store {
     }
 
     /// Search for known packages by query string.
-    pub(crate) fn search_known_packages(&self, query: &str) -> anyhow::Result<Vec<KnownPackage>> {
-        KnownPackage::search(&self.conn, query)
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub(crate) fn search_known_packages(
+        &self,
+        query: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        KnownPackage::search(&self.conn, query, offset, limit)
     }
 
     /// Get all known packages.
-    pub(crate) fn list_known_packages(&self) -> anyhow::Result<Vec<KnownPackage>> {
-        KnownPackage::get_all(&self.conn)
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub(crate) fn list_known_packages(
+        &self,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        KnownPackage::get_all(&self.conn, offset, limit)
+    }
+
+    /// Get a known package by registry and repository.
+    pub(crate) fn get_known_package(
+        &self,
+        registry: &str,
+        repository: &str,
+    ) -> anyhow::Result<Option<KnownPackage>> {
+        KnownPackage::get(&self.conn, registry, repository)
     }
 
     /// Add or update a known package.
