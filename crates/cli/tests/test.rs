@@ -214,3 +214,83 @@ fn test_color_flag_with_subcommand() {
 
     assert!(output.status.success());
 }
+
+// =============================================================================
+// Offline Mode Tests
+// =============================================================================
+
+#[test]
+fn test_offline_flag_accepted() {
+    // Test that --offline flag is accepted with --version
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--offline", "--version"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_offline_flag_in_help() {
+    // Test that --offline flag appears in help output
+    let output = run_cli(&["--help"]);
+    assert!(output.contains("--offline"));
+    assert!(output.contains("Run in offline mode"));
+}
+
+#[test]
+fn test_offline_flag_with_local_list() {
+    // Test that --offline works with local list command (local-only operation)
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--offline", "local", "list", "/nonexistent"])
+        .output()
+        .expect("Failed to execute command");
+
+    // The command should succeed (even if no files found)
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_offline_flag_with_package_pull() {
+    // Test that --offline mode causes package pull to fail with clear error
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&[
+            "--offline",
+            "package",
+            "pull",
+            "ghcr.io/example/test:latest",
+        ])
+        .output()
+        .expect("Failed to execute command");
+
+    // The command should fail with an offline mode error
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        stderr.contains("offline"),
+        "Expected 'offline' error message, got: {}",
+        stderr
+    );
+}
+
+#[test]
+fn test_offline_flag_with_inspect() {
+    // Test that --offline works with inspect command (local-only operation)
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--offline", "inspect", "--help"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+}
+
+#[test]
+fn test_offline_flag_with_subcommand() {
+    // Test that --offline flag works with subcommands
+    let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+        .args(&["--offline", "local", "--help"])
+        .output()
+        .expect("Failed to execute command");
+
+    assert!(output.status.success());
+}
