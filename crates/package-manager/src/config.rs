@@ -60,9 +60,14 @@ struct CredentialCache {
 
 impl Clone for CredentialCache {
     fn clone(&self) -> Self {
-        let cache = self.cache.read().expect("Failed to acquire read lock");
+        // Use unwrap_or_default if the lock is poisoned - we'll just start with empty cache
+        let cache = self
+            .cache
+            .read()
+            .map(|guard| guard.clone())
+            .unwrap_or_default();
         Self {
-            cache: RwLock::new(cache.clone()),
+            cache: RwLock::new(cache),
         }
     }
 }
@@ -217,16 +222,11 @@ impl Config {
     ///
     /// Returns an error if the credential helper command fails or returns invalid output.
     pub fn get_credentials(&self, registry: &str) -> Result<Option<(String, String)>> {
-        // Check cache first
+        // Check cache first - if lock is poisoned, skip cache and fetch fresh credentials
+        if let Ok(cache) = self.credential_cache.cache.read()
+            && let Some(creds) = cache.get(registry)
         {
-            let cache = self
-                .credential_cache
-                .cache
-                .read()
-                .expect("Failed to acquire read lock");
-            if let Some(creds) = cache.get(registry) {
-                return Ok(Some(creds.clone()));
-            }
+            return Ok(Some(creds.clone()));
         }
 
         // Look up registry config
@@ -249,13 +249,8 @@ impl Config {
             }
         };
 
-        // Cache the result
-        {
-            let mut cache = self
-                .credential_cache
-                .cache
-                .write()
-                .expect("Failed to acquire write lock");
+        // Cache the result - if lock is poisoned, skip caching but still return credentials
+        if let Ok(mut cache) = self.credential_cache.cache.write() {
             cache.insert(registry.to_string(), credentials.clone());
         }
 
@@ -264,12 +259,10 @@ impl Config {
 
     /// Clear the credential cache.
     pub fn clear_credential_cache(&self) {
-        let mut cache = self
-            .credential_cache
-            .cache
-            .write()
-            .expect("Failed to acquire write lock");
-        cache.clear();
+        // If lock is poisoned, the cache is already in an undefined state - just skip clearing
+        if let Ok(mut cache) = self.credential_cache.cache.write() {
+            cache.clear();
+        }
     }
 }
 
@@ -283,8 +276,18 @@ fn execute_json_helper(cmd: &str) -> Result<(String, String)> {
     let output = execute_shell_command(cmd)
         .with_context(|| format!("Failed to execute credential helper: {cmd}"))?;
 
-    let fields: Vec<CredentialField> = serde_json::from_str(&output)
-        .with_context(|| format!("Failed to parse credential helper output as JSON: {output}"))?;
+    // Trim whitespace for consistent parsing
+    let output = output.trim();
+
+    let fields: Vec<CredentialField> = serde_json::from_str(output).with_context(|| {
+        // Truncate output in error message to avoid leaking credentials
+        let preview = if output.len() > 100 {
+            format!("{}...", &output[..100])
+        } else {
+            output.to_string()
+        };
+        format!("Failed to parse credential helper output as JSON: {preview}")
+    })?;
 
     let mut username = None;
     let mut password = None;

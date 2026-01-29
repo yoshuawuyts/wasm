@@ -88,7 +88,9 @@ Each script should output the credential value to stdout (trailing whitespace is
 
 - **Credentials are cached in memory** during program execution for performance, but are never written to disk.
 - **Prefer credential helpers** over storing credentials in Docker's credential store when using sensitive tokens.
+- **Protect the config file**: Set appropriate permissions on your config file (e.g., `chmod 600 ~/.config/wasm/config.toml`) since it contains commands that will be executed.
 - **Keep scripts secure**: Ensure credential helper scripts have appropriate permissions (e.g., `chmod 700`).
+- **Command execution**: Credential helper commands are executed through the shell with your user privileges. Only configure commands you trust.
 
 ## Storage Layout
 

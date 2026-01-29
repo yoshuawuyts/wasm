@@ -53,11 +53,10 @@ impl Opts {
                     println!("Status:\t\tnot created (will use defaults)");
                     println!();
                     println!("To create a default config file with examples, run:");
-                    println!("  mkdir -p {}", config_path.parent().unwrap().display());
-                    println!(
-                        "  echo '' >> {}  # or run 'wasm self config' after creating it",
-                        config_path.display()
-                    );
+                    if let Some(parent) = config_path.parent() {
+                        println!("  mkdir -p {}", parent.display());
+                    }
+                    println!("  touch {}", config_path.display());
                 }
 
                 // Load the config to show current settings
