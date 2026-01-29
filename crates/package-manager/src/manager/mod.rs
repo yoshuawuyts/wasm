@@ -1,5 +1,6 @@
 use oci_client::Reference;
 
+use crate::config::Config;
 use crate::network::Client;
 use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface};
 
@@ -8,28 +9,39 @@ use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, W
 pub struct Manager {
     client: Client,
     store: Store,
+    config: Config,
 }
 
 impl Manager {
     /// Create a new store at a location on disk.
     ///
     /// This may return an error if it fails to create the cache location on disk.
+    /// Configuration is loaded from `$XDG_CONFIG_HOME/wasm/config.json` or a default
+    /// configuration is created if it doesn't exist.
     pub async fn open() -> anyhow::Result<Self> {
+        let config = Config::load()?;
+        Self::with_config(config).await
+    }
+
+    /// Create a new store with a specific configuration.
+    ///
+    /// This may return an error if it fails to create the cache location on disk.
+    pub async fn with_config(config: Config) -> anyhow::Result<Self> {
         let client = Client::new();
         let store = Store::open().await?;
 
-        Ok(Self { client, store })
+        Ok(Self {
+            client,
+            store,
+            config,
+        })
     }
 
-    // /// Create a new store at a location on disk.
-    // ///
-    // /// This may return an error if it fails to create the cache location on disk.
-    // pub async fn with_config(config: Config) -> anyhow::Result<Self> {
-    //     let client = Client::new();
-    //     let store = Store::open().await?;
-
-    //     Ok(Self { client, store })
-    // }
+    /// Get a reference to the current configuration.
+    #[must_use]
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
 
     /// Pull a package from the registry.
     /// Returns the insert result indicating whether the package was newly inserted
