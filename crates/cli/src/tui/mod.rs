@@ -153,7 +153,7 @@ async fn run_manager(
                 // Create a reference to fetch tags
                 let reference_str = format!("{}/{}:latest", registry, repository);
                 let result = match reference_str.parse::<Reference>() {
-                    Ok(reference) => match manager.list_tags(&reference, true).await {
+                    Ok(reference) => match manager.list_tags(&reference, false).await {
                         Ok(tags) => {
                             let tag_count = tags.len();
                             // Store all fetched tags as known packages

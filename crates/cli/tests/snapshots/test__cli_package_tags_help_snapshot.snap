@@ -17,8 +17,8 @@ Options:
       --attestations
           Include attestation tags (ending in .att)
 
-      --refresh
-          Force refresh from registry, bypassing cache
+      --offline
+          Force offline resolution, using only cached tags
 
   -h, --help
           Print help (see a summary with '-h')

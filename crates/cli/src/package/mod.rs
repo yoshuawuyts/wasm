@@ -29,9 +29,9 @@ pub(crate) struct TagsOpts {
     /// Include attestation tags (ending in .att)
     #[arg(long)]
     attestations: bool,
-    /// Force refresh from registry, bypassing cache
+    /// Force offline resolution, using only cached tags
     #[arg(long)]
-    refresh: bool,
+    offline: bool,
 }
 
 impl Opts {
@@ -51,7 +51,7 @@ impl Opts {
             }
             Opts::Push => todo!(),
             Opts::Tags(opts) => {
-                let all_tags = store.list_tags(&opts.reference, opts.refresh).await?;
+                let all_tags = store.list_tags(&opts.reference, opts.offline).await?;
 
                 // Filter tags based on flags
                 let tags: Vec<_> = all_tags
