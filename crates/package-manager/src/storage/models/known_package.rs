@@ -256,7 +256,6 @@ impl KnownPackage {
     }
 
     /// Get a known package by registry and repository.
-    #[allow(dead_code)]
     pub(crate) fn get(
         conn: &Connection,
         registry: &str,

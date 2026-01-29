@@ -250,6 +250,15 @@ impl Store {
         KnownPackage::get_all(&self.conn, offset, limit)
     }
 
+    /// Get a known package by registry and repository.
+    pub(crate) fn get_known_package(
+        &self,
+        registry: &str,
+        repository: &str,
+    ) -> anyhow::Result<Option<KnownPackage>> {
+        KnownPackage::get(&self.conn, registry, repository)
+    }
+
     /// Add or update a known package.
     pub(crate) fn add_known_package(
         &self,

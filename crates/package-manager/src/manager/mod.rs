@@ -168,22 +168,22 @@ impl Manager {
     /// Returns all cached tags (release, signature, and attestation) for the given
     /// reference from the local known packages database.
     fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
-        // Use a large limit to get all known packages for offline tag lookup
-        let known_packages = self.store.list_known_packages(0, 10000)?;
-        let tags: Vec<String> = known_packages
-            .into_iter()
-            .filter(|pkg| {
-                pkg.registry == reference.registry() && pkg.repository == reference.repository()
-            })
-            .flat_map(|pkg| {
-                // Combine all tag types: release, signature, and attestation
-                pkg.tags
-                    .into_iter()
-                    .chain(pkg.signature_tags)
-                    .chain(pkg.attestation_tags)
-            })
-            .collect();
-        Ok(tags)
+        // Use efficient lookup by registry and repository
+        if let Some(pkg) = self
+            .store
+            .get_known_package(reference.registry(), reference.repository())?
+        {
+            // Combine all tag types: release, signature, and attestation
+            let tags: Vec<String> = pkg
+                .tags
+                .into_iter()
+                .chain(pkg.signature_tags)
+                .chain(pkg.attestation_tags)
+                .collect();
+            Ok(tags)
+        } else {
+            Ok(Vec::new())
+        }
     }
 
     /// Re-scan known package tags to update derived data (e.g., tag types).
