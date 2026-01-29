@@ -118,13 +118,24 @@ impl Manager {
 
     /// Search for known packages by query string.
     /// Searches in both registry and repository fields.
-    pub fn search_packages(&self, query: &str) -> anyhow::Result<Vec<KnownPackage>> {
-        self.store.search_known_packages(query)
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn search_packages(
+        &self,
+        query: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.search_known_packages(query, offset, limit)
     }
 
     /// Get all known packages.
-    pub fn list_known_packages(&self) -> anyhow::Result<Vec<KnownPackage>> {
-        self.store.list_known_packages()
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn list_known_packages(
+        &self,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.list_known_packages(offset, limit)
     }
 
     /// Add or update a known package entry.
@@ -157,7 +168,8 @@ impl Manager {
     /// Returns all cached tags (release, signature, and attestation) for the given
     /// reference from the local known packages database.
     fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
-        let known_packages = self.store.list_known_packages()?;
+        // Use a large limit to get all known packages for offline tag lookup
+        let known_packages = self.store.list_known_packages(0, 10000)?;
         let tags: Vec<String> = known_packages
             .into_iter()
             .filter(|pkg| {

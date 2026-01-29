@@ -49,6 +49,7 @@ impl ImageEntry {
     }
 
     /// Checks if an image entry with the given reference already exists.
+    #[allow(dead_code)]
     pub(crate) fn exists(
         conn: &Connection,
         ref_registry: &str,
@@ -82,6 +83,7 @@ impl ImageEntry {
     }
 
     /// Inserts a new image entry into the database if it doesn't already exist.
+    /// Uses atomic `INSERT ... ON CONFLICT DO NOTHING` to prevent race conditions.
     /// Returns `(InsertResult::AlreadyExists, None)` if the entry already exists,
     /// or `(InsertResult::Inserted, Some(id))` if it was successfully inserted.
     pub(crate) fn insert(
@@ -93,16 +95,20 @@ impl ImageEntry {
         manifest: &str,
         size_on_disk: u64,
     ) -> anyhow::Result<(InsertResult, Option<i64>)> {
-        // Check if entry already exists
-        if Self::exists(conn, ref_registry, ref_repository, ref_tag, ref_digest)? {
-            return Ok((InsertResult::AlreadyExists, None));
-        }
-
-        conn.execute(
-            "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+        // Use atomic upsert to prevent race conditions
+        // The unique index uses COALESCE for NULL handling, so we match that pattern
+        let rows_affected = conn.execute(
+            "INSERT INTO image (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk) 
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(ref_registry, ref_repository, COALESCE(ref_tag, ''), COALESCE(ref_digest, '')) DO NOTHING",
             (ref_registry, ref_repository, ref_tag, ref_digest, manifest, size_on_disk as i64),
         )?;
-        Ok((InsertResult::Inserted, Some(conn.last_insert_rowid())))
+
+        if rows_affected == 0 {
+            Ok((InsertResult::AlreadyExists, None))
+        } else {
+            Ok((InsertResult::Inserted, Some(conn.last_insert_rowid())))
+        }
     }
 
     /// Returns all currently stored images and their metadata, ordered alphabetically by repository.
