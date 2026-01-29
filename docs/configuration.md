@@ -12,7 +12,83 @@
 | `$XDG_DATA_HOME`   | User-specific data files                               | `~/.local/share`              | `~/Library/Application Support`   | `%LOCALAPPDATA%`      |
 | `$XDG_STATE_HOME`  | User-specific state data (logs, history, recent files) | `~/.local/state`              | `~/Library/Application Support`   | `%LOCALAPPDATA%`      |
 
-We're currently using the data directory (`$XDG_DATA_HOME/wasm`), and are planning to use the config directory in the future.
+## Configuration File
+
+The configuration file is located at `$XDG_CONFIG_HOME/wasm/config.toml`. On most systems, this is:
+
+- **Linux/BSD**: `~/.config/wasm/config.toml`
+- **macOS**: `~/Library/Preferences/wasm/config.toml`
+- **Windows**: `%LOCALAPPDATA%\wasm\config.toml`
+
+To view the current configuration and file location:
+
+```bash
+wasm self config
+```
+
+### Configuration Format
+
+The configuration file uses TOML format. Here's an example with all available options:
+
+```toml
+# ~/.config/wasm/config.toml
+
+# Default registry to use when no registry is specified (optional)
+default-registry = "ghcr.io"
+
+# Per-registry credential helpers
+# These allow you to securely retrieve credentials from password managers
+# or other secret stores without storing them in plain text.
+
+# Option 1: Single JSON command (recommended for 1Password, etc.)
+# The command should output JSON with username and password fields:
+# [{"id": "username", "value": "..."}, {"id": "password", "value": "..."}]
+[registries."ghcr.io"]
+credential-helper = "op item get ghcr --format json --fields username,password"
+
+# Option 2: Separate commands for username and password
+# Each command's stdout (trimmed) is used as the credential value.
+[registries."my-registry.example.com"]
+credential-helper.username = "/path/to/get-user.sh"
+credential-helper.password = "/path/to/get-pass.sh"
+```
+
+### Credential Helpers
+
+Credential helpers allow you to integrate with password managers and secret stores for secure authentication. When `wasm` needs to authenticate with a registry, it first checks if a credential helper is configured. If not, it falls back to the Docker credential store.
+
+#### 1Password Integration
+
+To use 1Password with `wasm`, first ensure you have the [1Password CLI](https://developer.1password.com/docs/cli/) installed and configured. Then add your registry credentials to 1Password and configure the helper:
+
+```toml
+[registries."ghcr.io"]
+credential-helper = "op item get 'GitHub Container Registry' --format json --fields username,password"
+```
+
+The command should output JSON in this format:
+
+```json
+[{"id": "username", "value": "your-username"}, {"id": "password", "value": "your-token"}]
+```
+
+#### Custom Scripts
+
+For custom secret stores or other password managers, you can use scripts:
+
+```toml
+[registries."my-registry.example.com"]
+credential-helper.username = "/path/to/get-username.sh"
+credential-helper.password = "/path/to/get-password.sh"
+```
+
+Each script should output the credential value to stdout (trailing whitespace is trimmed).
+
+### Security Notes
+
+- **Credentials are cached in memory** during program execution for performance, but are never written to disk.
+- **Prefer credential helpers** over storing credentials in Docker's credential store when using sensitive tokens.
+- **Keep scripts secure**: Ensure credential helper scripts have appropriate permissions (e.g., `chmod 700`).
 
 ## Storage Layout
 
@@ -40,10 +116,6 @@ The store directory uses [`cacache`](https://docs.rs/cacache/) for content-addre
 #### Metadata Database (`db/metadata.db3`)
 
 The metadata database is a SQLite database that stores package metadata.
-
-## Configuration Options
-
-Currently, we don't support any configuration options. However, we are planning to in the future, see [issue #62](https://github.com/yoshuawuyts/wasm/issues/62).
 
 ## Storage Management
 

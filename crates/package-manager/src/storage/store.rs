@@ -42,6 +42,10 @@ impl Store {
         let data_dir = dirs::data_local_dir()
             .context("No local data dir known for the current OS")?
             .join("wasm");
+        let config_file = dirs::config_dir()
+            .context("No config dir known for the current OS")?
+            .join("wasm")
+            .join("config.toml");
         let store_dir = data_dir.join("store");
         let db_dir = data_dir.join("db");
         let metadata_file = db_dir.join("metadata.db3");
@@ -66,7 +70,13 @@ impl Store {
             .await
             .map(|m| m.len())
             .unwrap_or(0);
-        let state_info = StateInfo::new_at(data_dir, migration_info, store_size, metadata_size);
+        let state_info = StateInfo::new_at(
+            data_dir,
+            config_file,
+            migration_info,
+            store_size,
+            metadata_size,
+        );
 
         let store = Self { state_info, conn };
 

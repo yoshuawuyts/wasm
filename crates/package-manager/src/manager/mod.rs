@@ -1,5 +1,6 @@
 use oci_client::Reference;
 
+use crate::config::Config;
 use crate::network::Client;
 use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, WitInterface};
 
@@ -8,28 +9,39 @@ use crate::storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, Store, W
 pub struct Manager {
     client: Client,
     store: Store,
+    config: Config,
 }
 
 impl Manager {
     /// Create a new store at a location on disk.
     ///
     /// This may return an error if it fails to create the cache location on disk.
+    /// Loads configuration from the default config location.
     pub async fn open() -> anyhow::Result<Self> {
-        let client = Client::new();
+        let config = Config::load()?;
+        let client = Client::new(config.clone());
         let store = Store::open().await?;
 
-        Ok(Self { client, store })
+        Ok(Self {
+            client,
+            store,
+            config,
+        })
     }
 
-    // /// Create a new store at a location on disk.
-    // ///
-    // /// This may return an error if it fails to create the cache location on disk.
-    // pub async fn with_config(config: Config) -> anyhow::Result<Self> {
-    //     let client = Client::new();
-    //     let store = Store::open().await?;
+    /// Create a new store with a specific configuration.
+    ///
+    /// This may return an error if it fails to create the cache location on disk.
+    pub async fn with_config(config: Config) -> anyhow::Result<Self> {
+        let client = Client::new(config.clone());
+        let store = Store::open().await?;
 
-    //     Ok(Self { client, store })
-    // }
+        Ok(Self {
+            client,
+            store,
+            config,
+        })
+    }
 
     /// Pull a package from the registry.
     /// Returns the insert result indicating whether the package was newly inserted
@@ -77,6 +89,12 @@ impl Manager {
     /// Get information about the current state of the package manager.
     pub fn state_info(&self) -> StateInfo {
         self.store.state_info.clone()
+    }
+
+    /// Get the current configuration.
+    #[must_use]
+    pub fn config(&self) -> &Config {
+        &self.config
     }
 
     /// Delete an image from the store by its reference.
