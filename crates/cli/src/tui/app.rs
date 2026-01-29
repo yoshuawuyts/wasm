@@ -103,6 +103,8 @@ pub(crate) struct App {
     interfaces_view_state: InterfacesViewState,
     /// Local WASM files
     local_wasm_files: Vec<wasm_detector::WasmEntry>,
+    /// Whether offline mode is enabled
+    offline: bool,
     app_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
@@ -111,6 +113,7 @@ impl App {
     pub(crate) fn new(
         app_sender: mpsc::Sender<AppEvent>,
         manager_receiver: mpsc::Receiver<ManagerEvent>,
+        offline: bool,
     ) -> Self {
         Self {
             running: true,
@@ -125,6 +128,7 @@ impl App {
             wit_interfaces: Vec::new(),
             interfaces_view_state: InterfacesViewState::new(),
             local_wasm_files: Vec::new(),
+            offline,
             app_sender,
             manager_receiver,
         }
@@ -144,9 +148,10 @@ impl App {
     #[allow(clippy::indexing_slicing)]
     fn render_frame(&mut self, frame: &mut ratatui::Frame) {
         let area = frame.area();
-        let status = match self.manager_state {
-            ManagerState::Ready => "ready",
-            ManagerState::Loading => "loading...",
+        let status = match (self.manager_state, self.offline) {
+            (_, true) => "offline",
+            (ManagerState::Ready, false) => "ready",
+            (ManagerState::Loading, false) => "loading...",
         };
 
         // Create main layout with tabs at top
@@ -413,9 +418,9 @@ impl App {
             (KeyCode::Char('3'), _) => self.current_tab = Tab::Interfaces,
             (KeyCode::Char('4'), _) => self.current_tab = Tab::Search,
             (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
-            // Pull prompt - 'p' to open (only on Components tab)
+            // Pull prompt - 'p' to open (only on Components tab, and not in offline mode)
             (KeyCode::Char('p'), _)
-                if self.current_tab == Tab::Components && self.is_manager_ready() =>
+                if self.current_tab == Tab::Components && self.can_use_network() =>
             {
                 self.input_mode = InputMode::PullPrompt(PullPromptState::default());
             }
@@ -497,9 +502,9 @@ impl App {
                     self.input_mode = InputMode::InterfaceDetail;
                 }
             }
-            // Pull selected package from search results
+            // Pull selected package from search results (not in offline mode)
             (KeyCode::Char('p'), _)
-                if self.current_tab == Tab::Search && self.is_manager_ready() =>
+                if self.current_tab == Tab::Search && self.can_use_network() =>
             {
                 if let Some(selected) = self.search_view_state.selected()
                     && let Some(package) = self.known_packages.get(selected)
@@ -509,9 +514,9 @@ impl App {
                     let _ = self.app_sender.try_send(AppEvent::Pull(reference));
                 }
             }
-            // Refresh tags for selected package from registry
+            // Refresh tags for selected package from registry (not in offline mode)
             (KeyCode::Char('r'), _)
-                if self.current_tab == Tab::Search && self.is_manager_ready() =>
+                if self.current_tab == Tab::Search && self.can_use_network() =>
             {
                 if let Some(selected) = self.search_view_state.selected()
                     && let Some(package) = self.known_packages.get(selected)
@@ -626,6 +631,11 @@ impl App {
 
     fn is_manager_ready(&self) -> bool {
         self.manager_state == ManagerState::Ready
+    }
+
+    /// Returns true if network operations are allowed (manager ready and not offline)
+    fn can_use_network(&self) -> bool {
+        self.is_manager_ready() && !self.offline
     }
 
     fn filtered_packages(&self) -> Vec<&ImageEntry> {

@@ -63,7 +63,7 @@ pub enum ManagerEvent {
 }
 
 /// Run the TUI application
-pub async fn run() -> anyhow::Result<()> {
+pub async fn run(offline: bool) -> anyhow::Result<()> {
     // Create channels for bidirectional communication
     let (app_sender, app_receiver) = mpsc::channel::<AppEvent>(32);
     let (manager_sender, manager_receiver) = mpsc::channel::<ManagerEvent>(32);
@@ -71,7 +71,7 @@ pub async fn run() -> anyhow::Result<()> {
     // Run the TUI in a blocking task (separate thread) since it has a synchronous event loop
     let tui_handle = tokio::task::spawn_blocking(move || {
         let terminal = ratatui::init();
-        let res = App::new(app_sender, manager_receiver).run(terminal);
+        let res = App::new(app_sender, manager_receiver, offline).run(terminal);
         ratatui::restore();
         res
     });
@@ -79,7 +79,7 @@ pub async fn run() -> anyhow::Result<()> {
     // Run the manager on the current task using LocalSet (Manager is not Send)
     let local = tokio::task::LocalSet::new();
     local
-        .run_until(run_manager(app_receiver, manager_sender))
+        .run_until(run_manager(app_receiver, manager_sender, offline))
         .await?;
 
     // Wait for TUI to finish
@@ -91,8 +91,13 @@ pub async fn run() -> anyhow::Result<()> {
 async fn run_manager(
     mut receiver: mpsc::Receiver<AppEvent>,
     sender: mpsc::Sender<ManagerEvent>,
+    offline: bool,
 ) -> Result<(), anyhow::Error> {
-    let manager = Manager::open().await?;
+    let manager = if offline {
+        Manager::open_offline().await?
+    } else {
+        Manager::open().await?
+    };
     sender.send(ManagerEvent::Ready).await.ok();
 
     while let Some(event) = receiver.recv().await {

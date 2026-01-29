@@ -32,8 +32,12 @@ pub(crate) struct TagsOpts {
 }
 
 impl Opts {
-    pub(crate) async fn run(self) -> Result<()> {
-        let store = Manager::open().await?;
+    pub(crate) async fn run(self, offline: bool) -> Result<()> {
+        let store = if offline {
+            Manager::open_offline().await?
+        } else {
+            Manager::open().await?
+        };
         match self {
             Opts::Show => todo!(),
             Opts::Pull(opts) => {
@@ -68,9 +72,23 @@ impl Opts {
                     .collect();
 
                 if tags.is_empty() {
-                    println!("No tags found for '{}'", opts.reference.whole());
+                    if offline {
+                        println!(
+                            "No cached tags found for '{}' (offline mode)",
+                            opts.reference.whole()
+                        );
+                    } else {
+                        println!("No tags found for '{}'", opts.reference.whole());
+                    }
                 } else {
-                    println!("Tags for '{}':", opts.reference.whole());
+                    if offline {
+                        println!(
+                            "Cached tags for '{}' (offline mode):",
+                            opts.reference.whole()
+                        );
+                    } else {
+                        println!("Tags for '{}':", opts.reference.whole());
+                    }
                     for tag in tags {
                         println!("  {}", tag);
                     }

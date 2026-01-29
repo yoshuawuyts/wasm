@@ -30,6 +30,13 @@ struct Cli {
     )]
     color: ColorChoice,
 
+    /// Run in offline mode.
+    ///
+    /// Disables all network operations. Commands that require network access
+    /// will fail with an error. Local-only commands will continue to work.
+    #[arg(long, global = true, help_heading = "Global Options")]
+    offline: bool,
+
     #[command(subcommand)]
     command: Option<Command>,
 }
@@ -41,10 +48,10 @@ impl Cli {
             Some(Command::Inspect(opts)) => opts.run()?,
             Some(Command::Convert) => todo!(),
             Some(Command::Local(opts)) => opts.run()?,
-            Some(Command::Package(opts)) => opts.run().await?,
+            Some(Command::Package(opts)) => opts.run(self.offline).await?,
             Some(Command::Compose) => todo!(),
             Some(Command::Self_(opts)) => opts.run().await?,
-            None if std::io::stdin().is_terminal() => tui::run().await?,
+            None if std::io::stdin().is_terminal() => tui::run(self.offline).await?,
             None => {
                 // Apply the parsed color choice when printing help
                 Cli::command().color(self.color).print_help()?;
