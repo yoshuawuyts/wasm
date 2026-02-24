@@ -118,13 +118,24 @@ impl Manager {
 
     /// Search for known packages by query string.
     /// Searches in both registry and repository fields.
-    pub fn search_packages(&self, query: &str) -> anyhow::Result<Vec<KnownPackage>> {
-        self.store.search_known_packages(query)
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn search_packages(
+        &self,
+        query: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.search_known_packages(query, offset, limit)
     }
 
     /// Get all known packages.
-    pub fn list_known_packages(&self) -> anyhow::Result<Vec<KnownPackage>> {
-        self.store.list_known_packages()
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn list_known_packages(
+        &self,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        self.store.list_known_packages(offset, limit)
     }
 
     /// Add or update a known package entry.
@@ -157,21 +168,22 @@ impl Manager {
     /// Returns all cached tags (release, signature, and attestation) for the given
     /// reference from the local known packages database.
     fn list_cached_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
-        let known_packages = self.store.list_known_packages()?;
-        let tags: Vec<String> = known_packages
-            .into_iter()
-            .filter(|pkg| {
-                pkg.registry == reference.registry() && pkg.repository == reference.repository()
-            })
-            .flat_map(|pkg| {
-                // Combine all tag types: release, signature, and attestation
-                pkg.tags
-                    .into_iter()
-                    .chain(pkg.signature_tags)
-                    .chain(pkg.attestation_tags)
-            })
-            .collect();
-        Ok(tags)
+        // Use efficient lookup by registry and repository
+        if let Some(pkg) = self
+            .store
+            .get_known_package(reference.registry(), reference.repository())?
+        {
+            // Combine all tag types: release, signature, and attestation
+            let tags: Vec<String> = pkg
+                .tags
+                .into_iter()
+                .chain(pkg.signature_tags)
+                .chain(pkg.attestation_tags)
+                .collect();
+            Ok(tags)
+        } else {
+            Ok(Vec::new())
+        }
     }
 
     /// Re-scan known package tags to update derived data (e.g., tag types).

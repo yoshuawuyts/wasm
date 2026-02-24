@@ -139,7 +139,8 @@ async fn run_manager(
                 }
             }
             AppEvent::SearchPackages(query) => {
-                if let Ok(packages) = manager.search_packages(&query) {
+                // Use default pagination: offset 0, limit 100
+                if let Ok(packages) = manager.search_packages(&query, 0, 100) {
                     sender
                         .send(ManagerEvent::SearchResults(packages))
                         .await
@@ -147,7 +148,8 @@ async fn run_manager(
                 }
             }
             AppEvent::RequestKnownPackages => {
-                if let Ok(packages) = manager.list_known_packages() {
+                // Use default pagination: offset 0, limit 100
+                if let Ok(packages) = manager.list_known_packages(0, 100) {
                     sender
                         .send(ManagerEvent::KnownPackagesList(packages))
                         .await
@@ -181,7 +183,8 @@ async fn run_manager(
                     .await
                     .ok();
                 // Refresh known packages list after updating tags
-                if let Ok(packages) = manager.list_known_packages() {
+                // Use default pagination: offset 0, limit 100
+                if let Ok(packages) = manager.list_known_packages(0, 100) {
                     sender
                         .send(ManagerEvent::KnownPackagesList(packages))
                         .await
