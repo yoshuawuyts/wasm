@@ -102,21 +102,21 @@ mod tests {
     #[test]
     fn test_parse_lockfile() {
         let toml = r#"
-            version = 1
+            lockfile_version = 1
 
-            [[package]]
+            [[packages]]
             name = "wasi:logging"
             version = "1.0.0"
             registry = "ghcr.io/webassembly/wasi-logging"
             digest = "sha256:a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456"
 
-            [[package]]
+            [[packages]]
             name = "wasi:key-value"
             version = "2.0.0"
             registry = "ghcr.io/webassembly/wasi-key-value"
             digest = "sha256:b2c3d4e5f67890123456789012345678901abcdef2345678901abcdef2345678"
 
-            [[package.dependencies]]
+            [[packages.dependencies]]
             name = "wasi:logging"
             version = "1.0.0"
         "#;
@@ -176,9 +176,9 @@ mod tests {
     #[test]
     fn test_package_without_dependencies() {
         let toml = r#"
-            version = 1
+            lockfile_version = 1
 
-            [[package]]
+            [[packages]]
             name = "wasi:logging"
             version = "1.0.0"
             registry = "ghcr.io/webassembly/wasi-logging"

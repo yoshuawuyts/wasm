@@ -22,9 +22,9 @@
 //! use wasm_manifest::Lockfile;
 //!
 //! let toml = r#"
-//! version = 1
+//! lockfile_version = 1
 //!
-//! [[package]]
+//! [[packages]]
 //! name = "wasi:logging"
 //! version = "1.0.0"
 //! registry = "ghcr.io/webassembly/wasi-logging"
