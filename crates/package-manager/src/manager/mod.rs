@@ -176,8 +176,18 @@ impl Manager {
         if let Some(ref manifest) = pull_result.manifest {
             for layer in &manifest.layers {
                 if layer.media_type == "application/wasm" {
-                    // Derive filename from the repository name
-                    let filename = format!("{}.wasm", reference.repository().replace('/', "-"));
+                    // Derive filename from the full OCI reference including
+                    // registry, repository, tag, and a truncated layer SHA.
+                    let registry_part = reference.registry().replace('.', "-");
+                    let repo_part = reference.repository().replace('/', "-");
+                    let tag_part = reference.tag().map(|t| format!("-{t}")).unwrap_or_default();
+                    let sha_part = layer
+                        .digest
+                        .strip_prefix("sha256:")
+                        .unwrap_or(&layer.digest);
+                    let short_sha = sha_part.get(..12).unwrap_or(sha_part);
+                    let filename =
+                        format!("{registry_part}-{repo_part}{tag_part}-{short_sha}.wasm");
                     let dest = vendor_dir.join(&filename);
 
                     // Ensure vendor directory exists
