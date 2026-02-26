@@ -123,3 +123,41 @@ impl<E: Into<anyhow::Error>> From<E> for AppError {
         Self(err.into())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+
+    /// Verify the server starts, binds to a port, and responds to `/v1/health`.
+    #[tokio::test]
+    async fn server_starts_and_listens() {
+        let manager = Manager::open().await.expect("failed to open manager");
+        let state = Arc::new(std::sync::Mutex::new(manager));
+        let app = router(state);
+
+        // Bind to port 0 so the OS assigns a random available port.
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("failed to bind listener");
+        let addr = listener.local_addr().expect("failed to get local addr");
+
+        // Spawn the server in a background task.
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app)
+                .await
+                .expect("server error");
+        });
+
+        // Hit the health endpoint.
+        let url = format!("http://{addr}/v1/health");
+        let resp = reqwest::get(&url).await.expect("request failed");
+        assert_eq!(resp.status(), 200);
+
+        let body: serde_json::Value = resp.json().await.expect("invalid json");
+        assert_eq!(body, serde_json::json!({ "status": "ok" }));
+
+        // Clean up.
+        server.abort();
+    }
+}
