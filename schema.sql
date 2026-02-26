@@ -274,12 +274,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS "uq_wit_interface_dependency"
 CREATE TABLE IF NOT EXISTS "wasm_component" (
     "id"              INTEGER PRIMARY KEY,
     "oci_manifest_id" INTEGER NOT NULL,
-    "oci_layer_id"    INTEGER,                            -- the layer blob for this component
+    "oci_layer_id"    INTEGER,
     "name"            TEXT,
     "description"     TEXT,
-    "package_type"    TEXT NOT NULL DEFAULT 'component'
-        CHECK("package_type" IN ('component', 'library', 'plugin')),
-    "created_at"      TEXT    NOT NULL DEFAULT (datetime('now')),
+    "created_at"      TEXT NOT NULL DEFAULT (datetime('now')),
 
     FOREIGN KEY ("oci_manifest_id") REFERENCES "oci_manifest"("id")
         ON UPDATE NO ACTION ON DELETE CASCADE,
