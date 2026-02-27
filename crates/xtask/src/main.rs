@@ -100,7 +100,8 @@ fn workspace_root() -> Result<PathBuf> {
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
             // Fallback: assume CWD is the workspace root.
-            std::env::current_dir().expect("could not determine current directory")
+            std::env::current_dir()
+                .expect("failed to determine current directory; ensure xtask is run from the workspace root")
         });
 
     // If we're inside crates/xtask, go up two levels.
@@ -108,7 +109,7 @@ fn workspace_root() -> Result<PathBuf> {
         Ok(manifest_dir
             .parent()
             .and_then(|p| p.parent())
-            .expect("invalid workspace structure")
+            .expect("invalid workspace structure: expected crates/xtask to have two parent directories")
             .to_path_buf())
     } else {
         Ok(manifest_dir)
@@ -268,7 +269,11 @@ fn quote_reserved_column_names(ddl: &str) -> String {
 /// Returns an empty string when no changes are needed.
 fn run_sqlite3def_diff(db_path: &Path, schema_sql: &str) -> Result<String> {
     let output = Command::new("sqlite3def")
-        .arg(db_path.to_str().expect("temp db path is not valid UTF-8"))
+        .arg(
+            db_path
+                .to_str()
+                .expect("temp database path contains invalid UTF-8"),
+        )
         .arg("--dry-run")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -337,14 +342,15 @@ fn regenerate_migration_rs(root: &Path) -> Result<()> {
     buf.push_str("const MIGRATIONS: &[MigrationDef] = &[\n");
 
     for (num, name, _) in &entries {
-        let _ = writeln!(buf, "    MigrationDef {{");
-        let _ = writeln!(buf, "        version: {num},");
-        let _ = writeln!(buf, "        name: \"{name}\",");
-        let _ = writeln!(
+        writeln!(buf, "    MigrationDef {{").expect("write to String");
+        writeln!(buf, "        version: {num},").expect("write to String");
+        writeln!(buf, "        name: \"{name}\",").expect("write to String");
+        writeln!(
             buf,
             "        sql: include_str!(\"../migrations/{num:02}_{name}.sql\"),"
-        );
-        let _ = writeln!(buf, "    }},");
+        )
+        .expect("write to String");
+        writeln!(buf, "    }},").expect("write to String");
     }
 
     buf.push_str("];\n");
