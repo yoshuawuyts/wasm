@@ -372,11 +372,7 @@ fn sql_install() -> Result<()> {
 /// Returns an empty string when no changes are needed.
 fn run_sqlite3def_diff(sqlite3def: &Path, db_path: &Path, schema_sql: &str) -> Result<String> {
     let output = Command::new(sqlite3def)
-        .arg(
-            db_path
-                .to_str()
-                .expect("temp database path contains invalid UTF-8"),
-        )
+        .arg(db_path)
         .arg("--dry-run")
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -478,6 +474,13 @@ fn regenerate_migration_rs(root: &Path) -> Result<()> {
 
 /// `cargo xtask sql migrate --name <name>`
 fn sql_migrate(name: &str) -> Result<()> {
+    // Validate the migration name: only alphanumeric characters and underscores allowed.
+    if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+        anyhow::bail!(
+            "invalid migration name '{name}': only ASCII alphanumeric characters and underscores are allowed"
+        );
+    }
+
     let root = workspace_root()?;
     let migrations_dir = root.join(MIGRATIONS_DIR);
     let schema_path = root.join(SCHEMA_PATH);
