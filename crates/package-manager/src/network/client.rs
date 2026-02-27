@@ -5,8 +5,11 @@ use oci_client::manifest::{OciDescriptor, OciImageManifest};
 use oci_client::secrets::RegistryAuth;
 use oci_wasm::WasmClient;
 
+use crate::config::Config;
+
 pub(crate) struct Client {
     inner: WasmClient,
+    config: Config,
 }
 
 impl std::fmt::Debug for Client {
@@ -16,17 +19,20 @@ impl std::fmt::Debug for Client {
 }
 
 impl Client {
-    pub(crate) fn new() -> Self {
-        let config = ClientConfig {
+    pub(crate) fn new(config: Config) -> Self {
+        let client_config = ClientConfig {
             protocol: ClientProtocol::Https,
             ..Default::default()
         };
-        let client = WasmClient::new(oci_client::Client::new(config));
-        Self { inner: client }
+        let client = WasmClient::new(oci_client::Client::new(client_config));
+        Self {
+            inner: client,
+            config,
+        }
     }
 
     pub(crate) async fn pull(&self, reference: &Reference) -> anyhow::Result<ImageData> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         let image = self.inner.pull(reference, &auth).await?;
         Ok(image)
     }
@@ -38,7 +44,7 @@ impl Client {
         &self,
         reference: &Reference,
     ) -> anyhow::Result<(OciImageManifest, String)> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         let (manifest, _config, digest) = self
             .inner
             .pull_manifest_and_config(reference, &auth)
@@ -55,7 +61,7 @@ impl Client {
         reference: &Reference,
         layer: &OciDescriptor,
     ) -> anyhow::Result<SizedStream> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         // Ensure auth is stored before calling pull_blob_stream
         self.inner
             .store_auth_if_needed(reference.resolve_registry(), &auth)
@@ -69,7 +75,7 @@ impl Client {
     /// This method handles pagination automatically, fetching all available tags
     /// by making multiple requests if necessary.
     pub(crate) async fn list_tags(&self, reference: &Reference) -> anyhow::Result<Vec<String>> {
-        let auth = resolve_auth(reference)?;
+        let auth = resolve_auth(reference, &self.config)?;
         let mut all_tags = Vec::new();
         let mut last: Option<String> = None;
 
@@ -125,11 +131,25 @@ impl Client {
     }
 }
 
-fn resolve_auth(reference: &Reference) -> anyhow::Result<RegistryAuth> {
+/// Resolve authentication for a registry reference.
+///
+/// The authentication is resolved in the following order:
+/// 1. Check if a credential helper is configured in the config file for this registry
+/// 2. Fall back to Docker credential store
+/// 3. Use anonymous access if no credentials are found
+fn resolve_auth(reference: &Reference, config: &Config) -> anyhow::Result<RegistryAuth> {
+    let registry = reference.resolve_registry();
+
+    // First, check if a credential helper is configured in the config file
+    if let Some((username, password)) = config.get_credentials(registry)? {
+        return Ok(RegistryAuth::Basic(username, password));
+    }
+
+    // Fall back to Docker credential store
     // NOTE: copied approach from https://github.com/bytecodealliance/wasm-pkg-tools/blob/48c28825a7dfb585b3fe1d42be65fe73a17d84fe/crates/wkg/src/oci.rs#L59-L66
-    let server_url = match reference.resolve_registry() {
-        "index.docker.io" => "https://index.docker.io/v1/", // Default registry uses this key.
-        other => other, // All other registries are keyed by their domain name without the `https://` prefix or any path suffix.
+    let server_url = match registry {
+        "index.docker.io" => "https://index.docker.io/v1/",
+        other => other,
     };
 
     match docker_credential::get_credential(server_url) {

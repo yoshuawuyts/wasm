@@ -15,8 +15,8 @@ keywords = { workspace = true }
 default = []
 # Enable test helpers for use in other crates' tests
 test-helpers = []
-# Enable serde::Serialize derives for types like KnownPackage
-serde = ["dep:serde"]
+# serde is always enabled (kept as a no-op feature for backward compatibility)
+serde = []
 # Enable HTTP sync from meta-registry
 http-sync = ["dep:reqwest", "dep:exponential-backoff", "serde"]
 
@@ -29,16 +29,18 @@ exponential-backoff = { workspace = true, optional = true }
 futures-concurrency = { workspace = true }
 oci-client = { workspace = true }
 oci-wasm = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 reqwest = { workspace = true, optional = true }
-serde = { workspace = true, optional = true }
 tokio = { workspace = true }
 tokio-stream = { workspace = true }
 rusqlite = { workspace = true }
-serde_json = { workspace = true }
+toml = { workspace = true }
 wasmparser = { workspace = true }
 wit-parser = { workspace = true }
 
 [dev-dependencies]
+tempfile = { workspace = true }
 
 [lints]
 workspace = true

@@ -1,11 +1,13 @@
 use anyhow::Result;
-use wasm_package_manager::{Manager, format_size};
+use wasm_package_manager::{Config, Manager, format_size};
 
 /// Configure the `wasm(1)` tool, generate completions, & manage state
 #[derive(clap::Parser)]
 pub(crate) enum Opts {
     /// Print diagnostics about the local state
     State,
+    /// Show configuration file location and current settings
+    Config,
 }
 
 impl Opts {
@@ -35,6 +37,47 @@ impl Opts {
                     state_info.metadata_file().display(),
                     format_size(state_info.metadata_size())
                 );
+                Ok(())
+            }
+            Opts::Config => {
+                // Get the config path
+                let config_path = Config::config_path();
+
+                println!("[Configuration]");
+                println!("Config file:\t{}", config_path.display());
+
+                // Check if the config file exists
+                if config_path.exists() {
+                    println!("Status:\t\texists");
+                } else {
+                    println!("Status:\t\tnot created (will use defaults)");
+                    println!();
+                    println!("To create a default config file with examples, run:");
+                    if let Some(parent) = config_path.parent() {
+                        println!("  mkdir -p {}", parent.display());
+                    }
+                    println!("  touch {}", config_path.display());
+                }
+
+                // Load the config to show current settings
+                let config = Config::load()?;
+                println!();
+                println!("[Registries]");
+
+                // Show configured registries
+                if config.registries.is_empty() {
+                    println!("(none configured)");
+                } else {
+                    for (name, registry_config) in &config.registries {
+                        let helper_status = if registry_config.credential_helper.is_some() {
+                            "credential-helper configured"
+                        } else {
+                            "no credential-helper"
+                        };
+                        println!("  - {name}: {helper_status}");
+                    }
+                }
+
                 Ok(())
             }
         }

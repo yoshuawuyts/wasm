@@ -9,6 +9,8 @@ use super::models::Migrations;
 pub struct StateInfo {
     /// Path to the current executable
     executable: PathBuf,
+    /// Path to the configuration file
+    config_file: PathBuf,
     /// Path to the data storage directory
     data_dir: PathBuf,
     /// Path to the content-addressable store directory
@@ -35,8 +37,13 @@ impl StateInfo {
         let data_dir = dirs::data_local_dir()
             .context("No local data dir known for the current OS")?
             .join("wasm");
+        let config_file = dirs::config_dir()
+            .context("No config dir known for the current OS")?
+            .join("wasm")
+            .join("config.toml");
         Ok(Self::new_at(
             data_dir,
+            config_file,
             migration_info,
             store_size,
             metadata_size,
@@ -47,12 +54,14 @@ impl StateInfo {
     #[must_use]
     pub fn new_at(
         data_dir: PathBuf,
+        config_file: PathBuf,
         migration_info: Migrations,
         store_size: u64,
         metadata_size: u64,
     ) -> Self {
         Self {
             executable: env::current_exe().unwrap_or_else(|_| PathBuf::from("unknown")),
+            config_file,
             store_dir: data_dir.join("store"),
             store_size,
             metadata_file: data_dir.join("db").join("metadata.db3"),
@@ -67,6 +76,12 @@ impl StateInfo {
     #[must_use]
     pub fn executable(&self) -> &Path {
         &self.executable
+    }
+
+    /// Get the path to the configuration file
+    #[must_use]
+    pub fn config_file(&self) -> &Path {
+        &self.config_file
     }
 
     /// Get the location of the crate's data dir
@@ -117,6 +132,7 @@ impl StateInfo {
     pub fn new_for_testing() -> Self {
         Self {
             executable: PathBuf::from("/usr/local/bin/wasm"),
+            config_file: PathBuf::from("/home/user/.config/wasm/config.toml"),
             data_dir: PathBuf::from("/home/user/.local/share/wasm"),
             store_dir: PathBuf::from("/home/user/.local/share/wasm/store"),
             store_size: 1024 * 1024 * 10, // 10 MB
@@ -143,9 +159,17 @@ mod tests {
     #[test]
     fn test_state_info_new_at() {
         let data_dir = PathBuf::from("/test/data");
-        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024, 512);
+        let config_file = PathBuf::from("/test/config/config.toml");
+        let state_info = StateInfo::new_at(
+            data_dir.clone(),
+            config_file.clone(),
+            test_migrations(),
+            1024,
+            512,
+        );
 
         assert_eq!(state_info.data_dir(), data_dir);
+        assert_eq!(state_info.config_file(), config_file);
         assert_eq!(state_info.store_dir(), data_dir.join("store"));
         assert_eq!(
             state_info.metadata_file(),
@@ -160,7 +184,8 @@ mod tests {
     #[test]
     fn test_state_info_executable() {
         let data_dir = PathBuf::from("/test/data");
-        let state_info = StateInfo::new_at(data_dir, test_migrations(), 0, 0);
+        let config_file = PathBuf::from("/test/config/config.toml");
+        let state_info = StateInfo::new_at(data_dir, config_file, test_migrations(), 0, 0);
 
         // executable() should return something (either the actual exe or "unknown")
         let exe = state_info.executable();
@@ -170,13 +195,26 @@ mod tests {
     #[test]
     fn test_state_info_sizes() {
         let data_dir = PathBuf::from("/test/data");
+        let config_file = PathBuf::from("/test/config/config.toml");
 
         // Test with various sizes
-        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 0, 0);
+        let state_info = StateInfo::new_at(
+            data_dir.clone(),
+            config_file.clone(),
+            test_migrations(),
+            0,
+            0,
+        );
         assert_eq!(state_info.store_size(), 0);
         assert_eq!(state_info.metadata_size(), 0);
 
-        let state_info = StateInfo::new_at(data_dir.clone(), test_migrations(), 1024 * 1024, 1024);
+        let state_info = StateInfo::new_at(
+            data_dir.clone(),
+            config_file.clone(),
+            test_migrations(),
+            1024 * 1024,
+            1024,
+        );
         assert_eq!(state_info.store_size(), 1024 * 1024);
         assert_eq!(state_info.metadata_size(), 1024);
     }

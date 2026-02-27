@@ -4,9 +4,34 @@
 
 ## Overview
 
-`wasm(1)` integrates with your system's Docker credential store to authenticate with container registries. This means if you've already authenticated with a registry using Docker or Podman, `wasm(1)` will automatically use those credentials.
+`wasm(1)` supports multiple authentication methods:
+
+1. **Credential Helpers** (recommended): Configure per-registry credential helpers in the config file to securely retrieve credentials from password managers like 1Password
+2. **Docker Credential Store**: Automatically uses credentials stored by Docker or Podman
+
+The authentication resolution order is:
+1. Check config file for a credential helper for the registry
+2. Fall back to Docker credential store
+3. Use anonymous access if no credentials are found
 
 ## Authentication Methods
+
+### Credential Helpers (Recommended)
+
+You can configure credential helpers in your config file (`~/.config/wasm/config.toml`) to securely retrieve credentials from password managers or secret stores.
+
+```toml
+# Using 1Password CLI
+[registries."ghcr.io"]
+credential-helper = "op item get ghcr --format json --fields username,password"
+
+# Using separate scripts
+[registries."my-registry.example.com"]
+credential-helper.username = "/path/to/get-user.sh"
+credential-helper.password = "/path/to/get-pass.sh"
+```
+
+See [Configuration](configuration.md#credential-helpers) for detailed setup instructions.
 
 ### Docker Credential Store
 
@@ -27,6 +52,25 @@ The authentication flow:
 **Note**: Identity tokens are currently not supported.
 
 ## Setting Up Authentication
+
+### Using Credential Helpers
+
+1. Create the config directory and file:
+   ```bash
+   mkdir -p ~/.config/wasm
+   touch ~/.config/wasm/config.toml
+   ```
+
+2. Add your credential helper configuration:
+   ```toml
+   [registries."ghcr.io"]
+   credential-helper = "op item get ghcr --format json --fields username,password"
+   ```
+
+3. Verify the configuration:
+   ```bash
+   wasm self config
+   ```
 
 ### Using Docker Login
 
@@ -80,6 +124,9 @@ If credential lookups fail:
 - Verify you've logged in to the registry at least once
 - Check that credential helpers are properly configured in `~/.docker/config.json`
 
-## Future Enhancements
+### Credential Helper Errors
 
-Planned authentication improvement: [Support for identity tokens](https://github.com/yoshuawuyts/wasm/issues/56)
+If credential helper commands fail:
+- Verify the command works when run manually in your terminal
+- Check that the output format matches what `wasm` expects (see [Configuration](configuration.md#credential-helpers))
+- Ensure the credential helper program is installed and in your PATH
