@@ -109,7 +109,9 @@ fn workspace_root() -> Result<PathBuf> {
         Ok(manifest_dir
             .parent()
             .and_then(|p| p.parent())
-            .expect("invalid workspace structure: expected crates/xtask to have two parent directories")
+            .expect(
+                "invalid workspace structure: expected crates/xtask to have two parent directories",
+            )
             .to_path_buf())
     } else {
         Ok(manifest_dir)
