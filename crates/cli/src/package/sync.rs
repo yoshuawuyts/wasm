@@ -1,7 +1,7 @@
 //! `wasm package sync` subcommand.
 
 use anyhow::Result;
-use wasm_package_manager::{Manager, SyncResult};
+use wasm_package_manager::{Manager, SyncPolicy, SyncResult};
 
 /// Default meta-registry URL.
 const REGISTRY_URL: &str = "http://localhost:8080";
@@ -18,7 +18,7 @@ impl SyncOpts {
         let manager = Manager::open().await?;
 
         match manager
-            .sync_from_meta_registry(REGISTRY_URL, SYNC_INTERVAL, true)
+            .sync_from_meta_registry(REGISTRY_URL, SYNC_INTERVAL, SyncPolicy::Force)
             .await?
         {
             SyncResult::Updated { count } => {

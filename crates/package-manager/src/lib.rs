@@ -9,7 +9,7 @@ mod progress;
 mod storage;
 mod utils;
 
-pub use manager::{InstallResult, Manager, PullResult, SyncResult};
+pub use manager::{InstallResult, Manager, PullResult, SyncPolicy, SyncResult};
 pub use oci_client::Reference;
 pub use progress::ProgressEvent;
 pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};

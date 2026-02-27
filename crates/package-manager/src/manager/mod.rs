@@ -26,6 +26,16 @@ pub enum SyncResult {
     },
 }
 
+/// Controls whether `sync_from_meta_registry` respects the minimum sync
+/// interval or forces an immediate fetch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyncPolicy {
+    /// Only sync if the minimum interval has elapsed since the last sync.
+    IfStale,
+    /// Ignore the minimum interval and always contact the registry.
+    Force,
+}
+
 /// Result of a pull operation.
 ///
 /// Contains the insert result along with the content digest and manifest
@@ -655,7 +665,8 @@ impl Manager {
     /// if less than `sync_interval` seconds have elapsed. Passes the cached
     /// ETag to the registry for conditional fetches.
     ///
-    /// When `force` is `true`, the minimum-interval check is skipped.
+    /// When `policy` is [`SyncPolicy::Force`], the minimum-interval check is
+    /// skipped.
     ///
     /// # Errors
     ///
@@ -666,20 +677,20 @@ impl Manager {
         &self,
         url: &str,
         sync_interval: u64,
-        force: bool,
+        policy: SyncPolicy,
     ) -> anyhow::Result<SyncResult> {
         use crate::network::registry_client::{FetchResult, RegistryClient};
 
         // Check the minimum interval unless forced.
-        if !force
+        if policy == SyncPolicy::IfStale
             && let Some(last) = self.store.get_sync_meta("last_synced_at")?
-            && let Ok(ts) = last.parse::<i64>()
+            && let Ok(last_synced_epoch) = last.parse::<i64>()
         {
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs() as i64;
-            if now - ts < sync_interval as i64 {
+            if now - last_synced_epoch < sync_interval as i64 {
                 return Ok(SyncResult::Skipped);
             }
         }
@@ -692,7 +703,21 @@ impl Manager {
             !existing.is_empty()
         };
 
-        match client.fetch_packages(etag.as_deref(), 1000).await {
+        let result = client
+            .fetch_packages(etag.as_deref(), 1000)
+            .await
+            .map_err(|e| {
+                if has_cached_data {
+                    e
+                } else {
+                    anyhow::anyhow!(
+                        "{e}. No local data available. Please check your network \
+                         connection and run 'wasm package sync' to fetch the package index."
+                    )
+                }
+            });
+
+        match result {
             Ok(FetchResult::NotModified) => {
                 self.update_last_synced_at()?;
                 Ok(SyncResult::NotModified)
@@ -724,17 +749,10 @@ impl Manager {
                 self.update_last_synced_at()?;
                 Ok(SyncResult::Updated { count })
             }
-            Err(e) => {
-                if has_cached_data {
-                    Ok(SyncResult::Degraded {
-                        error: e.to_string(),
-                    })
-                } else {
-                    Err(anyhow::anyhow!(
-                        "{e}. No local data available. Please check your network connection and run 'wasm package sync' to fetch the package index."
-                    ))
-                }
-            }
+            Err(e) if has_cached_data => Ok(SyncResult::Degraded {
+                error: e.to_string(),
+            }),
+            Err(e) => Err(e),
         }
     }
 
