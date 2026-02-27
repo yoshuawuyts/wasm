@@ -40,6 +40,26 @@ jobs:
         components: rustfmt, clippy
         override: true
 
+    - name: Install sqlite3def (Linux)
+      if: runner.os == 'Linux'
+      run: |
+        curl -sL https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_linux_amd64.tar.gz | tar xz
+        sudo mv sqlite3def /usr/local/bin/
+
+    - name: Install sqlite3def (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        curl -sL https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_darwin_arm64.tar.gz | tar xz
+        sudo mv sqlite3def /usr/local/bin/
+
+    - name: Install sqlite3def (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        Invoke-WebRequest -Uri "https://github.com/sqldef/sqldef/releases/latest/download/sqlite3def_windows_amd64.zip" -OutFile sqlite3def.zip
+        Expand-Archive sqlite3def.zip -DestinationPath .
+        Move-Item sqlite3def.exe C:\Windows\system32\sqlite3def.exe
+
     - name: Run xtask test
       run: cargo xtask test
 
