@@ -13,7 +13,7 @@ mod utils;
 
 pub use config::{Config, RegistryConfig};
 pub use credential_helper::CredentialHelper;
-pub use manager::{InstallResult, Manager, PullResult};
+pub use manager::{InstallResult, Manager, PullResult, SyncPolicy, SyncResult};
 pub use oci_client::Reference;
 pub use progress::ProgressEvent;
 pub use storage::{ImageEntry, InsertResult, KnownPackage, StateInfo, WitInterface};

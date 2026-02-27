@@ -34,7 +34,7 @@ toml = { workspace = true }
 wasm-detector = { workspace = true }
 wasm-manifest = { workspace = true }
 wasm-metadata = { workspace = true }
-wasm-package-manager = { workspace = true }
+wasm-package-manager = { workspace = true, features = ["http-sync"] }
 wasmtime = { workspace = true }
 wasmtime-wasi = { workspace = true }
 
