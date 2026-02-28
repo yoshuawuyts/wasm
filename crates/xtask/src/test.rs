@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 
-use crate::{run_command, sql};
+use crate::{readme, run_command, sql, workspace_root};
 
 pub(crate) fn run_tests() -> Result<()> {
     println!("Running cargo test...");
@@ -16,6 +16,9 @@ pub(crate) fn run_tests() -> Result<()> {
 
     println!("\nRunning sql check...");
     sql::check()?;
+
+    println!("\nRunning readme check...");
+    readme::check(&workspace_root()?)?;
 
     println!("\n✓ All checks passed!");
     Ok(())
