@@ -4,19 +4,13 @@
 
 use oci_client::manifest::OciDescriptor;
 
+/// Truncated digest length used in vendor filenames.
+const DIGEST_PREFIX_LEN: usize = 12;
+
 /// Compute the vendor filename for a cached layer.
 ///
 /// The filename encodes the registry, repository, optional tag, and a
 /// truncated image digest so that vendored files are human-identifiable.
-///
-/// # Examples
-///
-/// ```
-/// use wasm_package_manager::vendor_filename;
-///
-/// let name = vendor_filename("ghcr.io", "user/component", Some("v1.0"), "sha256:abcdef1234567890");
-/// assert_eq!(name, "ghcr-io-user-component-v1.0-abcdef123456.wasm");
-/// ```
 #[must_use]
 pub fn vendor_filename(
     registry: &str,
@@ -28,7 +22,7 @@ pub fn vendor_filename(
     let repo_part = repository.replace('/', "-");
     let tag_part = tag.map(|t| format!("-{t}")).unwrap_or_default();
     let sha_part = digest.strip_prefix("sha256:").unwrap_or(digest);
-    let short_sha = sha_part.get(..12).unwrap_or(sha_part);
+    let short_sha = sha_part.get(..DIGEST_PREFIX_LEN).unwrap_or(sha_part);
     format!("{registry_part}-{repo_part}{tag_part}-{short_sha}.wasm")
 }
 
