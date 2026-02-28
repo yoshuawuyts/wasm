@@ -280,7 +280,7 @@ impl OciManifest {
             }
         }
 
-        let rows_changed = conn.execute(
+        let rows_inserted = conn.execute(
             "INSERT INTO oci_manifest (
                 oci_repository_id, digest, media_type, raw_json, size_bytes,
                 oci_created, oci_authors, oci_url, oci_documentation, oci_source,
@@ -316,7 +316,7 @@ impl OciManifest {
             ],
         )?;
 
-        let was_inserted = rows_changed > 0;
+        let was_inserted = rows_inserted > 0;
 
         // Retrieve the canonical row id.
         let manifest_id: i64 = conn.query_row(

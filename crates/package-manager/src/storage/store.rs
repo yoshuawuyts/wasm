@@ -277,11 +277,7 @@ impl Store {
         };
 
         // Split "namespace:name@version" into (package_name, version).
-        let (package_name, version) = if let Some(at_pos) = raw_name.rfind('@') {
-            (&raw_name[..at_pos], Some(&raw_name[at_pos + 1..]))
-        } else {
-            (raw_name, None)
-        };
+        let (package_name, version) = split_package_version(raw_name);
 
         if let Err(e) = WitInterface::insert(
             &self.conn,
@@ -466,5 +462,42 @@ impl Store {
             (key, value),
         )?;
         Ok(())
+    }
+}
+
+/// Split a WIT package name like `"wasi:http@0.2.0"` into `("wasi:http", Some("0.2.0"))`.
+///
+/// If no `@` is present, returns the original string with `None` for the version.
+fn split_package_version(raw: &str) -> (&str, Option<&str>) {
+    if let Some(at_pos) = raw.rfind('@') {
+        (&raw[..at_pos], Some(&raw[at_pos + 1..]))
+    } else {
+        (raw, None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_split_package_version_with_version() {
+        let (name, version) = split_package_version("wasi:http@0.2.0");
+        assert_eq!(name, "wasi:http");
+        assert_eq!(version, Some("0.2.0"));
+    }
+
+    #[test]
+    fn test_split_package_version_without_version() {
+        let (name, version) = split_package_version("wasi:http");
+        assert_eq!(name, "wasi:http");
+        assert_eq!(version, None);
+    }
+
+    #[test]
+    fn test_split_package_version_complex() {
+        let (name, version) = split_package_version("wasi:io/streams@1.0.0-rc1");
+        assert_eq!(name, "wasi:io/streams");
+        assert_eq!(version, Some("1.0.0-rc1"));
     }
 }
