@@ -24,7 +24,7 @@ fn build_wasm_bin(workspace_root: &Path) -> Result<std::path::PathBuf> {
     Ok(workspace_root.join("target").join("debug").join(bin_name))
 }
 
-/// Run `wasm --help` and return the output.
+/// Run `wasm --help` and return the output, normalized for cross-platform use.
 fn wasm_help(workspace_root: &Path) -> Result<String> {
     let bin = build_wasm_bin(workspace_root)?;
     let output = Command::new(&bin)
@@ -32,7 +32,10 @@ fn wasm_help(workspace_root: &Path) -> Result<String> {
         .output()
         .with_context(|| format!("failed to run `{}`", bin.display()))?;
 
-    Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    let help = String::from_utf8_lossy(&output.stdout).into_owned();
+    // On Windows the binary is named "wasm.exe", which clap uses in the usage
+    // line. Normalize to "wasm" so the README is platform-independent.
+    Ok(help.replace("wasm.exe", "wasm"))
 }
 
 /// Format the help output as the markdown section content (between markers).
