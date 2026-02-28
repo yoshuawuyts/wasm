@@ -45,14 +45,8 @@ impl Opts {
                     );
                     return Ok(());
                 }
-                let file = std::fs::File::open(&log_path)?;
-                let mut reader = io::BufReader::new(file);
-                let mut all_lines = Vec::new();
-                let mut line = String::new();
-                while reader.read_line(&mut line)? > 0 {
-                    all_lines.push(line.clone());
-                    line.clear();
-                }
+                let content = std::fs::read_to_string(&log_path)?;
+                let all_lines: Vec<&str> = content.lines().collect();
                 let start = match lines {
                     Some(n) => all_lines.len().saturating_sub(*n),
                     None => 0,
@@ -60,11 +54,13 @@ impl Opts {
                 let stdout = io::stdout();
                 let mut out = stdout.lock();
                 for l in all_lines.iter().skip(start) {
-                    out.write_all(l.as_bytes())?;
+                    writeln!(out, "{l}")?;
                 }
                 if *follow {
-                    // Track position for incremental reads
-                    let mut pos = reader.stream_position()?;
+                    let file = std::fs::File::open(&log_path)?;
+                    let mut reader = io::BufReader::new(file);
+                    let mut pos = content.len() as u64;
+                    reader.seek(io::SeekFrom::Start(pos))?;
                     loop {
                         std::thread::sleep(std::time::Duration::from_millis(200));
                         let metadata = std::fs::metadata(&log_path)?;
