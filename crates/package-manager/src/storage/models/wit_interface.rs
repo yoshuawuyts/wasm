@@ -74,6 +74,7 @@ impl WitInterface {
     }
 
     /// Find a WIT interface by package name and optional version.
+    #[allow(dead_code)]
     pub(crate) fn find(
         conn: &Connection,
         package_name: &str,
@@ -97,6 +98,7 @@ impl WitInterface {
     }
 
     /// Full-text search on package_name and description.
+    #[allow(dead_code)]
     pub(crate) fn search(
         conn: &Connection,
         query: &str,

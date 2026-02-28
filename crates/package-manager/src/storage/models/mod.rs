@@ -1,17 +1,19 @@
 mod image_entry;
 mod known_package;
 mod migration;
-mod oci;
+pub(crate) mod oci;
 mod wasm_component;
 mod wit_interface;
 mod wit_world;
 
-pub use image_entry::{ImageEntry, InsertResult};
+pub use image_entry::ImageEntry;
 pub use known_package::KnownPackage;
-pub(crate) use known_package::TagType;
 pub(crate) use migration::Migrations;
+pub use oci::InsertResult;
 #[allow(unused_imports, unreachable_pub)]
-pub use oci::{OciLayer, OciManifest, OciReferrer, OciRepository, OciTag};
+pub use oci::OciReferrer;
+#[allow(unreachable_pub)]
+pub use oci::{OciLayer, OciManifest, OciRepository, OciTag};
 #[allow(unused_imports, unreachable_pub)]
 pub use wasm_component::{ComponentTarget, WasmComponent};
 pub use wit_interface::WitInterface;

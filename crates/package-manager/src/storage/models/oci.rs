@@ -55,6 +55,13 @@ pub struct OciRepository {
 
 #[allow(dead_code)]
 impl OciRepository {
+    /// Returns the primary key.
+    #[must_use]
+    #[allow(dead_code, unreachable_pub)]
+    pub fn id(&self) -> i64 {
+        self.id
+    }
+
     /// Insert or update a repository, returning its row id.
     pub(crate) fn upsert(
         conn: &Connection,

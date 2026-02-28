@@ -1,9 +1,13 @@
 use anyhow::Context;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{ImageEntry, InsertResult, KnownPackage, Migrations, TagType, WitInterface};
+use super::models::{
+    ImageEntry, InsertResult, KnownPackage, Migrations, OciLayer, OciManifest, OciRepository,
+    OciTag, WitInterface,
+};
 use super::wit_parser::extract_wit_metadata;
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
@@ -50,9 +54,6 @@ impl Store {
         let db_dir = data_dir.join("db");
         let metadata_file = db_dir.join("metadata.db3");
 
-        // TODO: remove me once we're done testing
-        // tokio::fs::remove_dir_all(&data_dir).await?;
-
         let a = tokio::fs::create_dir_all(&data_dir);
         let b = tokio::fs::create_dir_all(&store_dir);
         let c = tokio::fs::create_dir_all(&db_dir);
@@ -87,15 +88,7 @@ impl Store {
             metadata_size,
         );
 
-        let store = Self { state_info, conn };
-
-        // Re-scan known package tags after migrations to ensure derived data is up-to-date
-        // Suppress errors as they shouldn't prevent the store from opening
-        if let Err(e) = store.rescan_known_package_tags() {
-            eprintln!("Warning: Failed to re-scan known package tags: {}", e);
-        }
-
-        Ok(store)
+        Ok(Self { state_info, conn })
     }
 
     pub(crate) async fn insert(
@@ -109,41 +102,79 @@ impl Store {
         // Calculate total size on disk from all layers
         let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
 
-        let (result, image_id) = ImageEntry::insert(
-            &self.conn,
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            digest.as_deref(),
-            &manifest_str,
-            size_on_disk,
-            "component",
-        )?;
+        // 1. Upsert oci_repository
+        let repo_id =
+            OciRepository::upsert(&self.conn, reference.registry(), reference.repository())?;
+
+        // 2. Extract annotations from the manifest (convert BTreeMap → HashMap)
+        let annotations: HashMap<String, String> = image
+            .manifest
+            .as_ref()
+            .and_then(|m| m.annotations.clone())
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
+
+        // 3. Check if manifest already exists (by digest)
+        let existing = if let Some(ref d) = digest {
+            OciManifest::find(&self.conn, repo_id, d)?
+        } else {
+            None
+        };
+
+        let (result, manifest_id) = if let Some(existing_manifest) = existing {
+            (InsertResult::AlreadyExists, existing_manifest.id())
+        } else {
+            let media_type = image.manifest.as_ref().and_then(|m| m.media_type.clone());
+            let mid = OciManifest::insert(
+                &self.conn,
+                repo_id,
+                digest.as_deref().unwrap_or("unknown"),
+                media_type.as_deref(),
+                Some(&manifest_str),
+                Some(size_on_disk as i64),
+                &annotations,
+            )?;
+            (InsertResult::Inserted, mid)
+        };
+
+        // 4. Upsert tag if present
+        if let Some(tag) = reference.tag()
+            && let Some(ref d) = digest
+        {
+            OciTag::upsert(&self.conn, repo_id, tag, d)?;
+        }
 
         let manifest = image.manifest.clone();
 
         // Only store layers if this is a new entry
-        if result == InsertResult::Inserted {
-            // Store layers by their content digest (content-addressable storage)
-            // The manifest.layers and image.layers should be in the same order
-            if let Some(ref manifest) = image.manifest {
-                for (idx, layer) in image.layers.iter().enumerate() {
-                    let cache = self.state_info.store_dir();
-                    // Use the layer's content digest from the manifest as the key
-                    let fallback_key = reference.whole().to_string();
-                    let key = manifest
-                        .layers
-                        .get(idx)
-                        .map(|l| l.digest.as_str())
-                        .unwrap_or(&fallback_key);
-                    let data = &layer.data;
-                    let _integrity = cacache::write(&cache, key, data).await?;
+        if result == InsertResult::Inserted
+            && let Some(ref manifest) = image.manifest
+        {
+            for (idx, layer) in image.layers.iter().enumerate() {
+                let cache = self.state_info.store_dir();
+                let fallback_key = reference.whole().to_string();
+                let layer_digest = manifest
+                    .layers
+                    .get(idx)
+                    .map(|l| l.digest.as_str())
+                    .unwrap_or(&fallback_key);
+                let layer_media_type = manifest.layers.get(idx).map(|l| l.media_type.as_str());
+                let layer_size = manifest.layers.get(idx).map(|l| l.size);
+                let data = &layer.data;
+                let _integrity = cacache::write(&cache, layer_digest, data).await?;
 
-                    // Try to extract WIT interface from this layer
-                    if let Some(image_id) = image_id {
-                        self.try_extract_wit_interface(image_id, data);
-                    }
-                }
+                // Record the layer in oci_layer
+                let layer_id = OciLayer::insert(
+                    &self.conn,
+                    manifest_id,
+                    layer_digest,
+                    layer_media_type,
+                    layer_size.map(|s| s.max(0)),
+                    idx as i32,
+                )?;
+
+                self.try_extract_wit_interface(manifest_id, Some(layer_id), data);
             }
         }
         Ok((result, digest, manifest))
@@ -151,7 +182,7 @@ impl Store {
 
     /// Insert only the metadata (SQLite entry) for an image, without storing layers.
     ///
-    /// Returns the insert result and the optional image ID.
+    /// Returns the insert result and the optional manifest ID.
     pub(crate) fn insert_metadata(
         &self,
         reference: &Reference,
@@ -160,32 +191,68 @@ impl Store {
         size_on_disk: u64,
     ) -> anyhow::Result<(InsertResult, Option<i64>)> {
         let manifest_str = serde_json::to_string(manifest)?;
-        ImageEntry::insert(
-            &self.conn,
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            digest,
-            &manifest_str,
-            size_on_disk,
-            "component",
-        )
+
+        let repo_id =
+            OciRepository::upsert(&self.conn, reference.registry(), reference.repository())?;
+
+        let annotations: HashMap<String, String> = manifest
+            .annotations
+            .clone()
+            .unwrap_or_default()
+            .into_iter()
+            .collect();
+
+        // Check if manifest already exists
+        let existing = if let Some(d) = digest {
+            OciManifest::find(&self.conn, repo_id, d)?
+        } else {
+            None
+        };
+
+        let (result, manifest_id) = if let Some(existing_manifest) = existing {
+            (InsertResult::AlreadyExists, existing_manifest.id())
+        } else {
+            let media_type = manifest.media_type.as_deref();
+            let mid = OciManifest::insert(
+                &self.conn,
+                repo_id,
+                digest.unwrap_or("unknown"),
+                media_type,
+                Some(&manifest_str),
+                Some(size_on_disk as i64),
+                &annotations,
+            )?;
+            (InsertResult::Inserted, mid)
+        };
+
+        // Upsert tag if present
+        if let Some(tag) = reference.tag()
+            && let Some(d) = digest
+        {
+            OciTag::upsert(&self.conn, repo_id, tag, d)?;
+        }
+
+        if result == InsertResult::Inserted {
+            Ok((result, Some(manifest_id)))
+        } else {
+            Ok((result, None))
+        }
     }
 
     /// Insert a single layer into the content-addressable store.
     ///
-    /// Optionally extracts WIT interface metadata if an `image_id` is provided.
+    /// Optionally extracts WIT interface metadata if a `manifest_id` is provided.
     pub(crate) async fn insert_layer(
         &self,
         layer_digest: &str,
         data: &[u8],
-        image_id: Option<i64>,
+        manifest_id: Option<i64>,
     ) -> anyhow::Result<()> {
         let cache = self.state_info.store_dir();
         let _integrity = cacache::write(&cache, layer_digest, data).await?;
 
-        if let Some(image_id) = image_id {
-            self.try_extract_wit_interface(image_id, data);
+        if let Some(manifest_id) = manifest_id {
+            self.try_extract_wit_interface(manifest_id, None, data);
         }
 
         Ok(())
@@ -193,26 +260,15 @@ impl Store {
 
     /// Attempt to extract WIT interface from wasm component bytes.
     /// This is best-effort - if extraction fails, we log a warning and skip.
-    fn try_extract_wit_interface(&self, image_id: i64, wasm_bytes: &[u8]) {
+    fn try_extract_wit_interface(
+        &self,
+        manifest_id: i64,
+        layer_id: Option<i64>,
+        wasm_bytes: &[u8],
+    ) {
         let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
             return; // Not a valid wasm component, skip
         };
-
-        // Update the image's package_type based on the detected type
-        let package_type = if crate::utils::is_wit_package(wasm_bytes) {
-            "interface"
-        } else {
-            "component"
-        };
-        if let Err(e) = self.conn.execute(
-            "UPDATE image SET package_type = ?1 WHERE id = ?2",
-            (package_type, image_id),
-        ) {
-            eprintln!(
-                "Warning: Failed to update package_type for image {}: {}",
-                image_id, e
-            );
-        }
 
         // Insert the WIT interface (best-effort; skip if no package name)
         let Some(package_name) = metadata.package_name.as_deref() else {
@@ -225,12 +281,12 @@ impl Store {
             None,
             None,
             Some(&metadata.wit_text),
-            None,
-            None,
+            Some(manifest_id),
+            layer_id,
         ) {
             eprintln!(
-                "Warning: Failed to insert WIT interface for image {}: {}",
-                image_id, e
+                "Warning: Failed to insert WIT interface for manifest {}: {}",
+                manifest_id, e
             );
         }
     }
@@ -243,58 +299,67 @@ impl Store {
     /// Deletes an image by its reference.
     /// Only removes cached layers if no other images reference them.
     pub(crate) async fn delete(&self, reference: &Reference) -> anyhow::Result<bool> {
-        // Get all images to find which layers are still needed
-        let all_entries = ImageEntry::get_all(&self.conn)?;
+        // Find the repository
+        let repo = OciRepository::find(&self.conn, reference.registry(), reference.repository())?;
+        let Some(repo) = repo else {
+            return Ok(false);
+        };
 
-        // Find the entry we're deleting to get its layer digests
-        let entry_to_delete = all_entries.iter().find(|e| {
-            e.ref_registry == reference.registry()
-                && e.ref_repository == reference.repository()
-                && e.ref_tag.as_deref() == reference.tag()
-                && e.ref_digest.as_deref() == reference.digest()
-        });
+        // Resolve the manifest to delete
+        let repo_id = repo.id();
+        let manifest_to_delete = match (reference.tag(), reference.digest()) {
+            (Some(tag), _) => {
+                // Resolve tag to digest
+                if let Some(oci_tag) = OciTag::find_by_tag(&self.conn, repo_id, tag)? {
+                    OciManifest::find(&self.conn, repo_id, &oci_tag.manifest_digest)?
+                } else {
+                    None
+                }
+            }
+            (_, Some(digest)) => OciManifest::find(&self.conn, repo_id, digest)?,
+            (None, None) => {
+                // Delete all manifests for this repo — pick the first
+                let manifests = OciManifest::list_by_repository(&self.conn, repo_id)?;
+                manifests.into_iter().next()
+            }
+        };
 
-        if let Some(entry) = entry_to_delete {
-            // Collect all layer digests from the entry we're deleting
-            let layers_to_delete: HashSet<&str> = entry
-                .manifest
-                .layers
-                .iter()
-                .map(|l| l.digest.as_str())
-                .collect();
+        let Some(manifest) = manifest_to_delete else {
+            return Ok(false);
+        };
 
-            // Collect all layer digests from OTHER entries (excluding the one we're deleting)
-            let layers_still_needed: HashSet<&str> = all_entries
-                .iter()
-                .filter(|e| {
-                    !(e.ref_registry == reference.registry()
-                        && e.ref_repository == reference.repository()
-                        && e.ref_tag.as_deref() == reference.tag()
-                        && e.ref_digest.as_deref() == reference.digest())
-                })
-                .flat_map(|e| e.manifest.layers.iter().map(|l| l.digest.as_str()))
-                .collect();
+        // Get layers for the manifest being deleted
+        let layers = OciLayer::list_by_manifest(&self.conn, manifest.id())?;
+        let layer_digests: HashSet<&str> = layers.iter().map(|l| l.digest.as_str()).collect();
 
-            // Only delete layers that are not needed by other entries
-            for layer_digest in layers_to_delete {
-                if !layers_still_needed.contains(layer_digest) {
-                    let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
+        // Find layers still needed by other manifests
+        let all_manifests = OciManifest::list_by_repository(&self.conn, repo_id)?;
+        let mut layers_still_needed: HashSet<String> = HashSet::new();
+        for other in &all_manifests {
+            if other.id() == manifest.id() {
+                continue;
+            }
+            if let Ok(other_layers) = OciLayer::list_by_manifest(&self.conn, other.id()) {
+                for l in other_layers {
+                    layers_still_needed.insert(l.digest);
                 }
             }
         }
 
-        // Delete from database
-        ImageEntry::delete_by_reference(
-            &self.conn,
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            reference.digest(),
-        )
+        // Remove cached layers that are no longer needed
+        for layer_digest in &layer_digests {
+            if !layers_still_needed.contains(*layer_digest) {
+                let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
+            }
+        }
+
+        // Delete the manifest (FK cascade handles layers, tags, etc.)
+        OciManifest::delete(&self.conn, manifest.id())?;
+
+        Ok(true)
     }
 
     /// Search for known packages by query string.
-    /// Uses pagination with `offset` and `limit` parameters.
     pub(crate) fn search_known_packages(
         &self,
         query: &str,
@@ -305,7 +370,6 @@ impl Store {
     }
 
     /// Get all known packages.
-    /// Uses pagination with `offset` and `limit` parameters.
     pub(crate) fn list_known_packages(
         &self,
         offset: u32,
@@ -332,47 +396,6 @@ impl Store {
         description: Option<&str>,
     ) -> anyhow::Result<()> {
         KnownPackage::upsert(&self.conn, registry, repository, tag, description)
-    }
-
-    /// Re-scan known package tags to update derived data after migrations.
-    /// This re-classifies tag types based on tag naming conventions:
-    /// - Tags ending in ".sig" are classified as "signature"
-    /// - Tags ending in ".att" are classified as "attestation"
-    /// - All other tags are classified as "release"
-    pub(crate) fn rescan_known_package_tags(&self) -> anyhow::Result<usize> {
-        // Get all unique package IDs and their tags
-        let mut stmt = self.conn.prepare(
-            "SELECT DISTINCT kpt.known_package_id, kpt.tag 
-             FROM known_package_tag kpt",
-        )?;
-
-        let tags: Vec<(i64, String)> = stmt
-            .query_map([], |row| {
-                Ok((row.get::<_, i64>(0)?, row.get::<_, String>(1)?))
-            })?
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut updated_count = 0;
-
-        // Re-process each tag to ensure it has the correct tag_type
-        for (package_id, tag) in tags {
-            // Determine the correct tag type using existing logic
-            let tag_type = TagType::from_tag(&tag).as_str();
-
-            // Update the tag type if needed
-            let rows_affected = self.conn.execute(
-                "UPDATE known_package_tag 
-                 SET tag_type = ?1 
-                 WHERE known_package_id = ?2 AND tag = ?3 AND tag_type != ?1",
-                (tag_type, package_id, &tag),
-            )?;
-
-            if rows_affected > 0 {
-                updated_count += 1;
-            }
-        }
-
-        Ok(updated_count)
     }
 
     /// Get all WIT interfaces.

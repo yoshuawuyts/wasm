@@ -1,6 +1,7 @@
 use wit_parser::decoding::{DecodedWasm, decode};
 
 /// Metadata extracted from a WIT component.
+#[allow(dead_code)]
 pub(crate) struct WitMetadata {
     pub package_name: Option<String>,
     pub world_name: String,
