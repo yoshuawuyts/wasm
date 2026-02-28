@@ -226,9 +226,47 @@ wasm self --help
 
 ## Tips and Tricks
 
-### Tab Completion
+### Shell Completions
 
-Generate shell completions: [issue #54](https://github.com/yoshuawuyts/wasm/issues/54)
+Generate shell completions for your preferred shell (user-local paths shown):
+
+```bash
+# Bash
+wasm self completions bash > ~/.local/share/bash-completion/completions/wasm
+
+# Zsh
+wasm self completions zsh > ~/.zfunc/_wasm
+
+# Fish
+wasm self completions fish > ~/.config/fish/completions/wasm.fish
+```
+
+### Man Pages
+
+Generate man pages for offline documentation. A user-local path is shown below;
+for system-wide installation, use `sudo` and `/usr/local/share/man/man1/wasm.1`.
+
+```bash
+mkdir -p ~/.local/share/man/man1
+wasm self man-pages > ~/.local/share/man/man1/wasm.1
+man wasm
+```
+
+### Color Support
+
+The CLI supports colored output via the `--color` flag:
+
+```bash
+wasm --color auto ...     # automatic color (default)
+wasm --color always ...   # always use color
+wasm --color never ...    # never use color
+```
+
+Color output can also be controlled via environment variables:
+
+- `NO_COLOR=1` — disables color output
+- `CLICOLOR=0` — disables color output
+- `CLICOLOR_FORCE=1` — forces color output even when not in a terminal
 
 ### Quick Package Inspection
 

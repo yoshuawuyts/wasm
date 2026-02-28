@@ -48,54 +48,73 @@ $ cargo add wasm
 
 ## Using `wasm`
 
+<!-- commands-start -->
+```
+Unified WebAssembly developer tools
+
+Usage: wasm [OPTIONS] [COMMAND]
+
+Commands:
+  run       Execute a Wasm Component
+  init      Create a new wasm component in an existing directory
+  install   Install a dependency from an OCI registry
+  inspect   Inspect a Wasm Component
+  convert   Convert a Wasm Component to another format
+  local     Detect and manage local WASM files
+  registry  Manage Wasm Components and WIT interfaces in OCI registries
+  compose   Compose Wasm Components with other components
+  self      Configure the `wasm(1)` tool, generate completions, & manage state
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+Global Options:
+      --color <WHEN>
+          When to use colored output.
+
+          Can also be controlled via environment variables: - NO_COLOR=1 (disables color) - CLICOLOR=0 (disables color) - CLICOLOR_FORCE=1 (forces color)
+
+          [default: auto]
+          [possible values: auto, always, never]
+
+      --offline
+          Run in offline mode.
+
+          Disables all network operations. Commands that require network access will fail with an error. Local-only commands will continue to work.
+```
+<!-- commands-end -->
+
+## Example: Installing a Package
+
+Initialize a new project and install the [Bytecode Alliance WASI HTTP sample][ba-sample]:
+
 ```bash
-wasm                              # launch interactive TUI
-wasm inspect file.wasm            # inspect a Wasm Component
-wasm local list                   # list local WASM files in current directory
-wasm registry pull ghcr.io/...    # pull a package from a registry
-wasm registry list                # list installed packages
-wasm registry search <query>      # search for packages across registries
-wasm registry known               # list all known packages
-wasm registry delete ghcr.io/...  # delete a package from the local store
-wasm self state                   # show storage state info
-wasm self clean                   # clean up storage
+# Create a new project
+$ wasm init
+
+# Install the Bytecode Alliance WASI HTTP sample component
+$ wasm install ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
+   Installing ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
+   └── [a1b2c] application/wasm ━━━━━━━━━━━━ 1.2 MiB
+
+    Finished installation in 1.3s
 ```
 
-### Shell Completions
+The component is then available in your project under `deps/vendor/wasm/`:
 
-Generate shell completions for your preferred shell:
-
-```bash
-# Bash
-wasm self completions bash > ~/.local/share/bash-completion/completions/wasm
-
-# Zsh
-wasm self completions zsh > ~/.zfunc/_wasm
-
-# Fish
-wasm self completions fish > ~/.config/fish/completions/wasm.fish
+```
+deps/
+└── vendor/
+    └── wasm/
+        └── sample-wasi-http-rust.wasm
 ```
 
-### Man Pages
-
-Generate man pages for offline documentation:
-
-```bash
-wasm self man-pages > /usr/local/share/man/man1/wasm.1
-man wasm
-```
-
-### Color Support
-
-The CLI supports colored output via the `--color` flag:
-
-```bash
-wasm --color auto ...     # automatic color (default)
-wasm --color always ...   # always use color
-wasm --color never ...    # never use color
-```
-
-For more details including environment variable support, run `wasm --help`.
+[ba-sample]: https://github.com/bytecodealliance/sample-wasi-http-rust
 
 ## Storage Layout
 

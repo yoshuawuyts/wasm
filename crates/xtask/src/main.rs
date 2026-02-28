@@ -3,6 +3,7 @@
 //! This binary provides a unified interface for running common development tasks
 //! like testing, linting, and formatting checks.
 
+mod readme;
 mod sql;
 mod test;
 
@@ -35,6 +36,20 @@ enum Xtask {
         #[command(subcommand)]
         command: SqlCommand,
     },
+    /// Manage the README commands section
+    Readme {
+        #[command(subcommand)]
+        command: ReadmeCommand,
+    },
+}
+
+/// Subcommands for `cargo xtask readme`.
+#[derive(Subcommand)]
+enum ReadmeCommand {
+    /// Regenerate the README commands section from `wasm --help`
+    Update,
+    /// Check that the README commands section is in sync with `wasm --help`
+    Check,
 }
 
 /// Subcommands for `cargo xtask sql`.
@@ -78,6 +93,13 @@ fn main() -> Result<()> {
             SqlCommand::Check => sql::check()?,
             SqlCommand::Install => sql::install()?,
         },
+        Xtask::Readme { command } => {
+            let root = workspace_root()?;
+            match command {
+                ReadmeCommand::Update => readme::update(&root)?,
+                ReadmeCommand::Check => readme::check(&root)?,
+            }
+        }
     }
 
     Ok(())
