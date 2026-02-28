@@ -25,7 +25,6 @@ const WELL_KNOWN_ANNOTATIONS: &[(&str, &str)] = &[
 
 /// Result of an insert operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[allow(dead_code, unreachable_pub)]
 pub enum InsertResult {
     /// The entry was inserted successfully.
     Inserted,
@@ -39,21 +38,23 @@ pub enum InsertResult {
 
 /// An OCI registry/repository pair.
 #[derive(Debug, Clone)]
-#[allow(dead_code, unreachable_pub)]
+#[allow(unreachable_pub)]
 pub struct OciRepository {
-    #[allow(dead_code)]
     id: i64,
     /// Registry hostname (e.g. "ghcr.io").
+    #[allow(dead_code)]
     pub registry: String,
     /// Repository path (e.g. "user/repo").
+    #[allow(dead_code)]
     pub repository: String,
     /// When the row was created.
+    #[allow(dead_code)]
     pub created_at: String,
     /// When the row was last updated.
+    #[allow(dead_code)]
     pub updated_at: String,
 }
 
-#[allow(dead_code)]
 impl OciRepository {
     /// Returns the primary key.
     #[must_use]
@@ -85,6 +86,7 @@ impl OciRepository {
     }
 
     /// Get a repository by its primary key.
+    #[allow(dead_code)]
     pub(crate) fn get_by_id(conn: &Connection, id: i64) -> anyhow::Result<Option<Self>> {
         let result = conn.query_row(
             "SELECT id, registry, repository, created_at, updated_at
@@ -137,6 +139,7 @@ impl OciRepository {
     }
 
     /// List every repository.
+    #[allow(dead_code)]
     pub(crate) fn list_all(conn: &Connection) -> anyhow::Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, created_at, updated_at
@@ -184,10 +187,12 @@ impl OciRepository {
 // ---------------------------------------------------------------------------
 
 /// An OCI image manifest stored in the database.
+///
+/// Many annotation fields are not yet consumed by the current code paths
+/// but are populated from OCI manifests for completeness.
 #[derive(Debug, Clone)]
 #[allow(dead_code, unreachable_pub)]
 pub struct OciManifest {
-    #[allow(dead_code)]
     id: i64,
     /// Foreign key to `oci_repository`.
     pub oci_repository_id: i64,
@@ -237,11 +242,10 @@ pub struct OciManifest {
     pub oci_base_name: Option<String>,
 }
 
-#[allow(dead_code)]
 impl OciManifest {
     /// Returns the primary key.
     #[must_use]
-    #[allow(dead_code, unreachable_pub)]
+    #[allow(unreachable_pub)]
     pub fn id(&self) -> i64 {
         self.id
     }
@@ -250,8 +254,11 @@ impl OciManifest {
     ///
     /// Well-known OCI annotation keys are extracted into dedicated columns;
     /// remaining annotations are stored in `oci_manifest_annotation`.
+    ///
+    /// Uses `INSERT … ON CONFLICT DO NOTHING` so duplicate digests within the
+    /// same repository are silently skipped. Returns `(manifest_id, was_inserted)`.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn insert(
+    pub(crate) fn upsert(
         conn: &Connection,
         oci_repository_id: i64,
         digest: &str,
@@ -259,7 +266,7 @@ impl OciManifest {
         raw_json: Option<&str>,
         size_bytes: Option<i64>,
         annotations: &HashMap<String, String>,
-    ) -> anyhow::Result<i64> {
+    ) -> anyhow::Result<(i64, bool)> {
         // Partition annotations into well-known and extra.
         let ann_key_to_col: HashMap<&str, &str> = WELL_KNOWN_ANNOTATIONS.iter().copied().collect();
         let mut well_known: HashMap<&str, &str> = HashMap::new();
@@ -273,7 +280,7 @@ impl OciManifest {
             }
         }
 
-        conn.execute(
+        let rows_changed = conn.execute(
             "INSERT INTO oci_manifest (
                 oci_repository_id, digest, media_type, raw_json, size_bytes,
                 oci_created, oci_authors, oci_url, oci_documentation, oci_source,
@@ -284,7 +291,8 @@ impl OciManifest {
                 ?6, ?7, ?8, ?9, ?10,
                 ?11, ?12, ?13, ?14, ?15,
                 ?16, ?17, ?18, ?19
-             )",
+             )
+             ON CONFLICT(oci_repository_id, digest) DO NOTHING",
             rusqlite::params![
                 oci_repository_id,
                 digest,
@@ -308,22 +316,32 @@ impl OciManifest {
             ],
         )?;
 
-        let manifest_id = conn.last_insert_rowid();
+        let was_inserted = rows_changed > 0;
 
-        // Store extra (non-well-known) annotations.
-        for (key, value) in &extra {
-            conn.execute(
-                "INSERT INTO oci_manifest_annotation (oci_manifest_id, `key`, `value`)
-                 VALUES (?1, ?2, ?3)
-                 ON CONFLICT(oci_manifest_id, `key`) DO UPDATE SET `value` = ?3",
-                rusqlite::params![manifest_id, key, value],
-            )?;
+        // Retrieve the canonical row id.
+        let manifest_id: i64 = conn.query_row(
+            "SELECT id FROM oci_manifest WHERE oci_repository_id = ?1 AND digest = ?2",
+            (oci_repository_id, digest),
+            |row| row.get(0),
+        )?;
+
+        // Store extra (non-well-known) annotations (only on insert).
+        if was_inserted {
+            for (key, value) in &extra {
+                conn.execute(
+                    "INSERT INTO oci_manifest_annotation (oci_manifest_id, `key`, `value`)
+                     VALUES (?1, ?2, ?3)
+                     ON CONFLICT(oci_manifest_id, `key`) DO UPDATE SET `value` = ?3",
+                    rusqlite::params![manifest_id, key, value],
+                )?;
+            }
         }
 
-        Ok(manifest_id)
+        Ok((manifest_id, was_inserted))
     }
 
     /// Get a manifest by primary key.
+    #[allow(dead_code)]
     pub(crate) fn get_by_id(conn: &Connection, id: i64) -> anyhow::Result<Option<Self>> {
         let result = conn.query_row(
             "SELECT id, oci_repository_id, digest, media_type, raw_json, size_bytes,
@@ -465,23 +483,26 @@ impl OciManifest {
 
 /// A tag pointing at a manifest within a repository.
 #[derive(Debug, Clone)]
-#[allow(dead_code, unreachable_pub)]
+#[allow(unreachable_pub)]
 pub struct OciTag {
     #[allow(dead_code)]
     id: i64,
     /// Foreign key to `oci_repository`.
+    #[allow(dead_code)]
     pub oci_repository_id: i64,
     /// Digest of the manifest this tag references.
     pub manifest_digest: String,
     /// The tag string (e.g. "latest", "v1.0.0").
+    #[allow(dead_code)]
     pub tag: String,
     /// When the row was created.
+    #[allow(dead_code)]
     pub created_at: String,
     /// When the row was last updated.
+    #[allow(dead_code)]
     pub updated_at: String,
 }
 
-#[allow(dead_code)]
 impl OciTag {
     /// Insert or update a tag, returning its row id.
     pub(crate) fn upsert(
@@ -509,6 +530,7 @@ impl OciTag {
     }
 
     /// List all tags for a repository.
+    #[allow(dead_code)]
     pub(crate) fn list_by_repository(
         conn: &Connection,
         oci_repository_id: i64,
@@ -590,23 +612,26 @@ impl OciTag {
 
 /// A layer (blob) within an OCI manifest.
 #[derive(Debug, Clone)]
-#[allow(dead_code, unreachable_pub)]
+#[allow(unreachable_pub)]
 pub struct OciLayer {
     #[allow(dead_code)]
     id: i64,
     /// Foreign key to `oci_manifest`.
+    #[allow(dead_code)]
     pub oci_manifest_id: i64,
     /// Content-addressable digest.
     pub digest: String,
     /// MIME type of the layer.
+    #[allow(dead_code)]
     pub media_type: Option<String>,
     /// Size in bytes.
+    #[allow(dead_code)]
     pub size_bytes: Option<i64>,
     /// Ordinal position within the manifest.
+    #[allow(dead_code)]
     pub position: i32,
 }
 
-#[allow(dead_code)]
 impl OciLayer {
     /// Insert a new layer, returning its row id.
     pub(crate) fn insert(
@@ -655,6 +680,7 @@ impl OciLayer {
     }
 
     /// Find a layer by manifest id and digest.
+    #[allow(dead_code)]
     pub(crate) fn get_by_digest(
         conn: &Connection,
         oci_manifest_id: i64,
@@ -792,5 +818,231 @@ impl OciReferrer {
             artifact_type,
             created_at: String::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::storage::models::Migrations;
+
+    /// Create an in-memory database with migrations applied for testing.
+    fn setup_test_db() -> Connection {
+        let conn = Connection::open_in_memory().unwrap();
+        Migrations::run_all(&conn).unwrap();
+        conn
+    }
+
+    #[test]
+    fn test_oci_repository_upsert_and_find() {
+        let conn = setup_test_db();
+        let id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        assert!(id > 0);
+
+        let repo = OciRepository::find(&conn, "ghcr.io", "user/repo")
+            .unwrap()
+            .unwrap();
+        assert_eq!(repo.id(), id);
+    }
+
+    #[test]
+    fn test_oci_repository_upsert_idempotent() {
+        let conn = setup_test_db();
+        let id1 = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        let id2 = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        assert_eq!(id1, id2);
+    }
+
+    #[test]
+    fn test_oci_manifest_upsert_and_find() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+
+        let annotations = HashMap::new();
+        let (mid, was_inserted) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc123",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            &annotations,
+        )
+        .unwrap();
+        assert!(was_inserted);
+        assert!(mid > 0);
+
+        // Re-inserting same digest should not insert
+        let (mid2, was_inserted2) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc123",
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+        assert!(!was_inserted2);
+        assert_eq!(mid, mid2);
+
+        let manifest = OciManifest::find(&conn, repo_id, "sha256:abc123")
+            .unwrap()
+            .unwrap();
+        assert_eq!(manifest.id(), mid);
+    }
+
+    #[test]
+    fn test_oci_manifest_upsert_extracts_annotations() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+
+        let mut annotations = HashMap::new();
+        annotations.insert(
+            "org.opencontainers.image.description".to_string(),
+            "A test image".to_string(),
+        );
+        annotations.insert("custom.key".to_string(), "custom-value".to_string());
+
+        let (mid, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:desc123",
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+
+        let manifest = OciManifest::find(&conn, repo_id, "sha256:desc123")
+            .unwrap()
+            .unwrap();
+        assert_eq!(manifest.oci_description.as_deref(), Some("A test image"));
+
+        // Check extra annotation was stored
+        let custom: String = conn
+            .query_row(
+                "SELECT `value` FROM oci_manifest_annotation
+                 WHERE oci_manifest_id = ?1 AND `key` = 'custom.key'",
+                [mid],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(custom, "custom-value");
+    }
+
+    #[test]
+    fn test_oci_tag_upsert_and_find() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+
+        OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc123",
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        let tag_id = OciTag::upsert(&conn, repo_id, "latest", "sha256:abc123").unwrap();
+        assert!(tag_id > 0);
+
+        let tag = OciTag::find_by_tag(&conn, repo_id, "latest")
+            .unwrap()
+            .unwrap();
+        assert_eq!(tag.manifest_digest, "sha256:abc123");
+
+        // Update tag to point at a new digest
+        OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:def456",
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+        OciTag::upsert(&conn, repo_id, "latest", "sha256:def456").unwrap();
+        let tag = OciTag::find_by_tag(&conn, repo_id, "latest")
+            .unwrap()
+            .unwrap();
+        assert_eq!(tag.manifest_digest, "sha256:def456");
+    }
+
+    #[test]
+    fn test_oci_layer_insert_and_list() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        let (mid, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc",
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        OciLayer::insert(
+            &conn,
+            mid,
+            "sha256:layer1",
+            Some("application/wasm"),
+            Some(512),
+            0,
+        )
+        .unwrap();
+        OciLayer::insert(
+            &conn,
+            mid,
+            "sha256:layer2",
+            Some("application/octet-stream"),
+            Some(256),
+            1,
+        )
+        .unwrap();
+
+        let layers = OciLayer::list_by_manifest(&conn, mid).unwrap();
+        assert_eq!(layers.len(), 2);
+        assert_eq!(layers.first().unwrap().digest, "sha256:layer1");
+        assert_eq!(layers.get(1).unwrap().digest, "sha256:layer2");
+    }
+
+    #[test]
+    fn test_oci_manifest_delete_cascades() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "user/repo").unwrap();
+        let (mid, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:abc",
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        OciTag::upsert(&conn, repo_id, "v1", "sha256:abc").unwrap();
+        OciLayer::insert(&conn, mid, "sha256:layer1", None, None, 0).unwrap();
+
+        // Delete the manifest — tags and layers should cascade
+        OciManifest::delete(&conn, mid).unwrap();
+
+        let manifests = OciManifest::list_by_repository(&conn, repo_id).unwrap();
+        assert!(manifests.is_empty());
+
+        let layers = OciLayer::list_by_manifest(&conn, mid).unwrap();
+        assert!(layers.is_empty());
+
+        // Tag should also be gone (ON DELETE CASCADE)
+        let tag = OciTag::find_by_tag(&conn, repo_id, "v1").unwrap();
+        assert!(tag.is_none());
     }
 }

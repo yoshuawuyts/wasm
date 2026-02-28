@@ -115,27 +115,24 @@ impl Store {
             .into_iter()
             .collect();
 
-        // 3. Check if manifest already exists (by digest)
-        let existing = if let Some(ref d) = digest {
-            OciManifest::find(&self.conn, repo_id, d)?
-        } else {
-            None
-        };
+        // 3. Upsert manifest (atomic insert-or-find)
+        let (manifest_id, was_inserted) = OciManifest::upsert(
+            &self.conn,
+            repo_id,
+            digest.as_deref().unwrap_or("unknown"),
+            image
+                .manifest
+                .as_ref()
+                .and_then(|m| m.media_type.as_deref()),
+            Some(&manifest_str),
+            Some(size_on_disk as i64),
+            &annotations,
+        )?;
 
-        let (result, manifest_id) = if let Some(existing_manifest) = existing {
-            (InsertResult::AlreadyExists, existing_manifest.id())
+        let result = if was_inserted {
+            InsertResult::Inserted
         } else {
-            let media_type = image.manifest.as_ref().and_then(|m| m.media_type.clone());
-            let mid = OciManifest::insert(
-                &self.conn,
-                repo_id,
-                digest.as_deref().unwrap_or("unknown"),
-                media_type.as_deref(),
-                Some(&manifest_str),
-                Some(size_on_disk as i64),
-                &annotations,
-            )?;
-            (InsertResult::Inserted, mid)
+            InsertResult::AlreadyExists
         };
 
         // 4. Upsert tag if present
@@ -202,27 +199,21 @@ impl Store {
             .into_iter()
             .collect();
 
-        // Check if manifest already exists
-        let existing = if let Some(d) = digest {
-            OciManifest::find(&self.conn, repo_id, d)?
-        } else {
-            None
-        };
+        // Atomic upsert — insert or find existing
+        let (manifest_id, was_inserted) = OciManifest::upsert(
+            &self.conn,
+            repo_id,
+            digest.unwrap_or("unknown"),
+            manifest.media_type.as_deref(),
+            Some(&manifest_str),
+            Some(size_on_disk as i64),
+            &annotations,
+        )?;
 
-        let (result, manifest_id) = if let Some(existing_manifest) = existing {
-            (InsertResult::AlreadyExists, existing_manifest.id())
+        let result = if was_inserted {
+            InsertResult::Inserted
         } else {
-            let media_type = manifest.media_type.as_deref();
-            let mid = OciManifest::insert(
-                &self.conn,
-                repo_id,
-                digest.unwrap_or("unknown"),
-                media_type,
-                Some(&manifest_str),
-                Some(size_on_disk as i64),
-                &annotations,
-            )?;
-            (InsertResult::Inserted, mid)
+            InsertResult::AlreadyExists
         };
 
         // Upsert tag if present
@@ -241,7 +232,8 @@ impl Store {
 
     /// Insert a single layer into the content-addressable store.
     ///
-    /// Optionally extracts WIT interface metadata if a `manifest_id` is provided.
+    /// Optionally records the layer in `oci_layer` and extracts WIT interface
+    /// metadata if a `manifest_id` is provided.
     pub(crate) async fn insert_layer(
         &self,
         layer_digest: &str,
@@ -252,7 +244,16 @@ impl Store {
         let _integrity = cacache::write(&cache, layer_digest, data).await?;
 
         if let Some(manifest_id) = manifest_id {
-            self.try_extract_wit_interface(manifest_id, None, data);
+            // Record the layer in oci_layer (position 0 since we don't know ordering).
+            let layer_id = OciLayer::insert(
+                &self.conn,
+                manifest_id,
+                layer_digest,
+                None,
+                Some(data.len() as i64),
+                0,
+            )?;
+            self.try_extract_wit_interface(manifest_id, Some(layer_id), data);
         }
 
         Ok(())
@@ -271,14 +272,21 @@ impl Store {
         };
 
         // Insert the WIT interface (best-effort; skip if no package name)
-        let Some(package_name) = metadata.package_name.as_deref() else {
+        let Some(raw_name) = metadata.package_name.as_deref() else {
             return;
+        };
+
+        // Split "namespace:name@version" into (package_name, version).
+        let (package_name, version) = if let Some(at_pos) = raw_name.rfind('@') {
+            (&raw_name[..at_pos], Some(&raw_name[at_pos + 1..]))
+        } else {
+            (raw_name, None)
         };
 
         if let Err(e) = WitInterface::insert(
             &self.conn,
             package_name,
-            None,
+            version,
             None,
             Some(&metadata.wit_text),
             Some(manifest_id),
@@ -305,38 +313,63 @@ impl Store {
             return Ok(false);
         };
 
-        // Resolve the manifest to delete
+        // Resolve the manifest(s) to delete
         let repo_id = repo.id();
-        let manifest_to_delete = match (reference.tag(), reference.digest()) {
-            (Some(tag), _) => {
+        let manifests_to_delete = match (reference.tag(), reference.digest()) {
+            (Some(tag), Some(digest)) => {
+                // Both tag and digest specified — verify tag matches digest, then delete
+                if let Some(oci_tag) = OciTag::find_by_tag(&self.conn, repo_id, tag)? {
+                    if oci_tag.manifest_digest == digest {
+                        OciManifest::find(&self.conn, repo_id, digest)?
+                            .into_iter()
+                            .collect()
+                    } else {
+                        Vec::new()
+                    }
+                } else {
+                    Vec::new()
+                }
+            }
+            (Some(tag), None) => {
                 // Resolve tag to digest
                 if let Some(oci_tag) = OciTag::find_by_tag(&self.conn, repo_id, tag)? {
                     OciManifest::find(&self.conn, repo_id, &oci_tag.manifest_digest)?
+                        .into_iter()
+                        .collect()
                 } else {
-                    None
+                    Vec::new()
                 }
             }
-            (_, Some(digest)) => OciManifest::find(&self.conn, repo_id, digest)?,
+            (None, Some(digest)) => OciManifest::find(&self.conn, repo_id, digest)?
+                .into_iter()
+                .collect(),
             (None, None) => {
-                // Delete all manifests for this repo — pick the first
-                let manifests = OciManifest::list_by_repository(&self.conn, repo_id)?;
-                manifests.into_iter().next()
+                // Delete all manifests for this repo
+                OciManifest::list_by_repository(&self.conn, repo_id)?
             }
         };
 
-        let Some(manifest) = manifest_to_delete else {
+        if manifests_to_delete.is_empty() {
             return Ok(false);
-        };
+        }
 
-        // Get layers for the manifest being deleted
-        let layers = OciLayer::list_by_manifest(&self.conn, manifest.id())?;
-        let layer_digests: HashSet<&str> = layers.iter().map(|l| l.digest.as_str()).collect();
+        // Collect all layer digests from manifests being deleted
+        let mut layer_digests: HashSet<String> = HashSet::new();
+        let mut manifest_ids: Vec<i64> = Vec::new();
+        for manifest in &manifests_to_delete {
+            manifest_ids.push(manifest.id());
+            if let Ok(layers) = OciLayer::list_by_manifest(&self.conn, manifest.id()) {
+                for l in layers {
+                    layer_digests.insert(l.digest);
+                }
+            }
+        }
 
-        // Find layers still needed by other manifests
+        // Find layers still needed by other manifests (ones NOT being deleted)
         let all_manifests = OciManifest::list_by_repository(&self.conn, repo_id)?;
         let mut layers_still_needed: HashSet<String> = HashSet::new();
         for other in &all_manifests {
-            if other.id() == manifest.id() {
+            if manifest_ids.contains(&other.id()) {
                 continue;
             }
             if let Ok(other_layers) = OciLayer::list_by_manifest(&self.conn, other.id()) {
@@ -348,13 +381,15 @@ impl Store {
 
         // Remove cached layers that are no longer needed
         for layer_digest in &layer_digests {
-            if !layers_still_needed.contains(*layer_digest) {
+            if !layers_still_needed.contains(layer_digest) {
                 let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
             }
         }
 
-        // Delete the manifest (FK cascade handles layers, tags, etc.)
-        OciManifest::delete(&self.conn, manifest.id())?;
+        // Delete the manifests (FK cascade handles layers, tags, etc.)
+        for manifest in &manifests_to_delete {
+            OciManifest::delete(&self.conn, manifest.id())?;
+        }
 
         Ok(true)
     }

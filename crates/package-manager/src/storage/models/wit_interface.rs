@@ -6,7 +6,6 @@ use rusqlite::Connection;
 /// The record is content-addressable: inserting a duplicate is a no-op.
 #[derive(Debug, Clone)]
 pub struct WitInterface {
-    #[allow(dead_code)]
     id: i64,
     /// The WIT package name (e.g. "wasi:http").
     pub package_name: String,

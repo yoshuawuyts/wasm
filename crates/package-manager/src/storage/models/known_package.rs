@@ -63,13 +63,19 @@ impl KnownPackage {
     ) -> anyhow::Result<()> {
         let repo_id = OciRepository::upsert(conn, registry, repository)?;
 
-        // Store description as the oci_description on the first manifest, if any.
+        // Store description on the most recent manifest that doesn't have one.
+        // Uses a subquery instead of LIMIT in UPDATE (SQLITE_ENABLE_UPDATE_DELETE_LIMIT
+        // is not enabled in most SQLite builds).
         if let Some(desc) = description
             && let Err(e) = conn.execute(
                 "UPDATE oci_manifest SET oci_description = ?1
-                 WHERE oci_repository_id = ?2
-                   AND oci_description IS NULL
-                 LIMIT 1",
+                 WHERE id = (
+                     SELECT id FROM oci_manifest
+                     WHERE oci_repository_id = ?2
+                       AND oci_description IS NULL
+                     ORDER BY created_at DESC
+                     LIMIT 1
+                 )",
                 rusqlite::params![desc, repo_id],
             )
         {
