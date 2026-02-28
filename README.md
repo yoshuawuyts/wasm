@@ -79,7 +79,7 @@ wasm self completions fish > ~/.config/fish/completions/wasm.fish
 Generate man pages for offline documentation:
 
 ```bash
-wasm self man-pages --out /usr/local/share/man/man1/
+wasm self man-pages > /usr/local/share/man/man1/wasm.1
 man wasm
 ```
 

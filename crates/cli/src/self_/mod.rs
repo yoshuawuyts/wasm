@@ -17,12 +17,8 @@ pub(crate) enum Opts {
         /// The shell to generate completions for
         shell: Shell,
     },
-    /// Generate man pages for the CLI and write them to a directory
-    ManPages {
-        /// The directory to write man pages to
-        #[arg(long, short, default_value = ".")]
-        out: std::path::PathBuf,
-    },
+    /// Generate a man page for the CLI
+    ManPages,
 }
 
 impl Opts {
@@ -100,15 +96,10 @@ impl Opts {
                 clap_complete::generate(*shell, &mut cmd, "wasm", &mut io::stdout());
                 Ok(())
             }
-            Opts::ManPages { out } => {
+            Opts::ManPages => {
                 let cmd = crate::Cli::command();
                 let man = clap_mangen::Man::new(cmd);
-                let mut buffer: Vec<u8> = Vec::new();
-                man.render(&mut buffer)?;
-
-                std::fs::create_dir_all(out)?;
-                std::fs::write(out.join("wasm.1"), buffer)?;
-                println!("Man pages written to {}", out.display());
+                man.render(&mut io::stdout())?;
                 Ok(())
             }
         }

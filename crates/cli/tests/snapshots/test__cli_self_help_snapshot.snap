@@ -10,7 +10,7 @@ Commands:
   state        Print diagnostics about the local state
   config       Show configuration file location and current settings
   completions  Generate shell completions for the given shell
-  man-pages    Generate man pages for the CLI and write them to a directory
+  man-pages    Generate a man page for the CLI
   help         Print this message or the help of the given subcommand(s)
 
 Options:
