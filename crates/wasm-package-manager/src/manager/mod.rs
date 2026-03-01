@@ -277,6 +277,7 @@ impl Manager {
                         &layer_descriptor.digest,
                         &layer_data,
                         image_id,
+                        Some(layer_descriptor.media_type.as_str()),
                         index as i32,
                     )
                     .await?;

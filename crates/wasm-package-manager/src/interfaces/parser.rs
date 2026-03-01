@@ -1,18 +1,47 @@
 use wit_parser::decoding::{DecodedWasm, decode};
 
+/// An import or export declaration inside a WIT world.
+#[derive(Debug, Clone)]
+pub(crate) struct ImportExportItem {
+    /// The declared package name (e.g. "wasi:http").
+    pub declared_package: String,
+    /// The declared interface name within the package, if any.
+    pub declared_interface: Option<String>,
+    /// The declared version constraint, if any.
+    pub declared_version: Option<String>,
+}
+
+/// Metadata about a single WIT world.
+#[derive(Debug, Clone)]
+pub(crate) struct WorldMetadata {
+    /// The world name (e.g. "proxy", "command").
+    pub name: String,
+    /// Import declarations in this world.
+    pub imports: Vec<ImportExportItem>,
+    /// Export declarations in this world.
+    pub exports: Vec<ImportExportItem>,
+}
+
+/// A dependency on another WIT package.
+#[derive(Debug, Clone)]
+pub(crate) struct DependencyItem {
+    /// The declared package name (e.g. "wasi:io").
+    pub declared_package: String,
+    /// The declared version, if any.
+    pub declared_version: Option<String>,
+}
+
 /// Metadata extracted from a WIT component.
-///
-/// Note: `world_name`, `import_count`, and `export_count` are extracted
-/// but not yet consumed. They will be used when the WIT world/Wasm
-/// component tables are populated in a future PR.
 pub(crate) struct WitMetadata {
+    /// The WIT package name (e.g. "wasi:http").
     pub package_name: Option<String>,
-    #[allow(dead_code)]
-    pub world_name: String,
-    #[allow(dead_code)]
-    pub import_count: i32,
-    #[allow(dead_code)]
-    pub export_count: i32,
+    /// All worlds declared in this package or component.
+    pub worlds: Vec<WorldMetadata>,
+    /// Dependencies on other WIT packages.
+    pub dependencies: Vec<DependencyItem>,
+    /// Whether this is a compiled component (true) or a WIT-only package (false).
+    pub is_component: bool,
+    /// Full WIT text representation.
     pub wit_text: String,
 }
 
@@ -22,54 +51,153 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
     // Try to decode the wasm bytes as a component
     let decoded = decode(wasm_bytes).ok()?;
 
-    // Extract metadata based on decoded type
-    let (package_name, world_name, import_count, export_count) = match &decoded {
+    // Determine if this is a compiled component or a WIT-only package
+    let is_component = matches!(&decoded, DecodedWasm::Component(..));
+
+    // Extract the primary package ID and name
+    let (package_name, primary_package_id) = match &decoded {
         DecodedWasm::WitPackage(resolve, package_id) => {
             let package = resolve
                 .packages
                 .get(*package_id)
                 .expect("Package ID should be valid");
-            let pkg_name = format!("{}", package.name);
-            // Use the first world name if available
-            let world = package.worlds.iter().next().map(|(name, world_id)| {
-                let w = resolve
-                    .worlds
-                    .get(*world_id)
-                    .expect("World ID should be valid");
-                (name.clone(), w.imports.len() as i32, w.exports.len() as i32)
-            });
-            let (world_name, imports, exports) = world.unwrap_or((package.name.name.clone(), 0, 0));
-            (Some(pkg_name), world_name, imports, exports)
+            (Some(format!("{}", package.name)), Some(*package_id))
         }
         DecodedWasm::Component(resolve, world_id) => {
             let world = resolve
                 .worlds
                 .get(*world_id)
                 .expect("World ID should be valid");
-            // Try to get package name from world's package reference
-            let pkg_name = world
+            let (pkg_name, pkg_id) = world
                 .package
-                .and_then(|pid| resolve.packages.get(pid))
-                .map(|p| format!("{}", p.name));
-            (
-                pkg_name,
-                world.name.clone(),
-                world.imports.len() as i32,
-                world.exports.len() as i32,
-            )
+                .and_then(|pid| {
+                    resolve
+                        .packages
+                        .get(pid)
+                        .map(|p| (format!("{}", p.name), pid))
+                })
+                .unzip();
+            (pkg_name, pkg_id)
         }
     };
+
+    let resolve = decoded.resolve();
+
+    // Extract world metadata
+    let worlds = extract_worlds(&decoded);
+
+    // Extract dependencies (packages other than the primary one)
+    let dependencies = extract_dependencies(resolve, primary_package_id);
 
     // Generate a WIT text representation from the decoded structure
     let wit_text = generate_wit_text(&decoded);
 
     Some(WitMetadata {
         package_name,
-        world_name,
-        import_count,
-        export_count,
+        worlds,
+        dependencies,
+        is_component,
         wit_text,
     })
+}
+
+/// Extract world metadata from all worlds in the decoded component.
+fn extract_worlds(decoded: &DecodedWasm) -> Vec<WorldMetadata> {
+    let resolve = decoded.resolve();
+
+    match decoded {
+        DecodedWasm::WitPackage(_, package_id) => {
+            let package = resolve
+                .packages
+                .get(*package_id)
+                .expect("Package ID should be valid");
+            package
+                .worlds
+                .iter()
+                .map(|(name, world_id)| {
+                    let world = resolve
+                        .worlds
+                        .get(*world_id)
+                        .expect("World ID should be valid");
+                    WorldMetadata {
+                        name: name.clone(),
+                        imports: extract_world_items(resolve, &world.imports),
+                        exports: extract_world_items(resolve, &world.exports),
+                    }
+                })
+                .collect()
+        }
+        DecodedWasm::Component(_, world_id) => {
+            let world = resolve
+                .worlds
+                .get(*world_id)
+                .expect("World ID should be valid");
+            vec![WorldMetadata {
+                name: world.name.clone(),
+                imports: extract_world_items(resolve, &world.imports),
+                exports: extract_world_items(resolve, &world.exports),
+            }]
+        }
+    }
+}
+
+/// Extract import/export items from a world's item map.
+fn extract_world_items<'a>(
+    resolve: &wit_parser::Resolve,
+    items: impl IntoIterator<Item = (&'a wit_parser::WorldKey, &'a wit_parser::WorldItem)>,
+) -> Vec<ImportExportItem> {
+    items
+        .into_iter()
+        .map(|(key, _)| match key {
+            wit_parser::WorldKey::Name(name) => ImportExportItem {
+                declared_package: name.clone(),
+                declared_interface: None,
+                declared_version: None,
+            },
+            wit_parser::WorldKey::Interface(id) => {
+                let iface = resolve
+                    .interfaces
+                    .get(*id)
+                    .expect("Interface ID should be valid");
+                if let Some(pkg_id) = iface.package {
+                    let pkg = resolve
+                        .packages
+                        .get(pkg_id)
+                        .expect("Package ID should be valid");
+                    ImportExportItem {
+                        declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+                        declared_interface: iface.name.clone(),
+                        declared_version: pkg.name.version.as_ref().map(|v| v.to_string()),
+                    }
+                } else {
+                    ImportExportItem {
+                        declared_package: iface
+                            .name
+                            .clone()
+                            .unwrap_or_else(|| format!("interface-{id:?}")),
+                        declared_interface: None,
+                        declared_version: None,
+                    }
+                }
+            }
+        })
+        .collect()
+}
+
+/// Extract dependency packages (all packages other than the primary one).
+fn extract_dependencies(
+    resolve: &wit_parser::Resolve,
+    primary_package_id: Option<wit_parser::PackageId>,
+) -> Vec<DependencyItem> {
+    resolve
+        .packages
+        .iter()
+        .filter(|(id, _)| Some(id) != primary_package_id.as_ref())
+        .map(|(_, pkg)| DependencyItem {
+            declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+            declared_version: pkg.name.version.as_ref().map(|v| v.to_string()),
+        })
+        .collect()
 }
 
 /// Generate WIT text representation from decoded component.
@@ -387,5 +515,264 @@ mod tests {
             "should contain export, got: {}",
             wit_text
         );
+    }
+
+    #[test]
+    fn extract_worlds_from_wit_package_with_multiple_worlds() {
+        use wit_parser::{Interface, Package, PackageName, Resolve, World};
+
+        let mut resolve = Resolve::default();
+
+        let interface = Interface {
+            name: Some("handler".to_string()),
+            docs: Default::default(),
+            types: Default::default(),
+            functions: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let interface_id = resolve.interfaces.alloc(interface);
+
+        let world_a = World {
+            name: "proxy".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            include_names: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let world_a_id = resolve.worlds.alloc(world_a);
+
+        let world_b = World {
+            name: "command".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            include_names: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let world_b_id = resolve.worlds.alloc(world_b);
+
+        let package = Package {
+            name: PackageName {
+                namespace: "wasi".to_string(),
+                name: "http".to_string(),
+                version: None,
+            },
+            docs: Default::default(),
+            interfaces: [("handler".to_string(), interface_id)]
+                .into_iter()
+                .collect(),
+            worlds: [
+                ("proxy".to_string(), world_a_id),
+                ("command".to_string(), world_b_id),
+            ]
+            .into_iter()
+            .collect(),
+        };
+        let package_id = resolve.packages.alloc(package);
+
+        resolve.interfaces[interface_id].package = Some(package_id);
+        resolve.worlds[world_a_id].package = Some(package_id);
+        resolve.worlds[world_b_id].package = Some(package_id);
+
+        let decoded = DecodedWasm::WitPackage(resolve, package_id);
+        let worlds = extract_worlds(&decoded);
+
+        assert_eq!(worlds.len(), 2, "should extract both worlds");
+        let names: Vec<&str> = worlds.iter().map(|w| w.name.as_str()).collect();
+        assert!(names.contains(&"proxy"), "should contain proxy world");
+        assert!(names.contains(&"command"), "should contain command world");
+    }
+
+    #[test]
+    fn extract_worlds_component_has_one_world() {
+        use wit_parser::{Resolve, World};
+
+        let mut resolve = Resolve::default();
+        let world = World {
+            name: "my-component".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            include_names: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let world_id = resolve.worlds.alloc(world);
+
+        let decoded = DecodedWasm::Component(resolve, world_id);
+        let worlds = extract_worlds(&decoded);
+
+        assert_eq!(worlds.len(), 1);
+        assert_eq!(worlds[0].name, "my-component");
+    }
+
+    #[test]
+    fn extract_world_items_with_named_and_interface_imports() {
+        use wit_parser::{
+            Function, FunctionKind, Interface, Package, PackageName, Resolve, World, WorldItem,
+            WorldKey,
+        };
+
+        let mut resolve = Resolve::default();
+
+        // Create a dependency interface with a package
+        let dep_iface = Interface {
+            name: Some("streams".to_string()),
+            docs: Default::default(),
+            types: Default::default(),
+            functions: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let dep_iface_id = resolve.interfaces.alloc(dep_iface);
+
+        let dep_pkg = Package {
+            name: PackageName {
+                namespace: "wasi".to_string(),
+                name: "io".to_string(),
+                version: None,
+            },
+            docs: Default::default(),
+            interfaces: [("streams".to_string(), dep_iface_id)]
+                .into_iter()
+                .collect(),
+            worlds: Default::default(),
+        };
+        let dep_pkg_id = resolve.packages.alloc(dep_pkg);
+        resolve.interfaces[dep_iface_id].package = Some(dep_pkg_id);
+
+        let mut world = World {
+            name: "test".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            include_names: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+
+        // Named import (bare function)
+        world.imports.insert(
+            WorldKey::Name("my-func".to_string()),
+            WorldItem::Function(Function {
+                name: "my-func".to_string(),
+                kind: FunctionKind::Freestanding,
+                params: vec![],
+                result: None,
+                docs: Default::default(),
+                stability: Default::default(),
+            }),
+        );
+
+        // Interface import
+        world.imports.insert(
+            WorldKey::Interface(dep_iface_id),
+            WorldItem::Interface {
+                id: dep_iface_id,
+                stability: Default::default(),
+            },
+        );
+
+        let items = extract_world_items(&resolve, &world.imports);
+
+        assert_eq!(items.len(), 2);
+
+        // Named import
+        let named = &items[0];
+        assert_eq!(named.declared_package, "my-func");
+        assert!(named.declared_interface.is_none());
+        assert!(named.declared_version.is_none());
+
+        // Interface import
+        let iface = &items[1];
+        assert_eq!(iface.declared_package, "wasi:io");
+        assert_eq!(iface.declared_interface.as_deref(), Some("streams"));
+        assert_eq!(iface.declared_version.as_deref(), None);
+    }
+
+    #[test]
+    fn extract_dependencies_excludes_primary_package() {
+        use wit_parser::{Package, PackageName, Resolve};
+
+        let mut resolve = Resolve::default();
+
+        let primary = Package {
+            name: PackageName {
+                namespace: "my".to_string(),
+                name: "app".to_string(),
+                version: None,
+            },
+            docs: Default::default(),
+            interfaces: Default::default(),
+            worlds: Default::default(),
+        };
+        let primary_id = resolve.packages.alloc(primary);
+
+        let dep = Package {
+            name: PackageName {
+                namespace: "wasi".to_string(),
+                name: "io".to_string(),
+                version: None,
+            },
+            docs: Default::default(),
+            interfaces: Default::default(),
+            worlds: Default::default(),
+        };
+        let _dep_id = resolve.packages.alloc(dep);
+
+        let deps = extract_dependencies(&resolve, Some(primary_id));
+
+        assert_eq!(deps.len(), 1);
+        assert_eq!(deps[0].declared_package, "wasi:io");
+        assert_eq!(deps[0].declared_version.as_deref(), None);
+    }
+
+    #[test]
+    fn is_component_flag_for_wit_package() {
+        use wit_parser::{Package, PackageName, Resolve, World};
+
+        let mut resolve = Resolve::default();
+        let world = World {
+            name: "hello".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            include_names: Default::default(),
+            package: None,
+            stability: Default::default(),
+        };
+        let world_id = resolve.worlds.alloc(world);
+
+        let package = Package {
+            name: PackageName {
+                namespace: "test".to_string(),
+                name: "pkg".to_string(),
+                version: None,
+            },
+            docs: Default::default(),
+            interfaces: Default::default(),
+            worlds: [("hello".to_string(), world_id)].into_iter().collect(),
+        };
+        let package_id = resolve.packages.alloc(package);
+        resolve.worlds[world_id].package = Some(package_id);
+
+        // WitPackage → is_component should be false
+        let decoded = DecodedWasm::WitPackage(resolve.clone(), package_id);
+        let worlds = extract_worlds(&decoded);
+        assert!(!matches!(decoded, DecodedWasm::Component(..)));
+        assert_eq!(worlds.len(), 1);
+
+        // Component → is_component should be true
+        let decoded = DecodedWasm::Component(resolve, world_id);
+        assert!(matches!(decoded, DecodedWasm::Component(..)));
     }
 }
