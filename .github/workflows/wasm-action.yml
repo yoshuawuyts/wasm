@@ -1,0 +1,60 @@
+name: wasm Action Example
+
+on:
+  workflow_dispatch:
+
+jobs:
+  run-wasm-component:
+    name: Run a Wasm Component
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Install a component from an OCI registry and save it locally.
+      - name: Install sample component
+        uses: ./
+        with:
+          command: install
+          input: ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6
+
+      # Run a local Wasm Component with network access disabled (default).
+      - name: Run Wasm Component
+        id: wasm-run
+        uses: ./
+        with:
+          command: run
+          input: deps/vendor/wasm/sample-wasi-http-rust.wasm
+          inherit-network: 'false'
+
+      - name: Show exit code
+        run: echo "wasm exited with code ${{ steps.wasm-run.outputs.exit-code }}"
+
+  run-wasm-component-with-permissions:
+    name: Run a Wasm Component with permissions
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # Run a component with environment variables and network access.
+      - name: Run component with permissions
+        id: wasm-run-perms
+        uses: ./
+        with:
+          command: run
+          input: my-component.wasm
+          inherit-env: 'false'
+          inherit-network: 'true'
+          args: '--env API_URL=https://example.com --env DEBUG=1'
+
+      - name: Check result
+        run: echo "Component exited with ${{ steps.wasm-run-perms.outputs.exit-code }}"

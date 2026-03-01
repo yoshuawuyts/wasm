@@ -1,0 +1,101 @@
+name: 'Run wasm CLI'
+description: 'Run the wasm(1) unified WebAssembly developer tool in your GitHub Actions workflow'
+author: 'yoshuawuyts'
+
+inputs:
+  command:
+    description: 'The wasm subcommand to run (run, install, init, local, registry)'
+    required: true
+    default: 'run'
+  input:
+    description: 'For `wasm run`: local file path or OCI reference to the Wasm Component'
+    required: false
+    default: ''
+  args:
+    description: 'Additional arguments passed verbatim to the wasm command'
+    required: false
+    default: ''
+  offline:
+    description: 'Run in offline mode (--offline)'
+    required: false
+    default: 'false'
+  color:
+    description: 'When to use colored output: auto, always, or never (--color)'
+    required: false
+    default: 'auto'
+  inherit-env:
+    description: 'For `wasm run`: inherit all host environment variables (--inherit-env)'
+    required: false
+    default: 'false'
+  inherit-network:
+    description: 'For `wasm run`: allow the guest to access the network (--inherit-network)'
+    required: false
+    default: 'false'
+  no-stdio:
+    description: 'For `wasm run`: suppress stdin/stdout/stderr inheritance (--no-stdio)'
+    required: false
+    default: 'false'
+
+outputs:
+  exit-code:
+    description: 'Exit code returned by the wasm command'
+    value: ${{ steps.wasm.outputs.exit-code }}
+
+runs:
+  using: composite
+  steps:
+    - name: Cache wasm CLI binary
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/wasm
+        key: wasm-cli-${{ runner.os }}
+
+    - name: Install wasm CLI
+      shell: bash
+      run: |
+        if ! command -v wasm &>/dev/null; then
+          cargo install --git https://github.com/yoshuawuyts/wasm-cli.git wasm
+        fi
+
+    - name: Run wasm
+      id: wasm
+      shell: bash
+      env:
+        INPUT_COMMAND: ${{ inputs.command }}
+        INPUT_INPUT: ${{ inputs.input }}
+        INPUT_ARGS: ${{ inputs.args }}
+        INPUT_OFFLINE: ${{ inputs.offline }}
+        INPUT_COLOR: ${{ inputs.color }}
+        INPUT_INHERIT_ENV: ${{ inputs.inherit-env }}
+        INPUT_INHERIT_NETWORK: ${{ inputs.inherit-network }}
+        INPUT_NO_STDIO: ${{ inputs.no-stdio }}
+      run: |
+        args=()
+
+        # Global options
+        [ "$INPUT_OFFLINE" = "true" ] && args+=(--offline)
+        [ "$INPUT_COLOR" != "auto" ] && args+=(--color "$INPUT_COLOR")
+
+        # Subcommand
+        args+=("$INPUT_COMMAND")
+
+        # Positional input argument (e.g. file path or OCI reference for `wasm run`)
+        [ -n "$INPUT_INPUT" ] && args+=("$INPUT_INPUT")
+
+        # Flags for `wasm run`
+        [ "$INPUT_INHERIT_ENV" = "true" ] && args+=(--inherit-env)
+        [ "$INPUT_INHERIT_NETWORK" = "true" ] && args+=(--inherit-network)
+        [ "$INPUT_NO_STDIO" = "true" ] && args+=(--no-stdio)
+
+        # Additional verbatim arguments split on whitespace
+        if [ -n "$INPUT_ARGS" ]; then
+          read -ra extra_args <<< "$INPUT_ARGS"
+          args+=("${extra_args[@]}")
+        fi
+
+        set +e
+        wasm "${args[@]}"
+        exit_code=$?
+        set -e
+        echo "exit-code=$exit_code" >> "$GITHUB_OUTPUT"
+        exit $exit_code
