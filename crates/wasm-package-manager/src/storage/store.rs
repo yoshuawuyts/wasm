@@ -1,9 +1,3 @@
-#![allow(
-    clippy::cast_possible_wrap,
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss
-)]
-
 use anyhow::Context;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
@@ -86,7 +80,7 @@ impl Store {
 
         Migrations::run_all(&conn)?;
 
-        let migration_info = Migrations::get(&conn)?;
+        let migration_info = Migrations::get(&conn);
         let store_size = dir_size(&store_dir).await;
         let metadata_size = tokio::fs::metadata(&metadata_file)
             .await
@@ -117,7 +111,11 @@ impl Store {
         let manifest_str = serde_json::to_string(&image.manifest)?;
 
         // Calculate total size on disk from all layers
-        let size_on_disk: u64 = image.layers.iter().map(|l| l.data.len() as u64).sum();
+        let size_on_disk: u64 = image
+            .layers
+            .iter()
+            .map(|l| u64::try_from(l.data.len()).unwrap_or(u64::MAX))
+            .sum();
 
         // 1. Upsert oci_repository
         let repo_id =
@@ -142,7 +140,7 @@ impl Store {
                 .as_ref()
                 .and_then(|m| m.media_type.as_deref()),
             Some(&manifest_str),
-            Some(size_on_disk as i64),
+            Some(i64::try_from(size_on_disk).unwrap_or(i64::MAX)),
             image
                 .manifest
                 .as_ref()
@@ -201,7 +199,7 @@ impl Store {
                     layer_digest,
                     layer_media_type,
                     layer_size.map(|s| s.max(0)),
-                    idx as i32,
+                    i32::try_from(idx).unwrap_or(i32::MAX),
                 )?;
 
                 // Store layer-level annotations
@@ -256,7 +254,7 @@ impl Store {
             digest.unwrap_or("unknown"),
             manifest.media_type.as_deref(),
             Some(&manifest_str),
-            Some(size_on_disk as i64),
+            Some(i64::try_from(size_on_disk).unwrap_or(i64::MAX)),
             manifest.artifact_type.as_deref(),
             Some(manifest.config.media_type.as_str()),
             Some(manifest.config.digest.as_str()),
@@ -308,7 +306,7 @@ impl Store {
                 manifest_id,
                 layer_digest,
                 media_type,
-                Some(data.len() as i64),
+                Some(i64::try_from(data.len()).unwrap_or(i64::MAX)),
                 position,
             )?;
 
@@ -384,9 +382,9 @@ impl Store {
                 if let Err(e) = WitWorldImport::insert(
                     &self.conn,
                     wit_world_id,
-                    &item.declared_package,
-                    item.declared_interface.as_deref(),
-                    item.declared_version.as_deref(),
+                    &item.package,
+                    item.interface.as_deref(),
+                    item.version.as_deref(),
                     None,
                 ) {
                     tracing::warn!("Failed to insert WIT world import: {}", e);
@@ -397,9 +395,9 @@ impl Store {
                 if let Err(e) = WitWorldExport::insert(
                     &self.conn,
                     wit_world_id,
-                    &item.declared_package,
-                    item.declared_interface.as_deref(),
-                    item.declared_version.as_deref(),
+                    &item.package,
+                    item.interface.as_deref(),
+                    item.version.as_deref(),
                     None,
                 ) {
                     tracing::warn!("Failed to insert WIT world export: {}", e);
@@ -412,8 +410,8 @@ impl Store {
             if let Err(e) = WitInterfaceDependency::insert(
                 &self.conn,
                 wit_interface_id,
-                &dep.declared_package,
-                dep.declared_version.as_deref(),
+                &dep.package,
+                dep.version.as_deref(),
                 None,
             ) {
                 tracing::warn!("Failed to insert WIT interface dependency: {}", e);

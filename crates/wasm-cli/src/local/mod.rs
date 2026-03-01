@@ -1,8 +1,7 @@
-#![allow(clippy::print_stdout, clippy::unnecessary_wraps)]
+#![allow(clippy::print_stdout)]
 
 use std::path::PathBuf;
 
-use anyhow::Result;
 use comfy_table::{Table, modifiers::UTF8_ROUND_CORNERS, presets::UTF8_FULL};
 use wasm_detector::WasmDetector;
 
@@ -29,7 +28,7 @@ pub(crate) struct ListOpts {
 }
 
 impl Opts {
-    pub(crate) fn run(self) -> Result<()> {
+    pub(crate) fn run(self) {
         match self {
             Opts::List(opts) => opts.run(),
         }
@@ -37,7 +36,7 @@ impl Opts {
 }
 
 impl ListOpts {
-    fn run(&self) -> Result<()> {
+    fn run(&self) {
         let detector = WasmDetector::new(&self.path)
             .include_hidden(self.hidden)
             .follow_symlinks(self.follow_links);
@@ -46,7 +45,7 @@ impl ListOpts {
 
         if wasm_files.is_empty() {
             println!("No WASM files found in {}", self.path.display());
-            return Ok(());
+            return;
         }
 
         // Sort by path for consistent output
@@ -68,7 +67,5 @@ impl ListOpts {
 
         println!("{table}");
         println!("\nFound {} WASM file(s)", wasm_files.len());
-
-        Ok(())
     }
 }

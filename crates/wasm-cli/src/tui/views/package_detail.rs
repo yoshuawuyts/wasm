@@ -1,5 +1,3 @@
-#![allow(clippy::cast_sign_loss)]
-
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
@@ -109,7 +107,9 @@ impl Widget for PackageDetailView<'_> {
         ]));
         details.push(Line::from(vec![
             Span::styled("  Config Size: ", Style::default().bold()),
-            Span::raw(super::format_size(self.package.manifest.config.size as u64)),
+            Span::raw(super::format_size(
+                u64::try_from(self.package.manifest.config.size.max(0)).unwrap_or(0),
+            )),
         ]));
 
         details.push(Line::raw("")); // Empty line
@@ -122,7 +122,7 @@ impl Widget for PackageDetailView<'_> {
         ]));
 
         for (i, layer) in self.package.manifest.layers.iter().enumerate() {
-            let size_str = super::format_size(layer.size as u64);
+            let size_str = super::format_size(u64::try_from(layer.size.max(0)).unwrap_or(0));
             details.push(Line::from(vec![
                 Span::styled(format!("  [{}] ", i + 1), Style::default().dim()),
                 Span::raw(&layer.media_type),

@@ -1,5 +1,3 @@
-#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
-
 use ratatui::{
     prelude::*,
     widgets::{Cell, Paragraph, Row, Table, Widget},
@@ -101,15 +99,19 @@ impl Widget for SettingsView<'_> {
                 let metadata_size = super::format_size(info.metadata_size());
 
                 // Column 1: longest is "Image metadata" = 14 chars
-                let col1_width = 14;
+                let col1_width: u16 = 14;
                 // Column 2: longest path
-                let col2_width = executable_path
-                    .len()
-                    .max(data_dir_path.len())
-                    .max(store_dir_path.len())
-                    .max(metadata_file_path.len());
+                let col2_width = u16::try_from(
+                    executable_path
+                        .len()
+                        .max(data_dir_path.len())
+                        .max(store_dir_path.len())
+                        .max(metadata_file_path.len()),
+                )
+                .unwrap_or(u16::MAX);
                 // Column 3: longest size string or "-"
-                let col3_width = store_size.len().max(metadata_size.len()).max(1);
+                let col3_width = u16::try_from(store_size.len().max(metadata_size.len()).max(1))
+                    .unwrap_or(u16::MAX);
 
                 // Create data rows
                 let rows = vec![
@@ -138,9 +140,9 @@ impl Widget for SettingsView<'_> {
                 let table = Table::new(
                     rows,
                     [
-                        Constraint::Length(col1_width as u16),
-                        Constraint::Length(col2_width as u16),
-                        Constraint::Length(col3_width as u16),
+                        Constraint::Length(col1_width),
+                        Constraint::Length(col2_width),
+                        Constraint::Length(col3_width),
                     ],
                 )
                 .column_spacing(3);

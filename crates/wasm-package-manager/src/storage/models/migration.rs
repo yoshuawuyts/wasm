@@ -60,8 +60,7 @@ impl Migrations {
     }
 
     /// Returns information about the current migration state.
-    #[allow(clippy::unnecessary_wraps)]
-    pub(crate) fn get(conn: &Connection) -> anyhow::Result<Self> {
+    pub(crate) fn get(conn: &Connection) -> Self {
         let current: u32 = conn
             .query_row(
                 "SELECT COALESCE(MAX(version), 0) FROM migrations",
@@ -70,7 +69,7 @@ impl Migrations {
             )
             .unwrap_or(0);
         let total = MIGRATIONS.last().map_or(0, |m| m.version);
-        Ok(Self { current, total })
+        Self { current, total }
     }
 }
 
@@ -123,7 +122,7 @@ mod tests {
         Migrations::run_all(&conn).unwrap();
 
         // Should still work correctly
-        let info = Migrations::get(&conn).unwrap();
+        let info = Migrations::get(&conn);
         assert_eq!(info.current, info.total);
     }
 
@@ -132,7 +131,7 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         Migrations::run_all(&conn).unwrap();
 
-        let info = Migrations::get(&conn).unwrap();
+        let info = Migrations::get(&conn);
 
         // Current should equal total after running all migrations
         assert_eq!(info.current, info.total);
@@ -149,7 +148,7 @@ mod tests {
         conn.execute_batch(include_str!("../migrations/00_migrations.sql"))
             .unwrap();
 
-        let info = Migrations::get(&conn).unwrap();
+        let info = Migrations::get(&conn);
 
         // Current should be 0 before running migrations
         assert_eq!(info.current, 0);

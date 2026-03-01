@@ -40,7 +40,7 @@ impl Cli {
     async fn run(self) -> Result<(), anyhow::Error> {
         match self.command {
             Some(Command::Run(opts)) => opts.run(self.offline).await?,
-            Some(Command::Local(opts)) => opts.run()?,
+            Some(Command::Local(opts)) => opts.run(),
             Some(Command::Registry(opts)) => opts.run(self.offline).await?,
             Some(Command::Init(opts)) => opts.run().await?,
             Some(Command::Install(opts)) => opts.run(self.offline).await?,

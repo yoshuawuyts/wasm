@@ -1,8 +1,3 @@
-#![allow(
-    clippy::implicit_hasher,
-    clippy::case_sensitive_file_extension_comparisons
-)]
-
 //! OCI-specific pure logic extracted from the `Manager` and `Store`
 //! implementations.
 //!
@@ -10,6 +5,7 @@
 
 use oci_client::manifest::OciDescriptor;
 use std::collections::HashSet;
+use std::ffi::OsStr;
 
 /// Filter manifest layers to only those with `application/wasm` media type.
 #[must_use]
@@ -26,9 +22,9 @@ pub fn filter_wasm_layers(layers: &[OciDescriptor]) -> Vec<&OciDescriptor> {
 /// belonging to all other (retained) manifests, returns those that appear only
 /// in the deleted set and can safely be purged from the content store.
 #[must_use]
-pub fn compute_orphaned_layers(
-    deleted_digests: &HashSet<String>,
-    retained_digests: &HashSet<String>,
+pub fn compute_orphaned_layers<S: std::hash::BuildHasher>(
+    deleted_digests: &HashSet<String, S>,
+    retained_digests: &HashSet<String, S>,
 ) -> Vec<String> {
     deleted_digests
         .difference(retained_digests)
@@ -45,9 +41,10 @@ pub fn compute_orphaned_layers(
 #[must_use]
 pub fn classify_tag(tag: &str) -> TagKind {
     if tag.starts_with("sha256-") {
-        if tag.ends_with(".sig") {
+        let ext = std::path::Path::new(tag).extension();
+        if ext == Some(OsStr::new("sig")) {
             TagKind::Signature
-        } else if tag.ends_with(".att") {
+        } else if ext == Some(OsStr::new("att")) {
             TagKind::Attestation
         } else {
             TagKind::Release

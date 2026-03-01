@@ -1,5 +1,3 @@
-#![allow(clippy::cast_possible_wrap, clippy::implicit_hasher)]
-
 //! Pure logic extracted from the `Manager` and `Store` implementations.
 //!
 //! These functions contain no IO and can be unit-tested in isolation.
@@ -35,7 +33,7 @@ pub fn vendor_filename(
 #[must_use]
 pub fn should_sync(last_synced_epoch: Option<i64>, sync_interval: u64, now_epoch: i64) -> bool {
     match last_synced_epoch {
-        Some(last) => now_epoch - last >= sync_interval as i64,
+        Some(last) => now_epoch - last >= i64::try_from(sync_interval).unwrap_or(i64::MAX),
         None => true,
     }
 }
@@ -83,11 +81,11 @@ pub fn sanitize_to_wit_identifier(input: &str) -> Option<String> {
 ///    collision with `existing_names`.
 /// 4. **Full repository path** — with `/` replaced by `-`; used on collision.
 #[must_use]
-pub fn derive_component_name(
+pub fn derive_component_name<S: std::hash::BuildHasher>(
     package_name: Option<&str>,
     oci_title: Option<&str>,
     repository: &str,
-    existing_names: &HashSet<String>,
+    existing_names: &HashSet<String, S>,
 ) -> String {
     // 1. WIT package name (strip @version).
     if let Some(name) = package_name {

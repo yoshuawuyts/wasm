@@ -98,10 +98,10 @@ impl Opts {
                 let tags: Vec<_> = all_tags
                     .into_iter()
                     .filter(|tag| {
-                        #[allow(clippy::case_sensitive_file_extension_comparisons)]
-                        let is_sig = tag.ends_with(".sig");
-                        #[allow(clippy::case_sensitive_file_extension_comparisons)]
-                        let is_att = tag.ends_with(".att");
+                        use std::ffi::OsStr;
+                        let ext = std::path::Path::new(tag.as_str()).extension();
+                        let is_sig = ext == Some(OsStr::new("sig"));
+                        let is_att = ext == Some(OsStr::new("att"));
 
                         if is_sig {
                             opts.signatures

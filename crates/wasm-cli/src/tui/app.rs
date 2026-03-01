@@ -1,11 +1,3 @@
-#![allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::needless_pass_by_value,
-    clippy::unused_self,
-    clippy::struct_field_names
-)]
-
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
@@ -123,13 +115,13 @@ pub(crate) struct App {
     log_scroll: usize,
     /// Whether offline mode is enabled
     offline: bool,
-    app_sender: mpsc::Sender<AppEvent>,
+    event_sender: mpsc::Sender<AppEvent>,
     manager_receiver: mpsc::Receiver<ManagerEvent>,
 }
 
 impl App {
     pub(crate) fn new(
-        app_sender: mpsc::Sender<AppEvent>,
+        event_sender: mpsc::Sender<AppEvent>,
         manager_receiver: mpsc::Receiver<ManagerEvent>,
         offline: bool,
     ) -> Self {
@@ -149,7 +141,7 @@ impl App {
             log_lines: Vec::new(),
             log_scroll: 0,
             offline,
-            app_sender,
+            event_sender,
             manager_receiver,
         }
     }
@@ -161,7 +153,7 @@ impl App {
             self.handle_manager_events();
         }
         // Notify manager that we're quitting
-        let _ = self.app_sender.try_send(AppEvent::Quit);
+        let _ = self.event_sender.try_send(AppEvent::Quit);
         Ok(())
     }
 
@@ -232,12 +224,12 @@ impl App {
 
         // Render pull prompt overlay if active
         if let InputMode::PullPrompt(ref state) = self.input_mode {
-            self.render_pull_prompt(frame, area, state.clone());
+            Self::render_pull_prompt(frame, area, state);
         }
     }
 
     #[allow(clippy::indexing_slicing)]
-    fn render_pull_prompt(&self, frame: &mut Frame, area: Rect, state: PullPromptState) {
+    fn render_pull_prompt(frame: &mut Frame, area: Rect, state: &PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));
         let popup_height = if state.error.is_some() { 7 } else { 5 };
@@ -316,11 +308,11 @@ impl App {
                 ManagerEvent::Ready => {
                     self.manager_state = ManagerState::Ready;
                     // Request packages list and state info when manager is ready
-                    let _ = self.app_sender.try_send(AppEvent::RequestPackages);
-                    let _ = self.app_sender.try_send(AppEvent::RequestStateInfo);
-                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
-                    let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
-                    let _ = self.app_sender.try_send(AppEvent::DetectLocalWasm);
+                    let _ = self.event_sender.try_send(AppEvent::RequestPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestStateInfo);
+                    let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                    let _ = self.event_sender.try_send(AppEvent::DetectLocalWasm);
                 }
                 ManagerEvent::PackagesList(packages) => {
                     self.packages = packages;
@@ -376,8 +368,8 @@ impl App {
                     InputMode::Normal
                 };
                 // Refresh known packages and WIT interfaces
-                let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
-                let _ = self.app_sender.try_send(AppEvent::RequestWitInterfaces);
+                let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
+                let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
             }
             Err(e) => {
                 // Keep the prompt open with the error
@@ -447,7 +439,7 @@ impl App {
             (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
             (KeyCode::Char('6'), _) => {
                 self.current_tab = Tab::Log;
-                let _ = self.app_sender.try_send(AppEvent::RequestLogLines);
+                let _ = self.event_sender.try_send(AppEvent::RequestLogLines);
             }
             // Pull prompt - 'p' to open (only on Components tab, and not in offline mode)
             (KeyCode::Char('p'), _)
@@ -494,7 +486,7 @@ impl App {
                     && let Some(package) = filtered.get(selected)
                 {
                     let _ = self
-                        .app_sender
+                        .event_sender
                         .try_send(AppEvent::Delete(package.reference()));
                     // Adjust selection if we're deleting the last item
                     if selected > 0 && selected >= filtered.len() - 1 {
@@ -542,7 +534,7 @@ impl App {
                 {
                     // Pull the package with the most recent tag (or latest if none)
                     let reference = package.reference_with_tag();
-                    let _ = self.app_sender.try_send(AppEvent::Pull(reference));
+                    let _ = self.event_sender.try_send(AppEvent::Pull(reference));
                 }
             }
             // Refresh tags for selected package from registry (not in offline mode)
@@ -552,7 +544,7 @@ impl App {
                 if let Some(selected) = self.search_view_state.selected()
                     && let Some(package) = self.known_packages.get(selected)
                 {
-                    let _ = self.app_sender.try_send(AppEvent::RefreshTags(
+                    let _ = self.event_sender.try_send(AppEvent::RefreshTags(
                         package.registry.clone(),
                         package.repository.clone(),
                     ));
@@ -612,9 +604,9 @@ impl App {
                 // Execute search
                 self.input_mode = InputMode::Normal;
                 if self.search_view_state.search_query.is_empty() {
-                    let _ = self.app_sender.try_send(AppEvent::RequestKnownPackages);
+                    let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
                 } else {
-                    let _ = self.app_sender.try_send(AppEvent::SearchPackages(
+                    let _ = self.event_sender.try_send(AppEvent::SearchPackages(
                         self.search_view_state.search_query.clone(),
                     ));
                 }
@@ -653,7 +645,7 @@ impl App {
                     let input = state.input.clone();
                     state.in_progress = true;
                     state.error = None;
-                    let _ = self.app_sender.try_send(AppEvent::Pull(input));
+                    let _ = self.event_sender.try_send(AppEvent::Pull(input));
                 }
             }
             KeyCode::Backspace => {

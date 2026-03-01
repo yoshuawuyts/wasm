@@ -53,9 +53,22 @@ impl InspectOpts {
     }
 }
 
+/// Get the max value of the `range` field across a payload and all children.
+fn find_range_max(max: &mut usize, payload: &Payload) {
+    let range = &payload.metadata().range;
+    if range.end > *max {
+        *max = range.end;
+    }
+
+    if let Payload::Component { children, .. } = payload {
+        for child in children {
+            find_range_max(max, child);
+        }
+    }
+}
+
 /// Write a table containing a summarized overview of a wasm binary's metadata to
 /// a writer.
-#[allow(clippy::items_after_statements)]
 fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
     // Prepare a table and get the individual metadata
     let mut table = Table::new();
@@ -76,20 +89,6 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         .expect("This should be the SIZE% column")
         .set_cell_alignment(CellAlignment::Right);
 
-    // Get the max value of the `range` field. This is the upper memory bound.
-    fn find_range_max(max: &mut usize, payload: &Payload) {
-        let range = &payload.metadata().range;
-        if range.end > *max {
-            *max = range.end;
-        }
-
-        if let Payload::Component { children, .. } = payload {
-            for child in children {
-                find_range_max(max, child);
-            }
-        }
-    }
-
     let mut range_max = 0;
     find_range_max(&mut range_max, payload);
 
@@ -103,11 +102,6 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
 }
 
 // The recursing inner function of `write_summary_table`
-#[allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::cast_precision_loss
-)]
 fn write_summary_table_inner(
     payload: &Payload,
     parent: &str,
@@ -129,12 +123,18 @@ fn write_summary_table_inner(
         *unknown_id += 1;
         name
     };
-    let size = ByteSize::b((range.end - range.start) as u64)
+    let size_bytes = range.end - range.start;
+    let size = ByteSize::b(u64::try_from(size_bytes).unwrap_or(u64::MAX))
         .display()
         .si_short()
         .to_string();
 
-    let usep = match ((range.end - range.start) as f64 / range_max as f64 * 100.0).round() as u8 {
+    let percent = if range_max == 0 {
+        0usize
+    } else {
+        size_bytes.saturating_mul(100) / range_max
+    };
+    let usep = match u8::try_from(percent.min(100)).unwrap_or(100) {
         // If the item was truly empty, it wouldn't be part of the binary
         0..=1 => "<1%".to_string(),
         // We're hedging against the low-ends, this hedges against the high-ends.

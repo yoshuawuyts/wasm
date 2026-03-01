@@ -1,16 +1,14 @@
-#![allow(clippy::struct_field_names, clippy::format_push_string)]
-
 use wit_parser::decoding::{DecodedWasm, decode};
 
 /// An import or export declaration inside a WIT world.
 #[derive(Debug, Clone)]
 pub(crate) struct ImportExportItem {
     /// The declared package name (e.g. "wasi:http").
-    pub declared_package: String,
+    pub package: String,
     /// The declared interface name within the package, if any.
-    pub declared_interface: Option<String>,
+    pub interface: Option<String>,
     /// The declared version constraint, if any.
-    pub declared_version: Option<String>,
+    pub version: Option<String>,
 }
 
 /// Metadata about a single WIT world.
@@ -28,9 +26,9 @@ pub(crate) struct WorldMetadata {
 #[derive(Debug, Clone)]
 pub(crate) struct DependencyItem {
     /// The declared package name (e.g. "wasi:io").
-    pub declared_package: String,
+    pub package: String,
     /// The declared version, if any.
-    pub declared_version: Option<String>,
+    pub version: Option<String>,
 }
 
 /// Metadata extracted from a WIT component.
@@ -152,9 +150,9 @@ fn extract_world_items<'a>(
         .into_iter()
         .map(|(key, _)| match key {
             wit_parser::WorldKey::Name(name) => ImportExportItem {
-                declared_package: name.clone(),
-                declared_interface: None,
-                declared_version: None,
+                package: name.clone(),
+                interface: None,
+                version: None,
             },
             wit_parser::WorldKey::Interface(id) => {
                 let iface = resolve
@@ -167,18 +165,18 @@ fn extract_world_items<'a>(
                         .get(pkg_id)
                         .expect("Package ID should be valid");
                     ImportExportItem {
-                        declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
-                        declared_interface: iface.name.clone(),
-                        declared_version: pkg.name.version.as_ref().map(ToString::to_string),
+                        package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+                        interface: iface.name.clone(),
+                        version: pkg.name.version.as_ref().map(ToString::to_string),
                     }
                 } else {
                     ImportExportItem {
-                        declared_package: iface
+                        package: iface
                             .name
                             .clone()
                             .unwrap_or_else(|| format!("interface-{id:?}")),
-                        declared_interface: None,
-                        declared_version: None,
+                        interface: None,
+                        version: None,
                     }
                 }
             }
@@ -196,14 +194,15 @@ fn extract_dependencies(
         .iter()
         .filter(|(id, _)| Some(id) != primary_package_id.as_ref())
         .map(|(_, pkg)| DependencyItem {
-            declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
-            declared_version: pkg.name.version.as_ref().map(ToString::to_string),
+            package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+            version: pkg.name.version.as_ref().map(ToString::to_string),
         })
         .collect()
 }
 
 /// Generate WIT text representation from decoded component.
 fn generate_wit_text(decoded: &DecodedWasm) -> String {
+    use std::fmt::Write as _;
     let resolve = decoded.resolve();
     let mut output = String::new();
 
@@ -213,11 +212,12 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                 .packages
                 .get(*package_id)
                 .expect("Package ID should be valid");
-            output.push_str(&format!("package {};\n\n", package.name));
+            writeln!(output, "package {};", package.name).unwrap_or_default();
+            writeln!(output).unwrap_or_default();
 
             // Print interfaces
             for (name, interface_id) in &package.interfaces {
-                output.push_str(&format!("interface {name} {{\n"));
+                writeln!(output, "interface {name} {{").unwrap_or_default();
                 let interface = resolve
                     .interfaces
                     .get(*interface_id)
@@ -229,11 +229,13 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                         .types
                         .get(*type_id)
                         .expect("Type ID should be valid");
-                    output.push_str(&format!(
-                        "  type {}: {:?};\n",
+                    writeln!(
+                        output,
+                        "  type {}: {:?};",
                         type_name,
                         type_def.kind.as_str()
-                    ));
+                    )
+                    .unwrap_or_default();
                 }
 
                 // Print functions
@@ -241,12 +243,14 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                     let params: Vec<String> =
                         func.params.iter().map(|(name, _ty)| name.clone()).collect();
                     let has_result = func.result.is_some();
-                    output.push_str(&format!(
-                        "  func {}({}){};\n",
+                    writeln!(
+                        output,
+                        "  func {}({}){};",
                         func_name,
                         params.join(", "),
                         if has_result { " -> ..." } else { "" }
-                    ));
+                    )
+                    .unwrap_or_default();
                 }
                 output.push_str("}\n\n");
             }
@@ -257,13 +261,13 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                     .worlds
                     .get(*world_id)
                     .expect("World ID should be valid");
-                output.push_str(&format!("world {name} {{\n"));
+                writeln!(output, "world {name} {{").unwrap_or_default();
 
                 for (key, _item) in &world.imports {
-                    output.push_str(&format!("  import {};\n", world_key_to_string(key)));
+                    writeln!(output, "  import {};", world_key_to_string(key)).unwrap_or_default();
                 }
                 for (key, _item) in &world.exports {
-                    output.push_str(&format!("  export {};\n", world_key_to_string(key)));
+                    writeln!(output, "  export {};", world_key_to_string(key)).unwrap_or_default();
                 }
                 output.push_str("}\n\n");
             }
@@ -274,13 +278,13 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                 .get(*world_id)
                 .expect("World ID should be valid");
             output.push_str("// Inferred component interface\n");
-            output.push_str(&format!("world {name} {{\n", name = world.name));
+            writeln!(output, "world {name} {{", name = world.name).unwrap_or_default();
 
             for (key, _item) in &world.imports {
-                output.push_str(&format!("  import {};\n", world_key_to_string(key)));
+                writeln!(output, "  import {};", world_key_to_string(key)).unwrap_or_default();
             }
             for (key, _item) in &world.exports {
-                output.push_str(&format!("  export {};\n", world_key_to_string(key)));
+                writeln!(output, "  export {};", world_key_to_string(key)).unwrap_or_default();
             }
             output.push_str("}\n");
         }
@@ -688,15 +692,15 @@ mod tests {
 
         // Named import
         let named = &items[0];
-        assert_eq!(named.declared_package, "my-func");
-        assert!(named.declared_interface.is_none());
-        assert!(named.declared_version.is_none());
+        assert_eq!(named.package, "my-func");
+        assert!(named.interface.is_none());
+        assert!(named.version.is_none());
 
         // Interface import
         let iface = &items[1];
-        assert_eq!(iface.declared_package, "wasi:io");
-        assert_eq!(iface.declared_interface.as_deref(), Some("streams"));
-        assert_eq!(iface.declared_version.as_deref(), None);
+        assert_eq!(iface.package, "wasi:io");
+        assert_eq!(iface.interface.as_deref(), Some("streams"));
+        assert_eq!(iface.version.as_deref(), None);
     }
 
     #[test]
@@ -732,8 +736,8 @@ mod tests {
         let deps = extract_dependencies(&resolve, Some(primary_id));
 
         assert_eq!(deps.len(), 1);
-        assert_eq!(deps[0].declared_package, "wasi:io");
-        assert_eq!(deps[0].declared_version.as_deref(), None);
+        assert_eq!(deps[0].package, "wasi:io");
+        assert_eq!(deps[0].version.as_deref(), None);
     }
 
     #[test]

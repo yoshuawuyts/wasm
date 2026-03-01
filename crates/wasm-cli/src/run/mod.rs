@@ -98,7 +98,7 @@ impl Opts {
         validate_component(&bytes)?;
 
         // 4. Resolve permissions (4-layer merge).
-        let permissions = self.resolve_permissions(reference.as_ref())?;
+        let permissions = self.resolve_permissions(reference.as_ref());
 
         // 5. Build Wasmtime runtime and execute.
         //    This is CPU-bound work so we use spawn_blocking.
@@ -143,11 +143,10 @@ impl Opts {
     /// 2. Global per-component from `components.toml`
     /// 3. Local per-component from `wasm.toml`
     /// 4. CLI flags
-    #[allow(clippy::unnecessary_wraps)]
     fn resolve_permissions(
         &self,
         reference: Option<&wasm_package_manager::Reference>,
-    ) -> Result<wasm_manifest::ResolvedPermissions> {
+    ) -> wasm_manifest::ResolvedPermissions {
         // Layer 1: global config defaults
         let config = wasm_package_manager::Config::load().unwrap_or_default();
         let base = config.run.map(|r| r.permissions).unwrap_or_default();
@@ -173,7 +172,7 @@ impl Opts {
         let cli = self.cli_permissions();
         let merged = merged.merge(cli);
 
-        Ok(merged.resolve())
+        merged.resolve()
     }
 }
 

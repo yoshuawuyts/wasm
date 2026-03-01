@@ -1,9 +1,3 @@
-#![allow(
-    clippy::cast_possible_truncation,
-    clippy::cast_sign_loss,
-    clippy::unused_self
-)]
-
 use ratatui::{
     prelude::*,
     widgets::{
@@ -103,7 +97,7 @@ impl StatefulWidget for InterfacesView<'_> {
             if let Some(idx) = state.selected()
                 && let Some((interface, component_ref)) = self.interfaces.get(idx)
             {
-                self.render_detail(area, buf, state, interface, component_ref);
+                Self::render_detail(area, buf, state, interface, component_ref);
             }
         } else {
             // Render list view
@@ -158,7 +152,6 @@ impl InterfacesView<'_> {
 
     #[allow(clippy::indexing_slicing)]
     fn render_detail(
-        &self,
         area: Rect,
         buf: &mut Buffer,
         state: &mut InterfacesViewState,
@@ -212,7 +205,7 @@ impl InterfacesView<'_> {
             })
             .collect();
 
-        let total_lines = wit_lines.len() as u16;
+        let total_lines = u16::try_from(wit_lines.len()).unwrap_or(u16::MAX);
         let visible_height = chunks[1].height.saturating_sub(2); // Account for block borders
 
         // Clamp scroll to valid range
@@ -231,8 +224,8 @@ impl InterfacesView<'_> {
             let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
                 .begin_symbol(Some("↑"))
                 .end_symbol(Some("↓"));
-            let mut scrollbar_state =
-                ScrollbarState::new(total_lines as usize).position(state.detail_scroll as usize);
+            let mut scrollbar_state = ScrollbarState::new(usize::from(total_lines))
+                .position(usize::from(state.detail_scroll));
 
             let scrollbar_area = Rect {
                 x: chunks[1].x + chunks[1].width - 1,
