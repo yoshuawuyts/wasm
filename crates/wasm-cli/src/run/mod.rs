@@ -143,7 +143,7 @@ impl Opts {
     /// 4. CLI flags
     fn resolve_permissions(
         &self,
-        _reference: Option<&wasm_package_manager::Reference>,
+        reference: Option<&wasm_package_manager::Reference>,
     ) -> Result<wasm_manifest::ResolvedPermissions> {
         // Layer 1: global config defaults
         let config = wasm_package_manager::Config::load().unwrap_or_default();
@@ -153,7 +153,7 @@ impl Opts {
         let global_component = wasm_package_manager::Config::load_components()
             .ok()
             .flatten()
-            .and_then(|manifest| self.find_matching_permissions(&manifest))
+            .and_then(|manifest| find_matching_permissions(&manifest, reference))
             .unwrap_or_default();
         let merged = base.merge(global_component);
 
@@ -162,7 +162,7 @@ impl Opts {
             .ok()
             .and_then(|s| toml::from_str::<wasm_manifest::Manifest>(&s).ok());
         let local_component = local_manifest
-            .and_then(|m| self.find_matching_permissions(&m))
+            .and_then(|m| find_matching_permissions(&m, reference))
             .unwrap_or_default();
         let merged = merged.merge(local_component);
 
@@ -172,26 +172,39 @@ impl Opts {
 
         Ok(merged.resolve())
     }
+}
 
-    /// Look through a manifest for a dependency whose OCI reference matches
-    /// the input and return its permissions (if any).
-    fn find_matching_permissions(
-        &self,
-        manifest: &wasm_manifest::Manifest,
-    ) -> Option<RunPermissions> {
-        for (_, dep) in manifest.components.iter().chain(manifest.interfaces.iter()) {
-            let perms = match dep {
-                wasm_manifest::Dependency::Explicit { permissions, .. } => permissions.clone(),
-                wasm_manifest::Dependency::Compact(_) => None,
-            };
-            if perms.is_some() {
-                // For now, match by checking if the OCI reference is related.
-                // A more precise match can check registry/namespace/package.
-                return perms;
+/// Look through a manifest for a dependency whose OCI reference matches
+/// the given reference and return its permissions (if any).
+///
+/// Matching is performed by comparing `registry/namespace/package` (without
+/// the tag) against each explicit dependency in the manifest.
+fn find_matching_permissions(
+    manifest: &wasm_manifest::Manifest,
+    reference: Option<&wasm_package_manager::Reference>,
+) -> Option<RunPermissions> {
+    let reference = reference?;
+    let ref_registry = reference.registry();
+    let ref_repository = reference.repository();
+
+    for (_, dep) in manifest.components.iter().chain(manifest.interfaces.iter()) {
+        match dep {
+            wasm_manifest::Dependency::Explicit {
+                registry,
+                namespace,
+                package,
+                permissions,
+                ..
+            } => {
+                let dep_repository = format!("{namespace}/{package}");
+                if registry == ref_registry && dep_repository == ref_repository {
+                    return permissions.clone();
+                }
             }
+            wasm_manifest::Dependency::Compact(_) => {}
         }
-        None
     }
+    None
 }
 
 /// Confirm the bytes are a Wasm Component (not a core module or WIT-only package).
@@ -235,9 +248,13 @@ fn execute_component(
         builder.inherit_env();
     }
     // Forward explicitly allowed env vars.
+    // Entries containing '=' are treated as KEY=VAL pairs (from --env flags);
+    // entries without '=' are treated as variable names to look up from the host.
     for entry in &permissions.allow_env {
         if let Some((k, v)) = entry.split_once('=') {
             builder.env(k, v);
+        } else if let Ok(v) = std::env::var(entry) {
+            builder.env(entry, &v);
         }
     }
     // Pre-open directories with full read/write permissions.
