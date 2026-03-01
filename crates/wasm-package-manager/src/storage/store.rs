@@ -4,11 +4,9 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
-use super::models::{
-    ImageEntry, InsertResult, KnownPackage, Migrations, OciLayer, OciManifest, OciRepository,
-    OciTag, WitInterface,
-};
-use super::wit_parser::extract_wit_metadata;
+use super::models::{KnownPackage, Migrations};
+use crate::interfaces::{WitInterface, extract_wit_metadata};
+use crate::oci::{ImageEntry, InsertResult, OciLayer, OciManifest, OciRepository, OciTag};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
 use rusqlite::Connection;
@@ -390,7 +388,7 @@ impl Store {
         }
 
         // Remove cached layers that are no longer needed
-        let orphaned = crate::manager::compute_orphaned_layers(&layer_digests, &retained_digests);
+        let orphaned = crate::oci::compute_orphaned_layers(&layer_digests, &retained_digests);
         for layer_digest in &orphaned {
             let _ = cacache::remove(self.state_info.store_dir(), layer_digest).await;
         }

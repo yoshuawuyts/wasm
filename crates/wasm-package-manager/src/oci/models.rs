@@ -727,7 +727,7 @@ impl OciReferrer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::models::Migrations;
+    use crate::storage::Migrations;
 
     /// Create an in-memory database with migrations applied for testing.
     fn setup_test_db() -> Connection {

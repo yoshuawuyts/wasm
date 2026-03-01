@@ -1,6 +1,6 @@
 use rusqlite::Connection;
 
-use super::oci::OciRepository;
+use crate::oci::OciRepository;
 
 /// A known package that persists in the database even after local deletion.
 /// This is used to track packages the user has seen or searched for.

@@ -1,3 +1,5 @@
+//! Package manager orchestration and general-purpose logic.
+
 use oci_client::Reference;
 use oci_client::manifest::OciImageManifest;
 use std::path::Path;
@@ -6,16 +8,12 @@ use tokio_stream::StreamExt;
 mod logic;
 
 use crate::config::Config;
-use crate::network::Client;
+use crate::interfaces::WitInterfaceView;
+use crate::oci::{Client, ImageView, InsertResult};
 use crate::progress::ProgressEvent;
-use crate::storage::{
-    ImageView, InsertResult, KnownPackage, KnownPackageView, StateInfo, Store, WitInterfaceView,
-};
+use crate::storage::{KnownPackageView, StateInfo, Store};
 
-pub use logic::{
-    TagKind, classify_tag, classify_tags, compute_orphaned_layers, derive_component_name,
-    filter_wasm_layers, sanitize_to_wit_identifier, should_sync, vendor_filename,
-};
+pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, vendor_filename};
 
 /// Result of syncing the package index from a meta-registry.
 #[derive(Debug)]
@@ -370,8 +368,8 @@ impl Manager {
         reference: Reference,
         vendor_dir: &Path,
     ) -> anyhow::Result<InstallResult> {
-        use crate::storage::wit_parser::extract_wit_metadata;
-        use crate::utils::is_wit_package;
+        use crate::interfaces::{extract_wit_metadata, is_wit_package};
+        use crate::oci::filter_wasm_layers;
 
         let pull_result = self.pull(reference.clone()).await?;
 
@@ -446,8 +444,8 @@ impl Manager {
         vendor_dir: &Path,
         progress_tx: &tokio::sync::mpsc::Sender<ProgressEvent>,
     ) -> anyhow::Result<InstallResult> {
-        use crate::storage::wit_parser::extract_wit_metadata;
-        use crate::utils::is_wit_package;
+        use crate::interfaces::{extract_wit_metadata, is_wit_package};
+        use crate::oci::filter_wasm_layers;
 
         let pull_result = self
             .pull_with_progress(reference.clone(), progress_tx)
@@ -775,7 +773,7 @@ impl Manager {
     #[cfg(feature = "http-sync")]
     fn handle_update(
         &self,
-        packages: Vec<KnownPackage>,
+        packages: Vec<crate::storage::KnownPackage>,
         etag: Option<String>,
     ) -> anyhow::Result<SyncResult> {
         let count = packages.len();
