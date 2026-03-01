@@ -48,8 +48,8 @@ impl Default for Lockfile {
     fn default() -> Self {
         Self {
             lockfile_version: LOCKFILE_VERSION,
-            components: Default::default(),
-            interfaces: Default::default(),
+            components: Vec::default(),
+            interfaces: Vec::default(),
         }
     }
 }

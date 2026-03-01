@@ -30,7 +30,7 @@ pub struct StateInfo {
 impl StateInfo {
     /// Create a new StateInfo instance.
     pub fn new(
-        migration_info: Migrations,
+        migration_info: &Migrations,
         store_size: u64,
         metadata_size: u64,
     ) -> anyhow::Result<Self> {
@@ -55,7 +55,7 @@ impl StateInfo {
     pub fn new_at(
         data_dir: PathBuf,
         config_file: PathBuf,
-        migration_info: Migrations,
+        migration_info: &Migrations,
         store_size: u64,
         metadata_size: u64,
     ) -> Self {
@@ -151,13 +151,13 @@ impl StateInfo {
     /// and falls back to the local data directory on other systems.
     #[must_use]
     pub fn default_log_dir() -> PathBuf {
-        dirs::state_dir()
-            .map(|p| p.join("wasm").join("logs"))
-            .unwrap_or_else(|| {
+        dirs::state_dir().map_or_else(
+            || {
                 dirs::data_local_dir()
-                    .map(|p| p.join("wasm").join("logs"))
-                    .unwrap_or_else(|| PathBuf::from("."))
-            })
+                    .map_or_else(|| PathBuf::from("."), |p| p.join("wasm").join("logs"))
+            },
+            |p| p.join("wasm").join("logs"),
+        )
     }
 }
 
@@ -180,7 +180,7 @@ mod tests {
         let state_info = StateInfo::new_at(
             data_dir.clone(),
             config_file.clone(),
-            test_migrations(),
+            &test_migrations(),
             1024,
             512,
         );
@@ -202,7 +202,7 @@ mod tests {
     fn test_state_info_executable() {
         let data_dir = PathBuf::from("/test/data");
         let config_file = PathBuf::from("/test/config/config.toml");
-        let state_info = StateInfo::new_at(data_dir, config_file, test_migrations(), 0, 0);
+        let state_info = StateInfo::new_at(data_dir, config_file, &test_migrations(), 0, 0);
 
         // executable() should return something (either the actual exe or "unknown")
         let exe = state_info.executable();
@@ -218,7 +218,7 @@ mod tests {
         let state_info = StateInfo::new_at(
             data_dir.clone(),
             config_file.clone(),
-            test_migrations(),
+            &test_migrations(),
             0,
             0,
         );
@@ -228,7 +228,7 @@ mod tests {
         let state_info = StateInfo::new_at(
             data_dir.clone(),
             config_file.clone(),
-            test_migrations(),
+            &test_migrations(),
             1024 * 1024,
             1024,
         );

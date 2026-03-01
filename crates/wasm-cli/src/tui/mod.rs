@@ -124,7 +124,7 @@ async fn run_manager(
                 let result = match crate::util::parse_reference(&reference_str) {
                     Ok(reference) => {
                         let (progress_tx, mut progress_rx) =
-                            tokio::sync::mpsc::channel::<ProgressEvent>(64);
+                            mpsc::channel::<ProgressEvent>(64);
                         let sender_clone = sender.clone();
                         // Forward progress events to the TUI
                         let forwarder = tokio::task::spawn_local(async move {
@@ -144,7 +144,7 @@ async fn run_manager(
                         let _ = forwarder.await;
                         pull_result
                     }
-                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                    Err(e) => Err(format!("Invalid reference: {e}")),
                 };
                 sender.send(ManagerEvent::PullResult(result)).await.ok();
                 // Refresh the packages list after pull (only if it was newly inserted)
@@ -159,7 +159,7 @@ async fn run_manager(
                         .await
                         .map(|_| ())
                         .map_err(|e| e.to_string()),
-                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                    Err(e) => Err(format!("Invalid reference: {e}")),
                 };
                 sender.send(ManagerEvent::DeleteResult(result)).await.ok();
                 // Refresh the packages list after delete
@@ -187,7 +187,7 @@ async fn run_manager(
             }
             AppEvent::RefreshTags(registry, repository) => {
                 // Create a reference to fetch tags
-                let reference_str = format!("{}/{}:latest", registry, repository);
+                let reference_str = format!("{registry}/{repository}:latest");
                 let result = match reference_str.parse::<Reference>() {
                     Ok(reference) => match manager.list_tags(&reference).await {
                         Ok(tags) => {
@@ -205,7 +205,7 @@ async fn run_manager(
                         }
                         Err(e) => Err(e.to_string()),
                     },
-                    Err(e) => Err(format!("Invalid reference: {}", e)),
+                    Err(e) => Err(format!("Invalid reference: {e}")),
                 };
                 sender
                     .send(ManagerEvent::RefreshTagsResult(result))

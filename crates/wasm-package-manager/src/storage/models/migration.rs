@@ -60,6 +60,7 @@ impl Migrations {
     }
 
     /// Returns information about the current migration state.
+    #[allow(clippy::unnecessary_wraps)]
     pub(crate) fn get(conn: &Connection) -> anyhow::Result<Self> {
         let current: u32 = conn
             .query_row(
@@ -68,7 +69,7 @@ impl Migrations {
                 |row| row.get(0),
             )
             .unwrap_or(0);
-        let total = MIGRATIONS.last().map(|m| m.version).unwrap_or(0);
+        let total = MIGRATIONS.last().map_or(0, |m| m.version);
         Ok(Self { current, total })
     }
 }

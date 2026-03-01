@@ -1,3 +1,5 @@
+#![allow(clippy::implicit_hasher, clippy::case_sensitive_file_extension_comparisons)]
+
 //! OCI-specific pure logic extracted from the `Manager` and `Store`
 //! implementations.
 //!

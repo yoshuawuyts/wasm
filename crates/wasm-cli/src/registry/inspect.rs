@@ -253,7 +253,7 @@ fn write_details_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         for (name, pairs) in &producers {
             for (field, version) in pairs.iter() {
                 match version.len() {
-                    0 => table.add_row(vec![name, &field.clone()]),
+                    0 => table.add_row(vec![name, field]),
                     _ => table.add_row(vec![name, &format!("{field} [{version}]")]),
                 };
             }

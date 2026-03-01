@@ -80,6 +80,7 @@ impl Indexer {
     /// Run the indexer in a loop, syncing at the configured interval.
     ///
     /// This method runs indefinitely and should be spawned as a background task.
+    #[allow(clippy::infinite_loop)]
     pub async fn run(mut self) {
         let interval = Duration::from_secs(self.config.sync_interval);
 

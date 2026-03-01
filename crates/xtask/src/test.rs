@@ -1,5 +1,7 @@
 //! `cargo xtask test` — run tests, clippy, and formatting checks.
 
+#![allow(clippy::print_stdout)]
+
 use anyhow::Result;
 
 use crate::{readme, run_command, sql, workspace_root};

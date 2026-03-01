@@ -1,3 +1,11 @@
+#![allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::needless_pass_by_value,
+    clippy::unused_self,
+    clippy::struct_field_names
+)]
+
 use ratatui::{
     crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers},
     prelude::*,
@@ -158,7 +166,7 @@ impl App {
     }
 
     #[allow(clippy::indexing_slicing)]
-    fn render_frame(&mut self, frame: &mut ratatui::Frame) {
+    fn render_frame(&mut self, frame: &mut Frame) {
         let area = frame.area();
         let status = match (self.manager_state, self.offline) {
             (_, true) => "offline",
@@ -170,7 +178,7 @@ impl App {
         let layout = Layout::vertical([Constraint::Length(3), Constraint::Min(0)]).split(area);
 
         // Render tab bar
-        let tab_bar = TabBar::new(format!("wasm(1) - {}", status), self.current_tab);
+        let tab_bar = TabBar::new(format!("wasm(1) - {status}"), self.current_tab);
         frame.render_widget(tab_bar, layout[0]);
 
         // Render content based on current tab
@@ -215,10 +223,10 @@ impl App {
                 );
             }
             Tab::Settings => {
-                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area)
+                frame.render_widget(SettingsView::new(self.state_info.as_ref()), content_area);
             }
             Tab::Log => {
-                frame.render_widget(LogView::new(&self.log_lines, self.log_scroll), content_area)
+                frame.render_widget(LogView::new(&self.log_lines, self.log_scroll), content_area);
             }
         }
 
@@ -229,7 +237,7 @@ impl App {
     }
 
     #[allow(clippy::indexing_slicing)]
-    fn render_pull_prompt(&self, frame: &mut ratatui::Frame, area: Rect, state: PullPromptState) {
+    fn render_pull_prompt(&self, frame: &mut Frame, area: Rect, state: PullPromptState) {
         // Calculate centered popup area
         let popup_width = 60.min(area.width.saturating_sub(4));
         let popup_height = if state.error.is_some() { 7 } else { 5 };
@@ -326,10 +334,8 @@ impl App {
                 ManagerEvent::DeleteResult(_result) => {
                     // Delete completed, packages list will be refreshed automatically
                 }
-                ManagerEvent::SearchResults(packages) => {
-                    self.known_packages = packages;
-                }
-                ManagerEvent::KnownPackagesList(packages) => {
+                ManagerEvent::SearchResults(packages)
+                | ManagerEvent::KnownPackagesList(packages) => {
                     self.known_packages = packages;
                 }
                 ManagerEvent::RefreshTagsResult(_result) => {
@@ -425,13 +431,13 @@ impl App {
 
     fn handle_normal_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
         match (key, modifiers) {
-            (KeyCode::Char('q'), _) | (KeyCode::Esc, _) => self.running = false,
-            (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
+            (KeyCode::Char('q') | KeyCode::Esc, _)
+            | (KeyCode::Char('c'), KeyModifiers::CONTROL) => self.running = false,
             // Tab navigation
-            (KeyCode::Tab, KeyModifiers::NONE) | (KeyCode::Right, _) => {
+            (KeyCode::Tab | KeyCode::Right, _) => {
                 self.current_tab = self.current_tab.next();
             }
-            (KeyCode::BackTab, _) | (KeyCode::Left, _) => {
+            (KeyCode::BackTab | KeyCode::Left, _) => {
                 self.current_tab = self.current_tab.prev();
             }
             (KeyCode::Char('1'), _) => self.current_tab = Tab::Local,
@@ -455,11 +461,11 @@ impl App {
                 self.packages_view_state.filter_active = true;
             }
             // Package list navigation (when on Components tab)
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Components => {
                 self.packages_view_state
                     .select_prev(self.filtered_packages().len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Components => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Components => {
                 self.packages_view_state
                     .select_next(self.filtered_packages().len());
             }
@@ -499,11 +505,11 @@ impl App {
                 }
             }
             // Search tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Search => {
                 self.search_view_state
                     .select_prev(self.known_packages.len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Search => {
                 self.search_view_state
                     .select_next(self.known_packages.len());
             }
@@ -512,11 +518,11 @@ impl App {
                 self.input_mode = InputMode::SearchInput;
             }
             // Interfaces tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
                 self.interfaces_view_state
                     .select_prev(self.wit_interfaces.len());
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
                 self.interfaces_view_state
                     .select_next(self.wit_interfaces.len());
             }
@@ -553,10 +559,10 @@ impl App {
                 }
             }
             // Log tab navigation
-            (KeyCode::Up, _) | (KeyCode::Char('k'), _) if self.current_tab == Tab::Log => {
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Log => {
                 self.log_scroll = self.log_scroll.saturating_sub(1);
             }
-            (KeyCode::Down, _) | (KeyCode::Char('j'), _) if self.current_tab == Tab::Log => {
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Log => {
                 if self.log_scroll < self.log_lines.len().saturating_sub(1) {
                     self.log_scroll += 1;
                 }
@@ -687,8 +693,7 @@ impl App {
                         || p.ref_registry.to_lowercase().contains(&query)
                         || p.ref_tag
                             .as_ref()
-                            .map(|t| t.to_lowercase().contains(&query))
-                            .unwrap_or(false)
+                            .is_some_and(|t| t.to_lowercase().contains(&query))
                 })
                 .collect()
         }

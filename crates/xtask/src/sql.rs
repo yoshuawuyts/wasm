@@ -1,5 +1,7 @@
 //! `cargo xtask sql` — database schema and migration management.
 
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -211,7 +213,10 @@ fn numbered_migrations(migrations_dir: &Path) -> Result<Vec<(u32, String, PathBu
     for entry in fs::read_dir(migrations_dir).context("reading migrations directory")? {
         let entry = entry?;
         let file_name = entry.file_name().to_string_lossy().to_string();
-        if !file_name.ends_with(".sql") {
+        if !Path::new(&file_name)
+            .extension()
+            .is_some_and(|e| e.eq_ignore_ascii_case("sql"))
+        {
             continue;
         }
         // Parse NN_name.sql
@@ -262,7 +267,7 @@ fn build_clean_migrations_db(migrations_dir: &Path) -> Result<tempfile::NamedTem
     let ddl_rows: Vec<String> = stmt
         .query_map([], |row| row.get::<_, String>(0))
         .context("reading sqlite_master rows")?
-        .filter_map(|r| r.ok())
+        .filter_map(Result::ok)
         .collect();
 
     drop(stmt);

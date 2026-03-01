@@ -1,3 +1,5 @@
+#![allow(clippy::cast_sign_loss)]
+
 use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
@@ -116,7 +118,7 @@ impl Widget for PackageDetailView<'_> {
         let layer_count = self.package.manifest.layers.len();
         details.push(Line::from(vec![
             Span::styled("Layers: ", Style::default().bold()),
-            Span::raw(format!("{} layer(s)", layer_count)),
+            Span::raw(format!("{layer_count} layer(s)")),
         ]));
 
         for (i, layer) in self.package.manifest.layers.iter().enumerate() {
@@ -124,7 +126,7 @@ impl Widget for PackageDetailView<'_> {
             details.push(Line::from(vec![
                 Span::styled(format!("  [{}] ", i + 1), Style::default().dim()),
                 Span::raw(&layer.media_type),
-                Span::styled(format!(" ({})", size_str), Style::default().dim()),
+                Span::styled(format!(" ({size_str})"), Style::default().dim()),
             ]));
         }
 

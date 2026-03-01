@@ -56,6 +56,7 @@ pub use progress::ProgressEvent;
 
 /// Format a byte size as a human-readable string (B, KB, MB, GB).
 #[must_use]
+#[allow(clippy::cast_precision_loss)]
 pub fn format_size(bytes: u64) -> String {
     const KB: u64 = 1024;
     const MB: u64 = KB * 1024;
@@ -68,7 +69,7 @@ pub fn format_size(bytes: u64) -> String {
     } else if bytes >= KB {
         format!("{:.2} KB", bytes as f64 / KB as f64)
     } else {
-        format!("{} B", bytes)
+        format!("{bytes} B")
     }
 }
 

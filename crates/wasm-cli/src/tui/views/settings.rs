@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+
 use ratatui::{
     prelude::*,
     widgets::{Cell, Paragraph, Row, Table, Widget},
@@ -70,8 +72,7 @@ impl Widget for SettingsView<'_> {
                         config_status
                     )),
                     Line::from(format!(
-                        "  Local config:  {} ({})",
-                        local_config_display, local_config_status
+                        "  Local config:  {local_config_display} ({local_config_status})"
                     )),
                 ]);
                 Paragraph::new(configuration).render(layout[1], buf);

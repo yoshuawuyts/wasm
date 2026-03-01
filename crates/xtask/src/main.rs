@@ -117,16 +117,19 @@ pub(crate) fn run_command(cmd: &str, args: &[&str]) -> Result<()> {
 }
 
 /// Return the workspace root directory (the directory containing the root `Cargo.toml`).
+#[allow(clippy::unnecessary_wraps)]
 pub(crate) fn workspace_root() -> Result<PathBuf> {
     // xtask is invoked via `cargo xtask` which sets CARGO_MANIFEST_DIR for the
     // xtask crate. Walk up to the workspace root (two levels: crates/xtask).
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            // Fallback: assume CWD is the workspace root.
-            std::env::current_dir()
-                .expect("failed to determine current directory; ensure xtask is run from the workspace root")
-        });
+        .map_or_else(
+            |_| {
+                // Fallback: assume CWD is the workspace root.
+                std::env::current_dir()
+                    .expect("failed to determine current directory; ensure xtask is run from the workspace root")
+            },
+            PathBuf::from,
+        );
 
     // If we're inside crates/xtask, go up two levels.
     if manifest_dir.ends_with("crates/xtask") {

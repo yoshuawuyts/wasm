@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, clippy::unused_self)]
+
 use ratatui::{
     prelude::*,
     widgets::{
@@ -170,7 +172,7 @@ impl InterfacesView<'_> {
         );
         let header = Paragraph::new(header_text)
             .style(Style::default().bold())
-            .block(Block::bordered().title(format!(" {} ", component_ref)));
+            .block(Block::bordered().title(format!(" {component_ref} ")));
         header.render(chunks[0], buf);
 
         // WIT content with scrolling

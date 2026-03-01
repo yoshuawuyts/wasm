@@ -116,18 +116,16 @@ impl KnownPackage {
 
     /// Fetch tags for a repository from `oci_tag`, ordered by most recent first.
     fn fetch_tags(conn: &Connection, repo_id: i64) -> Vec<String> {
-        let mut stmt = match conn.prepare(
+        let Ok(mut stmt) = conn.prepare(
             "SELECT t.tag FROM oci_tag t
              WHERE t.oci_repository_id = ?1
              ORDER BY t.updated_at DESC",
-        ) {
-            Ok(stmt) => stmt,
-            Err(_) => return Vec::new(),
+        ) else {
+            return Vec::new();
         };
 
-        let rows = match stmt.query_map([repo_id], |row| row.get::<_, String>(0)) {
-            Ok(rows) => rows,
-            Err(_) => return Vec::new(),
+        let Ok(rows) = stmt.query_map([repo_id], |row| row.get::<_, String>(0)) else {
+            return Vec::new();
         };
 
         rows.flatten().collect()

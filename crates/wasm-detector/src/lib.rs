@@ -132,7 +132,13 @@ impl WasmDetector {
     ///
     /// Returns an error if the detection fails to complete.
     pub fn detect(&self) -> Result<Vec<WasmEntry>, ignore::Error> {
-        self.into_iter().collect()
+        self.iter().collect()
+    }
+
+    /// Returns an iterator over discovered `.wasm` files.
+    #[must_use]
+    pub fn iter(&self) -> WasmDetectorIter {
+        WasmDetectorIter::new(self.clone())
     }
 
     /// Find all well-known wasm directories that exist in the root.
@@ -218,6 +224,7 @@ impl std::fmt::Debug for WasmDetectorIter {
 }
 
 impl WasmDetectorIter {
+    #[allow(clippy::needless_pass_by_value)]
     fn new(detector: WasmDetector) -> Self {
         // Build the main walker that respects gitignore
         let main_walker = WalkBuilder::new(&detector.root)

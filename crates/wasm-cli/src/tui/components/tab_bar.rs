@@ -13,6 +13,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
 
     /// Returns the next tab (wrapping around).
     #[allow(clippy::indexing_slicing)]
+    #[must_use]
     fn next(&self) -> Self {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
@@ -22,6 +23,7 @@ pub trait TabItem: Copy + PartialEq + 'static {
 
     /// Returns the previous tab (wrapping around).
     #[allow(clippy::indexing_slicing)]
+    #[must_use]
     fn prev(&self) -> Self {
         let all = Self::all();
         let current_idx = all.iter().position(|t| t == self).unwrap_or(0);
@@ -43,7 +45,7 @@ pub struct TabBar<'a, T: TabItem> {
     _marker: std::marker::PhantomData<&'a T>,
 }
 
-impl<'a, T: TabItem> TabBar<'a, T> {
+impl<T: TabItem> TabBar<'_, T> {
     /// Creates a new tab bar with the given title and selected tab.
     pub fn new(title: impl Into<String>, selected: T) -> Self {
         Self {
@@ -58,7 +60,7 @@ impl<'a, T: TabItem> TabBar<'a, T> {
 impl<T: TabItem> Widget for TabBar<'_, T> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let all_tabs = T::all();
-        let tab_titles: Vec<&str> = all_tabs.iter().map(|t| t.title()).collect();
+        let tab_titles: Vec<&str> = all_tabs.iter().map(TabItem::title).collect();
         let selected_index = all_tabs
             .iter()
             .position(|t| *t == self.selected)

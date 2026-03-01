@@ -1,3 +1,5 @@
+#![allow(clippy::cast_sign_loss)]
+
 use oci_client::manifest::OciImageManifest;
 use rusqlite::Connection;
 

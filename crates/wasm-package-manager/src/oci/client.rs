@@ -113,13 +113,12 @@ impl Client {
             }
 
             // Make another request to check if there are more tags
-            let next_response = match self
+            let Ok(next_response) = self
                 .inner
                 .list_tags(reference, &auth, Some(1), last.as_deref())
                 .await
-            {
-                Ok(resp) => resp,
-                Err(_) => break,
+            else {
+                break;
             };
 
             if next_response.tags.is_empty() {

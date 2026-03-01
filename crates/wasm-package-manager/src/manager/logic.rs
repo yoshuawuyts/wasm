@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_wrap, clippy::implicit_hasher)]
+
 //! Pure logic extracted from the `Manager` and `Store` implementations.
 //!
 //! These functions contain no IO and can be unit-tested in isolation.

@@ -1,3 +1,5 @@
+#![allow(clippy::cast_possible_wrap, clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+
 use oci_client::Reference;
 use oci_client::manifest::OciImageManifest;
 use std::path::Path;
@@ -420,7 +422,7 @@ impl Manager {
         Ok(InstallResult {
             registry: reference.registry().to_string(),
             repository: reference.repository().to_string(),
-            tag: reference.tag().map(|s| s.to_string()),
+            tag: reference.tag().map(str::to_string),
             digest: pull_result.digest,
             package_name,
             oci_title,
@@ -500,7 +502,7 @@ impl Manager {
         Ok(InstallResult {
             registry: reference.registry().to_string(),
             repository: reference.repository().to_string(),
-            tag: reference.tag().map(|s| s.to_string()),
+            tag: reference.tag().map(str::to_string),
             digest: pull_result.digest,
             package_name,
             oci_title,
@@ -770,6 +772,7 @@ impl Manager {
     }
 
     #[cfg(feature = "http-sync")]
+    #[allow(clippy::needless_pass_by_value)]
     fn handle_update(
         &self,
         packages: Vec<crate::storage::KnownPackage>,
@@ -778,7 +781,7 @@ impl Manager {
         let count = packages.len();
         // Bulk upsert all packages.
         for pkg in &packages {
-            let first_tag = pkg.tags.first().map(|s| s.as_str());
+            let first_tag = pkg.tags.first().map(String::as_str);
             self.store.add_known_package(
                 &pkg.registry,
                 &pkg.repository,

@@ -1,5 +1,7 @@
 //! `cargo xtask readme` — update or check the README commands section.
 
+#![allow(clippy::print_stdout)]
+
 use std::path::Path;
 use std::process::Command;
 

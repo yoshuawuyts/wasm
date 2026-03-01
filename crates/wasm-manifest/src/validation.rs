@@ -27,8 +27,7 @@ impl std::fmt::Display for ValidationError {
             ValidationError::MissingDependency { name } => {
                 write!(
                     f,
-                    "Package '{}' is in the lockfile but not in the manifest",
-                    name
+                    "Package '{name}' is in the lockfile but not in the manifest",
                 )
             }
             ValidationError::InvalidDependency {
@@ -37,8 +36,7 @@ impl std::fmt::Display for ValidationError {
             } => {
                 write!(
                     f,
-                    "Package '{}' depends on '{}' which doesn't exist in the lockfile",
-                    package, dependency
+                    "Package '{package}' depends on '{dependency}' which doesn't exist in the lockfile",
                 )
             }
         }

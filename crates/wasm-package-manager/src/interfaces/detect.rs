@@ -22,13 +22,15 @@ pub fn is_wit_package(bytes: &[u8]) -> bool {
                     return false;
                 }
             }
-            Ok(Payload::ModuleSection { .. })
-            | Ok(Payload::ComponentSection { .. })
-            | Ok(Payload::InstanceSection(_))
-            | Ok(Payload::ComponentInstanceSection(_))
-            | Ok(Payload::ComponentCanonicalSection(_))
-            | Ok(Payload::CoreTypeSection(_))
-            | Ok(Payload::ComponentStartSection { .. }) => {
+            Ok(
+                Payload::ModuleSection { .. }
+                | Payload::ComponentSection { .. }
+                | Payload::InstanceSection(_)
+                | Payload::ComponentInstanceSection(_)
+                | Payload::ComponentCanonicalSection(_)
+                | Payload::CoreTypeSection(_)
+                | Payload::ComponentStartSection { .. },
+            ) => {
                 // Contains code/instantiation — it's a real component
                 return false;
             }

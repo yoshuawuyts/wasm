@@ -304,15 +304,13 @@ impl Config {
         }
 
         // Look up registry config
-        let registry_config = match self.registries.get(registry) {
-            Some(config) => config,
-            None => return Ok(None),
+        let Some(registry_config) = self.registries.get(registry) else {
+            return Ok(None);
         };
 
         // Check if credential helper is configured
-        let helper = match &registry_config.credential_helper {
-            Some(h) => h,
-            None => return Ok(None),
+        let Some(helper) = &registry_config.credential_helper else {
+            return Ok(None);
         };
 
         // Execute credential helper

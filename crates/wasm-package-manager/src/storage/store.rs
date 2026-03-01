@@ -1,3 +1,9 @@
+#![allow(
+    clippy::cast_possible_wrap,
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss
+)]
+
 use anyhow::Context;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -85,7 +91,7 @@ impl Store {
         let state_info = StateInfo::new_at(
             data_dir,
             config_file,
-            migration_info,
+            &migration_info,
             store_size,
             metadata_size,
         );
@@ -98,7 +104,7 @@ impl Store {
         reference: &Reference,
         image: ImageData,
     ) -> anyhow::Result<(InsertResult, Option<String>, Option<OciImageManifest>)> {
-        let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
+        let digest = reference.digest().map(str::to_owned).or(image.digest);
         let manifest_str = serde_json::to_string(&image.manifest)?;
 
         // Calculate total size on disk from all layers
@@ -161,12 +167,11 @@ impl Store {
         {
             for (idx, layer) in image.layers.iter().enumerate() {
                 let cache = self.state_info.store_dir();
-                let fallback_key = reference.whole().to_string();
+                let fallback_key = reference.whole().clone();
                 let layer_digest = manifest
                     .layers
                     .get(idx)
-                    .map(|l| l.digest.as_str())
-                    .unwrap_or(&fallback_key);
+                    .map_or(fallback_key.as_str(), |l| l.digest.as_str());
                 let layer_media_type = manifest.layers.get(idx).map(|l| l.media_type.as_str());
                 let layer_size = manifest.layers.get(idx).map(|l| l.size);
                 let data = &layer.data;
@@ -598,7 +603,7 @@ impl Store {
 /// the given `wit_interface_id` by matching `(declared_package, declared_version)`
 /// against existing `wit_interface` rows.
 fn resolve_import_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     wit_interface_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(
@@ -619,7 +624,7 @@ fn resolve_import_foreign_keys(
 /// Resolve `wit_world_export.resolved_interface_id` for exports belonging to
 /// the given `wit_interface_id`.
 fn resolve_export_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     wit_interface_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(
@@ -640,7 +645,7 @@ fn resolve_export_foreign_keys(
 /// Resolve `wit_interface_dependency.resolved_interface_id` for deps of the
 /// given `wit_interface_id`.
 fn resolve_dependency_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     wit_interface_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(
@@ -661,7 +666,7 @@ fn resolve_dependency_foreign_keys(
 /// Resolve `component_target.wit_world_id` for targets of components under
 /// the given `manifest_id` by matching against `wit_world` + `wit_interface`.
 fn resolve_component_target_foreign_keys(
-    conn: &rusqlite::Connection,
+    conn: &Connection,
     manifest_id: i64,
 ) -> anyhow::Result<usize> {
     let updated = conn.execute(

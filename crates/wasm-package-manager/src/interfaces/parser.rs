@@ -1,3 +1,5 @@
+#![allow(clippy::struct_field_names, clippy::format_push_string)]
+
 use wit_parser::decoding::{DecodedWasm, decode};
 
 /// An import or export declaration inside a WIT world.
@@ -167,7 +169,7 @@ fn extract_world_items<'a>(
                     ImportExportItem {
                         declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
                         declared_interface: iface.name.clone(),
-                        declared_version: pkg.name.version.as_ref().map(|v| v.to_string()),
+                        declared_version: pkg.name.version.as_ref().map(ToString::to_string),
                     }
                 } else {
                     ImportExportItem {
@@ -195,7 +197,7 @@ fn extract_dependencies(
         .filter(|(id, _)| Some(id) != primary_package_id.as_ref())
         .map(|(_, pkg)| DependencyItem {
             declared_package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
-            declared_version: pkg.name.version.as_ref().map(|v| v.to_string()),
+            declared_version: pkg.name.version.as_ref().map(ToString::to_string),
         })
         .collect()
 }
@@ -215,7 +217,7 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
 
             // Print interfaces
             for (name, interface_id) in &package.interfaces {
-                output.push_str(&format!("interface {} {{\n", name));
+                output.push_str(&format!("interface {name} {{\n"));
                 let interface = resolve
                     .interfaces
                     .get(*interface_id)
@@ -255,7 +257,7 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                     .worlds
                     .get(*world_id)
                     .expect("World ID should be valid");
-                output.push_str(&format!("world {} {{\n", name));
+                output.push_str(&format!("world {name} {{\n"));
 
                 for (key, _item) in &world.imports {
                     output.push_str(&format!("  import {};\n", world_key_to_string(key)));
@@ -272,7 +274,7 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
                 .get(*world_id)
                 .expect("World ID should be valid");
             output.push_str("// Inferred component interface\n");
-            output.push_str(&format!("world {} {{\n", world.name));
+            output.push_str(&format!("world {name} {{\n", name = world.name));
 
             for (key, _item) in &world.imports {
                 output.push_str(&format!("  import {};\n", world_key_to_string(key)));
@@ -291,10 +293,9 @@ fn generate_wit_text(decoded: &DecodedWasm) -> String {
 fn world_key_to_string(key: &wit_parser::WorldKey) -> String {
     match key {
         wit_parser::WorldKey::Name(name) => name.clone(),
-        wit_parser::WorldKey::Interface(id) => format!("interface-{:?}", id),
+        wit_parser::WorldKey::Interface(id) => format!("interface-{id:?}"),
     }
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

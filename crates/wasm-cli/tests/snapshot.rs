@@ -400,7 +400,7 @@ fn test_settings_view_with_state_info_snapshot() {
     let state_info = StateInfo::new_at(
         PathBuf::from("/home/user/.local/share/wasm"),
         PathBuf::from("/home/user/.config/wasm/config.toml"),
-        wasm_package_manager::storage::Migrations {
+        &wasm_package_manager::storage::Migrations {
             current: 3,
             total: 3,
         },
