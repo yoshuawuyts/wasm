@@ -784,7 +784,6 @@ fn split_package_version(raw: &str) -> (&str, Option<&str>) {
 mod tests {
     use super::*;
 
-    // r[verify manager.name.sanitize]
     #[test]
     fn test_split_package_version_with_version() {
         let (name, version) = split_package_version("wasi:http@0.2.0");
