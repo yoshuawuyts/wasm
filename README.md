@@ -41,6 +41,10 @@
   </h3>
 </div>
 
+> [!CAUTION]
+> This repository is under active development and therefore unstable. Breaking
+> changes are expected. Contributions and ideas however are still welcome!
+
 ## Installation
 
 To install the `wasm` command and make it available from the command line, run:
@@ -49,7 +53,8 @@ To install the `wasm` command and make it available from the command line, run:
 $ cargo install wasm
 ```
 
-To interface with the package manager backend programatically, install:
+To interface with the package manager backend programatically from Rust, you can
+use the `wasm-package-manager` crate:
 
 ```rust
 $ cargo add wasm-package-manager
@@ -102,10 +107,11 @@ lockfile, and a place for the downloaded artifacts to go. It's recommended to ad
 `deps/vendor/` to your `.gitignore` file:
 
 ```bash
-deps/
-├── vendor/         # Contains downloaded .wasm and .wit files
-├── wasm.lock.toml  # Project lockfile
-└── wasm.toml       # Project manifest
+.
+└── deps/
+    ├── vendor/         # A directory containing downloaded .wasm and .wit files
+    ├── wasm.lock.toml  # A generated lockfile to guarantee reproducible builds
+    └── wasm.toml       # A readable manifest to declare dependencies
 ```
 
 Now that we have our basic project structure setup, let's fetch [a basic HTTP
@@ -127,31 +133,11 @@ This will have downloaded the `.wasm` component to `deps/vendor/`, and added it
 to our manifest and lockfile. Our `deps/wasm.toml` file should now look like this:
 
 ```toml
+[components]
+"root:component" = "ghcr.io/bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust:0.1.6"
 ```
 
-## Storage Layout
-
-```
-~/.local/share/wasm/
-├── store/          # content-addressable blob storage (image layers)
-└── db/
-    └── metadata.db3    # sqlite database (package metadata & references)
-```
-
-## Status
-
-Experimental. Early development stage — expect breaking changes. 
-Contributions and feedback welcome!
-
-## Notes on AI
-
-This project is developed with GitHub Copilot. We believe language models can be 
-valuable tools for coding when paired with human oversight, testing, and 
-careful review. For transparency, we mention this in the README.
-
-## Safety
-This crate uses ``#![deny(unsafe_code)]`` to ensure everything is implemented in
-100% Safe Rust.
+TODO: show how to run the component
 
 ## Contributing
 Want to join us? Check out our ["Contributing" guide][contributing] and take a
@@ -163,6 +149,15 @@ look at some of these issues:
 [contributing]: https://github.com/yoshuawuyts/wasm/blob/master.github/CONTRIBUTING.md
 [good-first-issue]: https://github.com/yoshuawuyts/wasm/labels/good%20first%20issue
 [help-wanted]: https://github.com/yoshuawuyts/wasm/labels/help%20wanted
+
+## Safety
+This crate uses ``#![forbid(unsafe_code)]`` to ensure everything is implemented in
+100% Safe Rust.
+
+## Notes on AI
+This project is developed with GitHub Copilot. We believe language models can be 
+valuable tools for coding when paired with human oversight, testing, and 
+careful review. For transparency, we mention this in the README.
 
 ## License
 
