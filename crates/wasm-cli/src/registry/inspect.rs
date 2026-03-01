@@ -24,17 +24,18 @@ pub(crate) struct InspectOpts {
 
 impl InspectOpts {
     pub(crate) async fn run(self, store: &Manager) -> Result<()> {
-        let pull_result = store.pull(self.reference.clone()).await?;
+        let reference = self.reference;
+        let pull_result = store.pull(reference.clone()).await?;
 
         let manifest = pull_result
             .manifest
             .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("No manifest found for '{}'", self.reference.whole()))?;
+            .ok_or_else(|| anyhow::anyhow!("No manifest found for '{}'", reference.whole()))?;
 
         let wasm_layers = filter_wasm_layers(&manifest.layers);
-        let layer = wasm_layers.first().ok_or_else(|| {
-            anyhow::anyhow!("No wasm layers found for '{}'", self.reference.whole())
-        })?;
+        let layer = wasm_layers
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("No wasm layers found for '{}'", reference.whole()))?;
 
         let data = store.get(&layer.digest).await?;
         let payload = wasm_metadata::Payload::from_binary(&data)?;
@@ -90,7 +91,7 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
     find_range_max(&mut range_max, payload);
 
     // Recursively add all children to the table
-    write_summary_table_inner(payload, "<root>", &mut 0, range_max, f, &mut table)?;
+    write_summary_table_inner(payload, "<root>", &mut 0, range_max, &mut table)?;
 
     // Write the table to the writer
     writeln!(f, "{table}")?;
@@ -104,7 +105,6 @@ fn write_summary_table_inner(
     parent: &str,
     unknown_id: &mut u16,
     range_max: usize,
-    _f: &mut Stdout,
     table: &mut Table,
 ) -> Result<()> {
     let Metadata {
@@ -157,7 +157,7 @@ fn write_summary_table_inner(
     // Recursively print any children
     if let Payload::Component { children, .. } = payload {
         for payload in children {
-            write_summary_table_inner(payload, &name, unknown_id, range_max, _f, table)?;
+            write_summary_table_inner(payload, &name, unknown_id, range_max, table)?;
         }
     }
 
