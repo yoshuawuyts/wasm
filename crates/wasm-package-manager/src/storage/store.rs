@@ -1,4 +1,5 @@
 use anyhow::Context;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::path::Path;
@@ -10,7 +11,10 @@ use crate::interfaces::{
     WitInterface, WitInterfaceDependency, WitWorld, WitWorldExport, WitWorldImport,
     extract_wit_metadata,
 };
-use crate::oci::{ImageEntry, InsertResult, OciLayer, OciManifest, OciRepository, OciTag};
+use crate::oci::{
+    ImageEntry, InsertResult, OciLayer, OciLayerAnnotation, OciManifest, OciReferrer,
+    OciRepository, OciTag,
+};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
 use rusqlite::Connection;
@@ -97,7 +101,12 @@ impl Store {
         &self,
         reference: &Reference,
         image: ImageData,
-    ) -> anyhow::Result<(InsertResult, Option<String>, Option<OciImageManifest>)> {
+    ) -> anyhow::Result<(
+        InsertResult,
+        Option<String>,
+        Option<OciImageManifest>,
+        Option<i64>,
+    )> {
         let digest = reference.digest().map(|s| s.to_owned()).or(image.digest);
         let manifest_str = serde_json::to_string(&image.manifest)?;
 
@@ -155,10 +164,18 @@ impl Store {
 
         let manifest = image.manifest.clone();
 
-        // Only store layers if this is a new entry
-        if result == InsertResult::Inserted
-            && let Some(ref manifest) = image.manifest
-        {
+        // Store layers when the manifest is newly inserted, or when it was a
+        // placeholder (e.g. from referrer discovery) that has no layers yet.
+        let needs_layers = was_inserted || {
+            let layer_count: i64 = self.conn.query_row(
+                "SELECT COUNT(*) FROM oci_layer WHERE oci_manifest_id = ?1",
+                [manifest_id],
+                |row| row.get(0),
+            )?;
+            layer_count == 0
+        };
+
+        if needs_layers && let Some(ref manifest) = image.manifest {
             for (idx, layer) in image.layers.iter().enumerate() {
                 let cache = self.state_info.store_dir();
                 let fallback_key = reference.whole().to_string();
@@ -182,10 +199,27 @@ impl Store {
                     idx as i32,
                 )?;
 
+                // Store layer-level annotations
+                if let Some(descriptor) = manifest.layers.get(idx)
+                    && let Some(ref annotations) = descriptor.annotations
+                {
+                    for (key, value) in annotations {
+                        if let Err(e) = OciLayerAnnotation::insert(&self.conn, layer_id, key, value)
+                        {
+                            tracing::warn!("Failed to insert layer annotation '{}': {}", key, e);
+                        }
+                    }
+                }
+
                 self.try_extract_wit_interface(manifest_id, Some(layer_id), data);
             }
         }
-        Ok((result, digest, manifest))
+        let manifest_id_opt = if result == InsertResult::Inserted {
+            Some(manifest_id)
+        } else {
+            None
+        };
+        Ok((result, digest, manifest, manifest_id_opt))
     }
 
     /// Insert only the metadata (SQLite entry) for an image, without storing layers.
@@ -248,7 +282,9 @@ impl Store {
     ///
     /// Optionally records the layer in `oci_layer` and extracts WIT interface
     /// metadata if a `manifest_id` is provided. The `position` specifies the
-    /// layer's ordering within the manifest (0-based index).
+    /// layer's ordering within the manifest (0-based index). If
+    /// `layer_annotations` is provided, each key-value pair is stored in the
+    /// `oci_layer_annotation` table.
     pub(crate) async fn insert_layer(
         &self,
         layer_digest: &str,
@@ -256,6 +292,7 @@ impl Store {
         manifest_id: Option<i64>,
         media_type: Option<&str>,
         position: i32,
+        layer_annotations: Option<&BTreeMap<String, String>>,
     ) -> anyhow::Result<()> {
         let cache = self.state_info.store_dir();
         let _integrity = cacache::write(&cache, layer_digest, data).await?;
@@ -269,6 +306,16 @@ impl Store {
                 Some(data.len() as i64),
                 position,
             )?;
+
+            // Store layer-level annotations
+            if let Some(annotations) = layer_annotations {
+                for (key, value) in annotations {
+                    if let Err(e) = OciLayerAnnotation::insert(&self.conn, layer_id, key, value) {
+                        tracing::warn!("Failed to insert layer annotation '{}': {}", key, e);
+                    }
+                }
+            }
+
             self.try_extract_wit_interface(manifest_id, Some(layer_id), data);
         }
 
@@ -421,6 +468,45 @@ impl Store {
         if let Err(e) = resolve_component_target_foreign_keys(&self.conn, manifest_id) {
             tracing::warn!("Failed to resolve component target foreign keys: {}", e);
         }
+    }
+
+    /// Store a referrer relationship between two manifests.
+    ///
+    /// The referrer manifest is upserted into the database if needed, and the
+    /// relationship is recorded in `oci_referrer`. Uses the provided
+    /// `registry`/`repository` to look up the repo for the referrer manifest.
+    pub(crate) fn store_referrer(
+        &self,
+        subject_manifest_id: i64,
+        registry: &str,
+        repository: &str,
+        referrer_digest: &str,
+        artifact_type: &str,
+    ) -> anyhow::Result<()> {
+        let repo_id = OciRepository::upsert(&self.conn, registry, repository)?;
+
+        // Upsert a minimal manifest entry for the referrer
+        let (referrer_manifest_id, _) = OciManifest::upsert(
+            &self.conn,
+            repo_id,
+            referrer_digest,
+            None,
+            None,
+            None,
+            Some(artifact_type),
+            None,
+            None,
+            &HashMap::new(),
+        )?;
+
+        OciReferrer::insert(
+            &self.conn,
+            subject_manifest_id,
+            referrer_manifest_id,
+            artifact_type,
+        )?;
+
+        Ok(())
     }
 
     /// Returns all currently stored images and their metadata.
