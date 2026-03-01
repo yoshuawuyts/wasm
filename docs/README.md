@@ -1,3 +1,8 @@
+---
+sidebar_label: Introduction
+slug: /README
+---
+
 # wasm(1) Documentation
 
 Welcome to the documentation for `wasm(1)` - unified developer tools for WebAssembly.

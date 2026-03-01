@@ -4,3 +4,8 @@ deps/
 Cargo.lock
 .DS_Store
 registry.toml
+
+# Docusaurus
+website/node_modules/
+website/build/
+website/.docusaurus/
