@@ -304,18 +304,21 @@ fn world_key_to_string(key: &wit_parser::WorldKey) -> String {
 mod tests {
     use super::*;
 
+    // r[verify wit.parse.invalid-bytes]
     #[test]
     fn extract_returns_none_for_invalid_bytes() {
         let invalid_bytes = b"not a wasm component";
         assert!(extract_wit_metadata(invalid_bytes).is_none());
     }
 
+    // r[verify wit.parse.empty-bytes]
     #[test]
     fn extract_returns_none_for_empty_bytes() {
         let empty_bytes: &[u8] = &[];
         assert!(extract_wit_metadata(empty_bytes).is_none());
     }
 
+    // r[verify wit.parse.core-module]
     #[test]
     fn extract_handles_core_wasm_module() {
         // A minimal valid core WebAssembly module (not a component)
@@ -328,18 +331,21 @@ mod tests {
         let _ = extract_wit_metadata(&core_module);
     }
 
+    // r[verify wit.parse.random-bytes]
     #[test]
     fn extract_returns_none_for_random_bytes() {
         let random_bytes = [0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x11, 0x22, 0x33];
         assert!(extract_wit_metadata(&random_bytes).is_none());
     }
 
+    // r[verify wit.parse.world-key-name]
     #[test]
     fn world_key_name_converts_correctly() {
         let key = wit_parser::WorldKey::Name("my-import".to_string());
         assert_eq!(world_key_to_string(&key), "my-import");
     }
 
+    // r[verify wit.parse.world-key-interface]
     #[test]
     fn world_key_interface_converts_to_debug_format() {
         use wit_parser::{Interface, Resolve};
@@ -360,6 +366,7 @@ mod tests {
         assert!(result.starts_with("interface-"), "got: {}", result);
     }
 
+    // r[verify wit.parse.wit-text-package]
     #[test]
     fn generate_wit_text_for_wit_package() {
         use wit_parser::{Interface, Package, PackageName, Resolve, World};
@@ -430,6 +437,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.parse.wit-text-component]
     #[test]
     fn generate_wit_text_for_component() {
         use wit_parser::{Resolve, World};
@@ -464,6 +472,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.parse.wit-text-imports-exports]
     #[test]
     fn generate_wit_text_with_imports_and_exports() {
         use wit_parser::{Function, FunctionKind, Resolve, World, WorldItem, WorldKey};
@@ -522,6 +531,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.parse.multiple-worlds]
     #[test]
     fn extract_worlds_from_wit_package_with_multiple_worlds() {
         use wit_parser::{Interface, Package, PackageName, Resolve, World};
@@ -594,6 +604,7 @@ mod tests {
         assert!(names.contains(&"command"), "should contain command world");
     }
 
+    // r[verify wit.parse.single-world]
     #[test]
     fn extract_worlds_component_has_one_world() {
         use wit_parser::{Resolve, World};
@@ -618,6 +629,7 @@ mod tests {
         assert_eq!(worlds[0].name, "my-component");
     }
 
+    // r[verify wit.parse.world-items]
     #[test]
     fn extract_world_items_with_named_and_interface_imports() {
         use wit_parser::{
@@ -703,6 +715,7 @@ mod tests {
         assert_eq!(iface.version.as_deref(), None);
     }
 
+    // r[verify wit.parse.exclude-primary]
     #[test]
     fn extract_dependencies_excludes_primary_package() {
         use wit_parser::{Package, PackageName, Resolve};
@@ -740,6 +753,7 @@ mod tests {
         assert_eq!(deps[0].version.as_deref(), None);
     }
 
+    // r[verify wit.parse.is-component]
     #[test]
     fn is_component_flag_for_wit_package() {
         use wit_parser::{Package, PackageName, Resolve, World};

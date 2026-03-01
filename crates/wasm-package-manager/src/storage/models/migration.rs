@@ -77,6 +77,7 @@ impl Migrations {
 mod tests {
     use super::*;
 
+    // r[verify db.migrations.create-tables]
     #[test]
     fn test_migrations_run_all_creates_tables() {
         let conn = Connection::open_in_memory().unwrap();
@@ -112,6 +113,7 @@ mod tests {
             .unwrap();
     }
 
+    // r[verify db.migrations.idempotent]
     #[test]
     fn test_migrations_run_all_idempotent() {
         let conn = Connection::open_in_memory().unwrap();
@@ -126,6 +128,7 @@ mod tests {
         assert_eq!(info.current, info.total);
     }
 
+    // r[verify db.migrations.info]
     #[test]
     fn test_migrations_get_info() {
         let conn = Connection::open_in_memory().unwrap();

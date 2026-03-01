@@ -122,6 +122,7 @@ pub struct PackageDependency {
 mod tests {
     use super::*;
 
+    // r[verify lockfile.parse]
     #[test]
     fn test_parse_lockfile() {
         let toml = r#"
@@ -163,6 +164,7 @@ mod tests {
         assert_eq!(key_value.dependencies[0].version, "1.0.0");
     }
 
+    // r[verify lockfile.serialize]
     #[test]
     fn test_serialize_lockfile() {
         let lockfile = Lockfile {
@@ -197,6 +199,7 @@ mod tests {
         assert!(toml.contains("sha256:abc123"));
     }
 
+    // r[verify lockfile.no-dependencies.parse]
     #[test]
     fn test_package_without_dependencies() {
         let toml = r#"
@@ -215,6 +218,7 @@ mod tests {
         assert_eq!(lockfile.interfaces[0].dependencies.len(), 0);
     }
 
+    // r[verify lockfile.no-dependencies.serialize]
     #[test]
     fn test_serialize_package_without_dependencies() {
         let package = Package {
@@ -231,6 +235,7 @@ mod tests {
         assert!(!toml.contains("dependencies"));
     }
 
+    // r[verify lockfile.mixed-types.parse]
     #[test]
     fn test_components_and_interfaces() {
         let toml = r#"
@@ -257,6 +262,7 @@ mod tests {
         assert_eq!(lockfile.interfaces[0].name, "wasi:clocks");
     }
 
+    // r[verify lockfile.mixed-types.all-packages]
     #[test]
     fn test_all_packages() {
         let lockfile = Lockfile {

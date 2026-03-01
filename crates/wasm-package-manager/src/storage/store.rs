@@ -829,6 +829,7 @@ mod tests {
         manifest_id
     }
 
+    // r[verify wit.world.insert]
     #[test]
     fn wit_world_insert_and_query() {
         let conn = setup_test_db();
@@ -855,6 +856,7 @@ mod tests {
         assert_eq!(found.wit_interface_id, iface_id);
     }
 
+    // r[verify wit.world.imports-exports]
     #[test]
     fn wit_world_import_export_insert() {
         let conn = setup_test_db();
@@ -896,6 +898,7 @@ mod tests {
         assert!(export_id > 0);
     }
 
+    // r[verify wit.interface.dependencies]
     #[test]
     fn wit_interface_dependency_insert() {
         let conn = setup_test_db();
@@ -918,6 +921,7 @@ mod tests {
         assert!(dep_id > 0);
     }
 
+    // r[verify wit.component.insert]
     #[test]
     fn wasm_component_and_target_insert() {
         let conn = setup_test_db();
@@ -963,6 +967,7 @@ mod tests {
         assert_eq!(found.id(), comp_id);
     }
 
+    // r[verify wit.component.wit-only]
     #[test]
     fn no_component_rows_for_wit_only_package() {
         let conn = setup_test_db();
@@ -990,6 +995,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.world.idempotent]
     #[test]
     fn wit_world_import_export_idempotent() {
         let conn = setup_test_db();
@@ -1030,6 +1036,7 @@ mod tests {
         assert_eq!(id1, id2, "duplicate imports should return the same ID");
     }
 
+    // r[verify wit.resolve.import]
     #[test]
     fn resolve_import_resolved_interface_id_when_dep_exists() {
         let conn = setup_test_db();
@@ -1090,6 +1097,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.resolve.import-missing]
     #[test]
     fn resolve_import_stays_null_when_dep_missing() {
         let conn = setup_test_db();
@@ -1136,6 +1144,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.resolve.dependency]
     #[test]
     fn resolve_dependency_resolved_interface_id() {
         let conn = setup_test_db();
@@ -1187,6 +1196,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.resolve.export]
     #[test]
     fn resolve_export_resolved_interface_id() {
         let conn = setup_test_db();
@@ -1235,6 +1245,7 @@ mod tests {
         );
     }
 
+    // r[verify wit.resolve.component-target]
     #[test]
     fn resolve_component_target_cross_package() {
         let conn = setup_test_db();

@@ -46,16 +46,19 @@ pub fn is_wit_package(bytes: &[u8]) -> bool {
 mod tests {
     use super::*;
 
+    // r[verify wit.detect.invalid]
     #[test]
     fn invalid_bytes_are_not_wit_package() {
         assert!(!is_wit_package(b"not a wasm component"));
     }
 
+    // r[verify wit.detect.empty]
     #[test]
     fn empty_bytes_are_not_wit_package() {
         assert!(!is_wit_package(&[]));
     }
 
+    // r[verify wit.detect.core-module]
     #[test]
     fn core_module_is_not_wit_package() {
         // A core WebAssembly module is not a WIT package — only components can be.
