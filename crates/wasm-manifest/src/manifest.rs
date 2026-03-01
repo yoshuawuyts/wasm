@@ -106,6 +106,7 @@ pub enum Dependency {
 mod tests {
     use super::*;
 
+    // r[verify manifest.parse.compact]
     #[test]
     fn test_parse_compact_format() {
         let toml = r#"
@@ -128,6 +129,7 @@ mod tests {
         }
     }
 
+    // r[verify manifest.parse.explicit]
     #[test]
     fn test_parse_explicit_format() {
         let toml = r#"
@@ -165,6 +167,7 @@ mod tests {
         }
     }
 
+    // r[verify manifest.serialize.compact]
     #[test]
     fn test_serialize_compact_format() {
         let mut interfaces = HashMap::new();
@@ -183,6 +186,7 @@ mod tests {
         assert!(toml.contains("ghcr.io/webassembly/wasi-logging:1.0.0"));
     }
 
+    // r[verify manifest.serialize.explicit]
     #[test]
     fn test_serialize_explicit_format() {
         let mut interfaces = HashMap::new();
@@ -208,6 +212,7 @@ mod tests {
         assert!(toml.contains("ghcr.io"));
     }
 
+    // r[verify manifest.parse.empty]
     #[test]
     fn test_empty_manifest() {
         let toml = r#""#;
@@ -216,6 +221,7 @@ mod tests {
         assert_eq!(manifest.interfaces.len(), 0);
     }
 
+    // r[verify manifest.parse.mixed]
     #[test]
     fn test_parse_components_and_interfaces() {
         let toml = r#"
@@ -234,6 +240,7 @@ mod tests {
         assert!(manifest.interfaces.contains_key("wasi:clocks"));
     }
 
+    // r[verify manifest.parse.mixed]
     #[test]
     fn test_all_dependencies() {
         let mut components = HashMap::new();
@@ -261,6 +268,7 @@ mod tests {
         assert!(has_interface);
     }
 
+    // r[verify manifest.parse.permissions]
     #[test]
     fn test_parse_explicit_with_permissions() {
         let toml = r#"
@@ -296,6 +304,7 @@ mod tests {
         }
     }
 
+    // r[verify manifest.parse.no-permissions]
     #[test]
     fn test_explicit_without_permissions_still_works() {
         let toml = r#"

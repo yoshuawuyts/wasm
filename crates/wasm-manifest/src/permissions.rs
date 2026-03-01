@@ -98,6 +98,7 @@ pub struct ResolvedPermissions {
 mod tests {
     use super::*;
 
+    // r[verify permissions.defaults]
     #[test]
     fn defaults_resolve_correctly() {
         let resolved = RunPermissions::default().resolve();
@@ -108,6 +109,7 @@ mod tests {
         assert!(!resolved.inherit_network);
     }
 
+    // r[verify permissions.merge]
     #[test]
     fn merge_overrides_some_fields() {
         let base = RunPermissions {
@@ -127,6 +129,7 @@ mod tests {
         assert!(merged.allow_env.is_none());
     }
 
+    // r[verify permissions.merge-preserve]
     #[test]
     fn merge_preserves_base_when_override_is_none() {
         let base = RunPermissions {
@@ -137,6 +140,7 @@ mod tests {
         assert_eq!(merged.inherit_network, Some(true));
     }
 
+    // r[verify permissions.serde]
     #[test]
     fn serde_roundtrip() {
         let perms = RunPermissions {
@@ -151,6 +155,7 @@ mod tests {
         assert_eq!(perms, parsed);
     }
 
+    // r[verify permissions.toml]
     #[test]
     fn deserialize_from_toml_fragment() {
         let toml_str = r#"

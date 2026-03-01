@@ -118,6 +118,7 @@ mod tests {
 
     // ── vendor_filename ─────────────────────────────────────────────────
 
+    // r[verify manager.vendor-filename.basic]
     #[test]
     fn vendor_filename_basic() {
         let name = vendor_filename(
@@ -129,12 +130,14 @@ mod tests {
         assert_eq!(name, "ghcr-io-user-repo-v1.0-abcdef123456.wasm");
     }
 
+    // r[verify manager.vendor-filename.no-tag]
     #[test]
     fn vendor_filename_no_tag() {
         let name = vendor_filename("ghcr.io", "user/repo", None, "sha256:abcdef1234567890");
         assert_eq!(name, "ghcr-io-user-repo-abcdef123456.wasm");
     }
 
+    // r[verify manager.vendor-filename.short-digest]
     #[test]
     fn vendor_filename_short_digest() {
         let name = vendor_filename("ghcr.io", "user/repo", Some("latest"), "sha256:abc");
@@ -147,6 +150,7 @@ mod tests {
         assert_eq!(name, "docker-io-lib-hello-1.0-rawdigest123.wasm");
     }
 
+    // r[verify manager.vendor-filename.nested]
     #[test]
     fn vendor_filename_nested_repository() {
         let name = vendor_filename(
@@ -166,16 +170,19 @@ mod tests {
 
     // ── should_sync ─────────────────────────────────────────────────────
 
+    // r[verify manager.sync.no-previous]
     #[test]
     fn should_sync_no_previous() {
         assert!(should_sync(None, 3600, 1000));
     }
 
+    // r[verify manager.sync.stale]
     #[test]
     fn should_sync_stale() {
         assert!(should_sync(Some(1000), 3600, 5000));
     }
 
+    // r[verify manager.sync.fresh]
     #[test]
     fn should_sync_fresh() {
         assert!(!should_sync(Some(1000), 3600, 2000));
@@ -189,6 +196,7 @@ mod tests {
 
     // ── sanitize_to_wit_identifier ──────────────────────────────────────
 
+    // r[verify manager.name.sanitize]
     #[test]
     fn sanitize_already_valid() {
         assert_eq!(
@@ -197,6 +205,7 @@ mod tests {
         );
     }
 
+    // r[verify manager.name.sanitize]
     #[test]
     fn sanitize_uppercase() {
         assert_eq!(
@@ -205,6 +214,7 @@ mod tests {
         );
     }
 
+    // r[verify manager.name.sanitize]
     #[test]
     fn sanitize_underscores() {
         assert_eq!(
@@ -213,6 +223,7 @@ mod tests {
         );
     }
 
+    // r[verify manager.name.sanitize]
     #[test]
     fn sanitize_leading_digits() {
         assert_eq!(
@@ -241,6 +252,7 @@ mod tests {
 
     // ── derive_component_name ───────────────────────────────────────────
 
+    // r[verify manager.name.wit-package]
     #[test]
     fn derive_name_wit_package_name() {
         let existing = HashSet::new();
@@ -253,6 +265,7 @@ mod tests {
         assert_eq!(name, "wasi:http");
     }
 
+    // r[verify manager.name.oci-title]
     #[test]
     fn derive_name_oci_title() {
         let existing = HashSet::new();
@@ -265,6 +278,7 @@ mod tests {
         assert_eq!(name, "my-fetch-component");
     }
 
+    // r[verify manager.name.last-segment]
     #[test]
     fn derive_name_last_segment() {
         let existing = HashSet::new();
@@ -272,6 +286,7 @@ mod tests {
         assert_eq!(name, "fetch");
     }
 
+    // r[verify manager.name.collision]
     #[test]
     fn derive_name_collision() {
         let mut existing = HashSet::new();

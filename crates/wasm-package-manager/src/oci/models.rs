@@ -845,6 +845,7 @@ mod tests {
         conn
     }
 
+    // r[verify oci.repository.upsert]
     #[test]
     fn test_oci_repository_upsert_and_find() {
         let conn = setup_test_db();
@@ -857,6 +858,7 @@ mod tests {
         assert_eq!(repo.id(), id);
     }
 
+    // r[verify oci.repository.upsert]
     #[test]
     fn test_oci_repository_upsert_idempotent() {
         let conn = setup_test_db();
@@ -865,6 +867,7 @@ mod tests {
         assert_eq!(id1, id2);
     }
 
+    // r[verify oci.manifest.upsert]
     #[test]
     fn test_oci_manifest_upsert_and_find() {
         let conn = setup_test_db();
@@ -910,6 +913,7 @@ mod tests {
         assert_eq!(manifest.id(), mid);
     }
 
+    // r[verify oci.manifest.annotations]
     #[test]
     fn test_oci_manifest_upsert_extracts_annotations() {
         let conn = setup_test_db();
@@ -953,6 +957,7 @@ mod tests {
         assert_eq!(custom, "custom-value");
     }
 
+    // r[verify oci.tag.upsert]
     #[test]
     fn test_oci_tag_upsert_and_find() {
         let conn = setup_test_db();
@@ -1001,6 +1006,7 @@ mod tests {
         assert_eq!(tag.manifest_digest, "sha256:def456");
     }
 
+    // r[verify oci.layer.insert]
     #[test]
     fn test_oci_layer_insert_and_list() {
         let conn = setup_test_db();
@@ -1044,6 +1050,7 @@ mod tests {
         assert_eq!(layers.get(1).unwrap().digest, "sha256:layer2");
     }
 
+    // r[verify oci.manifest.cascade-delete]
     #[test]
     fn test_oci_manifest_delete_cascades() {
         let conn = setup_test_db();
@@ -1079,6 +1086,7 @@ mod tests {
         assert!(tag.is_none());
     }
 
+    // r[verify oci.manifest.config-fields]
     #[test]
     fn test_oci_manifest_upsert_stores_config_fields() {
         let conn = setup_test_db();
@@ -1117,6 +1125,7 @@ mod tests {
         );
     }
 
+    // r[verify oci.layer.annotations]
     #[test]
     fn test_oci_layer_annotation_insert_and_list() {
         let conn = setup_test_db();
@@ -1164,6 +1173,7 @@ mod tests {
         assert_eq!(annotations[1].value, "value2");
     }
 
+    // r[verify oci.layer.annotation-conflict]
     #[test]
     fn test_oci_layer_annotation_upsert_on_conflict() {
         let conn = setup_test_db();
@@ -1196,6 +1206,7 @@ mod tests {
         assert_eq!(annotations[0].value, "updated");
     }
 
+    // r[verify oci.layer.annotation-cascade]
     #[test]
     fn test_oci_layer_annotation_cascade_delete() {
         let conn = setup_test_db();
@@ -1228,6 +1239,7 @@ mod tests {
         );
     }
 
+    // r[verify oci.referrer.insert]
     #[test]
     fn test_oci_referrer_insert_and_list() {
         let conn = setup_test_db();
@@ -1284,6 +1296,7 @@ mod tests {
         );
     }
 
+    // r[verify oci.referrer.idempotent]
     #[test]
     fn test_oci_referrer_idempotent() {
         let conn = setup_test_db();
@@ -1322,6 +1335,7 @@ mod tests {
         assert_eq!(id1, id2, "duplicate referrer insert should return same ID");
     }
 
+    // r[verify oci.referrer.cascade-delete]
     #[test]
     fn test_oci_referrer_cascade_delete() {
         let conn = setup_test_db();
@@ -1367,6 +1381,7 @@ mod tests {
         );
     }
 
+    // r[verify oci.manifest.placeholder-upgrade]
     #[test]
     fn test_oci_manifest_upsert_upgrades_placeholder() {
         let conn = setup_test_db();

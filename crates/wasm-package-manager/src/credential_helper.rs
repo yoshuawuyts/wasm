@@ -197,6 +197,7 @@ mod tests {
         assert_eq!(password, "splitpass");
     }
 
+    // r[verify credential.no-leak-debug]
     #[test]
     fn test_credential_helper_debug_never_prints_credentials() {
         // Verify that Debug output only shows command configuration,
@@ -220,6 +221,7 @@ mod tests {
         assert!(debug_output.contains("/path/to/get-pass.sh"));
     }
 
+    // r[verify credential.no-leak-display]
     #[test]
     fn test_credential_helper_display_never_leaks_credentials() {
         // Test that after executing a credential helper, the helper's

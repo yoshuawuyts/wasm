@@ -341,12 +341,14 @@ mod tests {
     use std::io::Write;
     use tempfile::TempDir;
 
+    // r[verify config.default]
     #[test]
     fn test_config_default() {
         let config = Config::default();
         assert!(config.registries.is_empty());
     }
 
+    // r[verify config.load-missing]
     #[test]
     fn test_config_load_nonexistent() {
         let temp_dir = TempDir::new().unwrap();
@@ -354,6 +356,7 @@ mod tests {
         assert!(config.registries.is_empty());
     }
 
+    // r[verify config.load-valid]
     #[test]
     fn test_config_load_valid() {
         let temp_dir = TempDir::new().unwrap();
@@ -397,6 +400,7 @@ credential-helper.password = "/path/to/get-pass.sh"
         }
     }
 
+    // r[verify config.ensure-exists]
     #[test]
     fn test_config_ensure_exists() {
         let temp_dir = TempDir::new().unwrap();
@@ -408,6 +412,7 @@ credential-helper.password = "/path/to/get-pass.sh"
         assert!(content.contains("credential-helper"));
     }
 
+    // r[verify config.ensure-idempotent]
     #[test]
     fn test_config_ensure_exists_idempotent() {
         let temp_dir = TempDir::new().unwrap();
@@ -427,6 +432,7 @@ credential-helper.password = "/path/to/get-pass.sh"
         assert!(content.contains("# custom comment"));
     }
 
+    // r[verify config.credentials.cache]
     #[test]
     fn test_credential_cache() {
         // Write JSON to a temp file to avoid shell quoting issues across platforms
@@ -466,6 +472,7 @@ credential-helper.password = "/path/to/get-pass.sh"
         assert!(cache.is_empty());
     }
 
+    // r[verify config.credentials.no-helper]
     #[test]
     fn test_get_credentials_no_helper() {
         let config = Config::default();
@@ -473,6 +480,7 @@ credential-helper.password = "/path/to/get-pass.sh"
         assert!(creds.is_none());
     }
 
+    // r[verify config.local-overrides]
     #[test]
     fn test_merge_local_overrides_global() {
         let mut global = Config::default();

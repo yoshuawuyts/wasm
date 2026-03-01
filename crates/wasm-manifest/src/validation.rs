@@ -130,6 +130,7 @@ mod tests {
     use crate::{Dependency, Package, PackageDependency};
     use std::collections::HashMap;
 
+    // r[verify validation.success]
     #[test]
     fn test_validate_success() {
         let mut interfaces = HashMap::new();
@@ -174,6 +175,7 @@ mod tests {
         assert!(validate(&manifest, &lockfile).is_ok());
     }
 
+    // r[verify validation.missing-dependency]
     #[test]
     fn test_validate_missing_dependency() {
         let mut interfaces = HashMap::new();
@@ -222,6 +224,7 @@ mod tests {
         );
     }
 
+    // r[verify validation.invalid-dependency]
     #[test]
     fn test_validate_invalid_dependency() {
         let mut interfaces = HashMap::new();
@@ -283,6 +286,7 @@ mod tests {
         );
     }
 
+    // r[verify validation.empty]
     #[test]
     fn test_validate_empty() {
         let manifest = Manifest::default();
@@ -296,6 +300,7 @@ mod tests {
         assert!(validate(&manifest, &lockfile).is_ok());
     }
 
+    // r[verify validation.error-display]
     #[test]
     fn test_validation_error_display() {
         let err1 = ValidationError::MissingDependency {
@@ -316,6 +321,7 @@ mod tests {
         );
     }
 
+    // r[verify validation.mixed-types]
     #[test]
     fn test_validate_components_and_interfaces() {
         let mut components = HashMap::new();

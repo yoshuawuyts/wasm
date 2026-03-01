@@ -34,6 +34,7 @@ fn setup_test_dir() -> TempDir {
     temp_dir
 }
 
+// r[verify detector.find-wasm]
 #[test]
 fn test_detector_finds_wasm_files() {
     let temp_dir = setup_test_dir();
@@ -58,6 +59,7 @@ fn test_detector_finds_wasm_files() {
     }
 }
 
+// r[verify detector.target-dir]
 #[test]
 fn test_detector_finds_target_wasm_files() {
     let temp_dir = setup_test_dir();
@@ -78,6 +80,7 @@ fn test_detector_finds_target_wasm_files() {
     );
 }
 
+// r[verify detector.pkg-dir]
 #[test]
 fn test_detector_finds_pkg_wasm_files() {
     let temp_dir = setup_test_dir();
@@ -94,6 +97,7 @@ fn test_detector_finds_pkg_wasm_files() {
     assert_eq!(pkg_files.len(), 1, "Expected 1 file in pkg directory");
 }
 
+// r[verify detector.dist-dir]
 #[test]
 fn test_detector_finds_dist_wasm_files() {
     let temp_dir = setup_test_dir();
@@ -110,6 +114,7 @@ fn test_detector_finds_dist_wasm_files() {
     assert_eq!(dist_files.len(), 1, "Expected 1 file in dist directory");
 }
 
+// r[verify detector.entry-methods]
 #[test]
 fn test_wasm_entry_methods() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -127,6 +132,7 @@ fn test_wasm_entry_methods() {
     assert_eq!(entry.file_name(), Some("module.wasm"));
 }
 
+// r[verify detector.gitignore]
 #[test]
 fn test_detector_with_gitignore() {
     use std::process::Command;
@@ -176,6 +182,7 @@ fn test_detector_with_gitignore() {
     );
 }
 
+// r[verify detector.convenience]
 #[test]
 fn test_detect_convenience_method() {
     let temp_dir = setup_test_dir();
@@ -190,6 +197,7 @@ fn test_detect_convenience_method() {
     );
 }
 
+// r[verify detector.empty-dir]
 #[test]
 fn test_detector_empty_directory() {
     let temp_dir = TempDir::new().expect("Failed to create temp dir");

@@ -291,6 +291,7 @@ mod tests {
         conn
     }
 
+    // r[verify db.known-packages.upsert]
     #[test]
     fn test_known_package_upsert_new_package() {
         let conn = setup_test_db();
@@ -302,6 +303,7 @@ mod tests {
         assert_eq!(packages.first().unwrap().repository, "user/repo");
     }
 
+    // r[verify db.known-packages.upsert]
     #[test]
     fn test_known_package_upsert_updates_existing() {
         let conn = setup_test_db();
@@ -312,6 +314,7 @@ mod tests {
         assert_eq!(packages.len(), 1);
     }
 
+    // r[verify db.known-packages.search]
     #[test]
     fn test_known_package_search() {
         let conn = setup_test_db();
@@ -330,6 +333,7 @@ mod tests {
         assert_eq!(results.first().unwrap().repository, "bytecode/component");
     }
 
+    // r[verify db.known-packages.search-empty]
     #[test]
     fn test_known_package_search_no_results() {
         let conn = setup_test_db();
@@ -339,6 +343,7 @@ mod tests {
         assert!(results.is_empty());
     }
 
+    // r[verify db.known-packages.upsert]
     #[test]
     fn test_known_package_get() {
         let conn = setup_test_db();
@@ -354,6 +359,7 @@ mod tests {
         assert!(package.is_none());
     }
 
+    // r[verify db.known-packages.reference]
     #[test]
     fn test_known_package_reference() {
         let conn = setup_test_db();
@@ -363,6 +369,7 @@ mod tests {
         assert_eq!(packages.first().unwrap().reference(), "ghcr.io/user/repo");
     }
 
+    // r[verify db.known-packages.reference]
     #[test]
     fn test_known_package_reference_with_tag_default() {
         let conn = setup_test_db();

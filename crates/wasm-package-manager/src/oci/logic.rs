@@ -90,6 +90,7 @@ mod tests {
 
     // ── filter_wasm_layers ──────────────────────────────────────────────
 
+    // r[verify oci.layers.filter-mixed]
     #[test]
     fn filter_wasm_layers_mixed() {
         let layers = vec![
@@ -121,6 +122,7 @@ mod tests {
         assert_eq!(wasm[1].digest, "sha256:ccc");
     }
 
+    // r[verify oci.layers.filter-none]
     #[test]
     fn filter_wasm_layers_none() {
         let layers = vec![OciDescriptor {
@@ -133,6 +135,7 @@ mod tests {
         assert!(filter_wasm_layers(&layers).is_empty());
     }
 
+    // r[verify oci.layers.filter-empty]
     #[test]
     fn filter_wasm_layers_empty() {
         assert!(filter_wasm_layers(&[]).is_empty());
@@ -140,6 +143,7 @@ mod tests {
 
     // ── compute_orphaned_layers ─────────────────────────────────────────
 
+    // r[verify oci.layers.orphaned-disjoint]
     #[test]
     fn orphaned_layers_disjoint() {
         let deleted: HashSet<String> = ["sha256:aaa", "sha256:bbb"]
@@ -152,6 +156,7 @@ mod tests {
         assert_eq!(orphaned, vec!["sha256:aaa", "sha256:bbb"]);
     }
 
+    // r[verify oci.layers.orphaned-overlap]
     #[test]
     fn orphaned_layers_overlap() {
         let deleted: HashSet<String> = ["sha256:aaa", "sha256:shared"]
@@ -166,6 +171,7 @@ mod tests {
         assert_eq!(orphaned, vec!["sha256:aaa"]);
     }
 
+    // r[verify oci.layers.orphaned-shared]
     #[test]
     fn orphaned_layers_all_shared() {
         let deleted: HashSet<String> = ["sha256:aaa"].iter().map(|s| s.to_string()).collect();
@@ -196,17 +202,20 @@ mod tests {
 
     // ── classify_tag / classify_tags ────────────────────────────────────
 
+    // r[verify oci.tags.classify-release]
     #[test]
     fn classify_tag_release() {
         assert_eq!(classify_tag("v1.0"), TagKind::Release);
         assert_eq!(classify_tag("latest"), TagKind::Release);
     }
 
+    // r[verify oci.tags.classify-signature]
     #[test]
     fn classify_tag_signature() {
         assert_eq!(classify_tag("sha256-abc123def456.sig"), TagKind::Signature);
     }
 
+    // r[verify oci.tags.classify-attestation]
     #[test]
     fn classify_tag_attestation() {
         assert_eq!(
@@ -221,6 +230,7 @@ mod tests {
         assert_eq!(classify_tag("sha256-abc123def456"), TagKind::Release);
     }
 
+    // r[verify oci.tags.classify-mixed]
     #[test]
     fn classify_tags_mixed() {
         let tags: Vec<String> = vec![
@@ -236,6 +246,7 @@ mod tests {
         assert_eq!(attestation, vec!["sha256-abc123.att"]);
     }
 
+    // r[verify oci.tags.classify-empty]
     #[test]
     fn classify_tags_empty() {
         let (release, signature, attestation) = classify_tags(&[]);
@@ -244,6 +255,7 @@ mod tests {
         assert!(attestation.is_empty());
     }
 
+    // r[verify oci.tags.classify-release]
     #[test]
     fn classify_tags_all_release() {
         let tags: Vec<String> = vec!["v1.0".into(), "latest".into(), "stable".into()];
