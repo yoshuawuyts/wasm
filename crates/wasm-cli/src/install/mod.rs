@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use anyhow::{Context, Result};
 use futures_concurrency::prelude::*;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -110,11 +112,10 @@ impl Opts {
                     &existing_names,
                 )
             } else {
-                result
-                    .package_name
-                    .as_deref()
-                    .map(|name| name.split('@').next().unwrap_or(name).to_string())
-                    .unwrap_or_else(|| format!("{}/{}", result.registry, result.repository))
+                result.package_name.as_deref().map_or_else(
+                    || format!("{}/{}", result.registry, result.repository),
+                    |name| name.split('@').next().unwrap_or(name).to_string(),
+                )
             };
 
             // Determine the version from the tag
@@ -124,7 +125,7 @@ impl Opts {
             // Only update the manifest when a reference was explicitly provided;
             // for the 0-args case the entries are already in the manifest.
             if update_manifest {
-                let reference_str = reference.whole().to_string();
+                let reference_str = reference.whole().clone();
                 let dep = wasm_manifest::Dependency::Compact(reference_str);
                 if result.is_component {
                     manifest.components.insert(dep_name.clone(), dep);
@@ -203,7 +204,7 @@ async fn install_one(
     reference: &Reference,
     vendor_dir: &std::path::Path,
 ) -> Result<wasm_package_manager::manager::InstallResult> {
-    let reference_display = reference.whole().to_string();
+    let reference_display = reference.whole().clone();
 
     if offline {
         // No progress bars in offline mode — just print the line
@@ -349,17 +350,14 @@ async fn run_progress_bars(
                 let label = title.as_deref().unwrap_or(media_type);
                 let prefix = format!("   {tree_glyph} [{short_digest}] {label}");
 
-                let pb = match total_bytes {
-                    Some(total) => {
-                        let pb = multi.add(ProgressBar::new(total));
-                        pb.set_style(bar_style_progress.clone());
-                        pb
-                    }
-                    None => {
-                        let pb = multi.add(ProgressBar::new_spinner());
-                        pb.set_style(bar_style_spinner.clone());
-                        pb
-                    }
+                let pb = if let Some(total) = total_bytes {
+                    let pb = multi.add(ProgressBar::new(total));
+                    pb.set_style(bar_style_progress.clone());
+                    pb
+                } else {
+                    let pb = multi.add(ProgressBar::new_spinner());
+                    pb.set_style(bar_style_spinner.clone());
+                    pb
                 };
                 pb.set_prefix(prefix);
 

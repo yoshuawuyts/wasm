@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use std::io::{self, BufRead, Seek, Write};
 
 use anyhow::Result;
@@ -170,7 +172,7 @@ impl Opts {
                     // Count variables defined in the file (system env vars take precedence;
                     // variables already set in the environment are not overridden).
                     let var_count = dotenvy::from_path_iter(dotenv_path)
-                        .map(|iter| iter.count())
+                        .map(Iterator::count)
                         .unwrap_or(0);
                     println!("Status:\t\texists ({var_count} variable(s) defined in file)");
                 } else {

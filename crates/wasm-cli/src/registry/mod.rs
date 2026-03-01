@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use anyhow::Result;
 use comfy_table::{ContentArrangement, Table};
 use wasm_package_manager::manager::Manager;
@@ -96,8 +98,12 @@ impl Opts {
                 let tags: Vec<_> = all_tags
                     .into_iter()
                     .filter(|tag| {
-                        let is_sig = tag.ends_with(".sig");
-                        let is_att = tag.ends_with(".att");
+                        let is_sig = std::path::Path::new(tag)
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("sig"));
+                        let is_att = std::path::Path::new(tag)
+                            .extension()
+                            .is_some_and(|ext| ext.eq_ignore_ascii_case("att"));
 
                         if is_sig {
                             opts.signatures
@@ -128,7 +134,7 @@ impl Opts {
                         println!("Tags for '{}':", opts.reference.whole());
                     }
                     for tag in tags {
-                        println!("  {}", tag);
+                        println!("  {tag}");
                     }
                 }
                 Ok(())

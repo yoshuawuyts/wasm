@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::unnecessary_wraps)]
+
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -64,7 +66,7 @@ impl ListOpts {
             ]);
         }
 
-        println!("{}", table);
+        println!("{table}");
         println!("\nFound {} WASM file(s)", wasm_files.len());
 
         Ok(())

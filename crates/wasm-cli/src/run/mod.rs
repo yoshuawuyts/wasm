@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 //! Execute a Wasm Component via Wasmtime.
 //!
 //! Runs a Wasm Component from a local file or OCI reference. The component is
@@ -141,6 +143,7 @@ impl Opts {
     /// 2. Global per-component from `components.toml`
     /// 3. Local per-component from `wasm.toml`
     /// 4. CLI flags
+    #[allow(clippy::unnecessary_wraps)]
     fn resolve_permissions(
         &self,
         reference: Option<&wasm_package_manager::Reference>,

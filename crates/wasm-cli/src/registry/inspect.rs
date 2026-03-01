@@ -1,3 +1,5 @@
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 use bytesize::ByteSize;
 use std::io::{Stdout, Write};
 
@@ -38,7 +40,7 @@ impl InspectOpts {
             .ok_or_else(|| anyhow::anyhow!("No wasm layers found for '{}'", reference.whole()))?;
 
         let data = store.get(&layer.digest).await?;
-        let payload = wasm_metadata::Payload::from_binary(&data)?;
+        let payload = Payload::from_binary(&data)?;
 
         let mut output = std::io::stdout();
         if self.json {
@@ -53,6 +55,7 @@ impl InspectOpts {
 
 /// Write a table containing a summarized overview of a wasm binary's metadata to
 /// a writer.
+#[allow(clippy::items_after_statements)]
 fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
     // Prepare a table and get the individual metadata
     let mut table = Table::new();
@@ -100,6 +103,11 @@ fn write_summary_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
 }
 
 // The recursing inner function of `write_summary_table`
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
 fn write_summary_table_inner(
     payload: &Payload,
     parent: &str,
@@ -114,13 +122,12 @@ fn write_summary_table_inner(
         ..
     } = payload.metadata();
 
-    let name = match name.as_deref() {
-        Some(name) => name.to_owned(),
-        None => {
-            let name = format!("unknown({unknown_id})");
-            *unknown_id += 1;
-            name
-        }
+    let name = if let Some(name) = name.as_deref() {
+        name.to_owned()
+    } else {
+        let name = format!("unknown({unknown_id})");
+        *unknown_id += 1;
+        name
     };
     let size = ByteSize::b((range.end - range.start) as u64)
         .display()
@@ -243,10 +250,10 @@ fn write_details_table(payload: &Payload, f: &mut Stdout) -> Result<()> {
         });
 
         // Add the producers to the table
-        for (name, pairs) in producers.iter() {
+        for (name, pairs) in &producers {
             for (field, version) in pairs.iter() {
                 match version.len() {
-                    0 => table.add_row(vec![name, &field.to_string()]),
+                    0 => table.add_row(vec![name, &field.clone()]),
                     _ => table.add_row(vec![name, &format!("{field} [{version}]")]),
                 };
             }
