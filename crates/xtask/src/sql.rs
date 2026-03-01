@@ -213,10 +213,7 @@ fn numbered_migrations(migrations_dir: &Path) -> Result<Vec<(u32, String, PathBu
     for entry in fs::read_dir(migrations_dir).context("reading migrations directory")? {
         let entry = entry?;
         let file_name = entry.file_name().to_string_lossy().to_string();
-        if !Path::new(&file_name)
-            .extension()
-            .is_some_and(|e| e.eq_ignore_ascii_case("sql"))
-        {
+        if !file_name.to_ascii_lowercase().ends_with(".sql") {
             continue;
         }
         // Parse NN_name.sql

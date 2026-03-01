@@ -98,12 +98,10 @@ impl Opts {
                 let tags: Vec<_> = all_tags
                     .into_iter()
                     .filter(|tag| {
-                        let is_sig = std::path::Path::new(tag)
-                            .extension()
-                            .is_some_and(|ext| ext.eq_ignore_ascii_case("sig"));
-                        let is_att = std::path::Path::new(tag)
-                            .extension()
-                            .is_some_and(|ext| ext.eq_ignore_ascii_case("att"));
+                        #[allow(clippy::case_sensitive_file_extension_comparisons)]
+                        let is_sig = tag.ends_with(".sig");
+                        #[allow(clippy::case_sensitive_file_extension_comparisons)]
+                        let is_att = tag.ends_with(".att");
 
                         if is_sig {
                             opts.signatures
