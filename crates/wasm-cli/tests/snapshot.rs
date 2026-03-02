@@ -36,8 +36,8 @@ use wasm::tui::views::{
     SearchViewState, SettingsView, TypesView, TypesViewState,
 };
 use wasm_detector::WasmEntry;
-use wasm_package_manager::oci::ImageView;
-use wasm_package_manager::storage::{KnownPackageView, StateInfo};
+use wasm_package_manager::oci::ImageEntry;
+use wasm_package_manager::storage::{KnownPackage, StateInfo};
 
 /// Helper function to render a widget to a string buffer.
 fn render_to_string<W: Widget>(widget: W, width: u16, height: u16) -> String {
@@ -142,11 +142,11 @@ fn test_types_view_snapshot() {
 // r[verify tui.types-view.populated]
 #[test]
 fn test_types_view_populated_snapshot() {
-    use wasm_package_manager::types::WitPackageView;
+    use wasm_package_manager::types::WitPackage;
 
     let interfaces = vec![
         (
-            WitPackageView {
+            WitPackage {
                 package_name: "wasi:http".to_string(),
                 version: Some("0.2.0".to_string()),
                 description: None,
@@ -156,7 +156,7 @@ fn test_types_view_populated_snapshot() {
             "ghcr.io/example/http-proxy:v1.0.0".to_string(),
         ),
         (
-            WitPackageView {
+            WitPackage {
                 package_name: "wasi:cli".to_string(),
                 version: Some("0.2.0".to_string()),
                 description: None,
@@ -187,7 +187,7 @@ fn test_packages_view_empty_snapshot() {
 #[test]
 fn test_packages_view_with_packages_snapshot() {
     let packages = vec![
-        ImageView {
+        ImageEntry {
             ref_registry: "ghcr.io".to_string(),
             ref_repository: "bytecode-alliance/wasmtime".to_string(),
             ref_mirror_registry: None,
@@ -196,7 +196,7 @@ fn test_packages_view_with_packages_snapshot() {
             manifest: test_manifest(),
             size_on_disk: 1024 * 1024 * 5, // 5 MB
         },
-        ImageView {
+        ImageEntry {
             ref_registry: "docker.io".to_string(),
             ref_repository: "example/hello-wasm".to_string(),
             ref_mirror_registry: None,
@@ -205,7 +205,7 @@ fn test_packages_view_with_packages_snapshot() {
             manifest: test_manifest(),
             size_on_disk: 1024 * 512, // 512 KB
         },
-        ImageView {
+        ImageEntry {
             ref_registry: "ghcr.io".to_string(),
             ref_repository: "user/my-component".to_string(),
             ref_mirror_registry: None,
@@ -233,7 +233,7 @@ fn test_packages_view_with_filter_active_snapshot() {
 // r[verify tui.packages-view.filter-results]
 #[test]
 fn test_packages_view_filter_with_results_snapshot() {
-    let packages = vec![ImageView {
+    let packages = vec![ImageEntry {
         ref_registry: "ghcr.io".to_string(),
         ref_repository: "bytecode-alliance/wasi-http".to_string(),
         ref_mirror_registry: None,
@@ -255,7 +255,7 @@ fn test_packages_view_filter_with_results_snapshot() {
 // r[verify tui.package-detail-view.full]
 #[test]
 fn test_package_detail_view_snapshot() {
-    let package = ImageView {
+    let package = ImageEntry {
         ref_registry: "ghcr.io".to_string(),
         ref_repository: "bytecode-alliance/wasmtime".to_string(),
         ref_mirror_registry: None,
@@ -271,7 +271,7 @@ fn test_package_detail_view_snapshot() {
 // r[verify tui.package-detail-view.no-tag]
 #[test]
 fn test_package_detail_view_without_tag_snapshot() {
-    let package = ImageView {
+    let package = ImageEntry {
         ref_registry: "docker.io".to_string(),
         ref_repository: "library/hello-world".to_string(),
         ref_mirror_registry: None,
@@ -300,7 +300,7 @@ fn test_search_view_empty_snapshot() {
 #[test]
 fn test_search_view_with_packages_snapshot() {
     let packages = vec![
-        KnownPackageView {
+        KnownPackage {
             registry: "ghcr.io".to_string(),
             repository: "bytecode-alliance/wasi-http".to_string(),
             description: Some("WASI HTTP interface".to_string()),
@@ -310,7 +310,7 @@ fn test_search_view_with_packages_snapshot() {
             last_seen_at: "2024-01-15T10:30:00Z".to_string(),
             created_at: "2024-01-01T08:00:00Z".to_string(),
         },
-        KnownPackageView {
+        KnownPackage {
             registry: "ghcr.io".to_string(),
             repository: "user/my-component".to_string(),
             description: None,
@@ -339,7 +339,7 @@ fn test_search_view_with_search_active_snapshot() {
 // r[verify tui.search-view.many-tags]
 #[test]
 fn test_search_view_with_many_tags_snapshot() {
-    let packages = vec![KnownPackageView {
+    let packages = vec![KnownPackage {
         registry: "ghcr.io".to_string(),
         repository: "project/component".to_string(),
         description: Some("A component with many tags".to_string()),
@@ -366,7 +366,7 @@ fn test_search_view_with_many_tags_snapshot() {
 // r[verify tui.known-package-detail-view.full]
 #[test]
 fn test_known_package_detail_view_snapshot() {
-    let package = KnownPackageView {
+    let package = KnownPackage {
         registry: "ghcr.io".to_string(),
         repository: "user/example-package".to_string(),
         description: Some("An example WASM component package".to_string()),
@@ -387,7 +387,7 @@ fn test_known_package_detail_view_snapshot() {
 // r[verify tui.known-package-detail-view.minimal]
 #[test]
 fn test_known_package_detail_view_minimal_snapshot() {
-    let package = KnownPackageView {
+    let package = KnownPackage {
         registry: "docker.io".to_string(),
         repository: "library/minimal".to_string(),
         description: None,

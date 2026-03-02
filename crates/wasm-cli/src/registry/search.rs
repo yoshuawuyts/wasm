@@ -60,13 +60,13 @@ impl SearchOpts {
     }
 }
 
-/// Render a list of [`KnownPackageView`]s as a `comfy-table` table string.
+/// Render a list of [`KnownPackage`]s as a `comfy-table` table string.
 ///
 /// Extracted for testability — the CLI calls this via `SearchOpts::run`,
 /// but unit tests can call it directly without a database.
 #[must_use]
 pub(crate) fn render_search_table(
-    packages: &[wasm_package_manager::storage::KnownPackageView],
+    packages: &[wasm_package_manager::storage::KnownPackage],
 ) -> String {
     let mut table = Table::new();
     table.set_content_arrangement(ContentArrangement::Dynamic);
@@ -89,12 +89,12 @@ pub(crate) fn render_search_table(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wasm_package_manager::storage::KnownPackageView;
+    use wasm_package_manager::storage::KnownPackage;
 
     #[test]
     fn test_render_search_table_with_results() {
         let packages = vec![
-            KnownPackageView {
+            KnownPackage {
                 registry: "ghcr.io".into(),
                 repository: "example/http-server".into(),
                 description: Some("A simple HTTP server component".into()),
@@ -104,7 +104,7 @@ mod tests {
                 last_seen_at: "2025-01-01 00:00:00".into(),
                 created_at: "2025-01-01 00:00:00".into(),
             },
-            KnownPackageView {
+            KnownPackage {
                 registry: "ghcr.io".into(),
                 repository: "example/logger".into(),
                 description: None,

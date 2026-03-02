@@ -1,12 +1,12 @@
-use super::models::KnownPackage;
+use super::models::RawKnownPackage;
 
 /// A public view of a known package, without internal database IDs.
 ///
 /// This type is freely constructable and is the primary public API type
-/// for representing known packages. Internal code uses [`KnownPackage`]
-/// with database IDs; this view type strips those away.
+/// for representing known packages. Internal code uses [`RawKnownPackage`]
+/// with database IDs; this type strips those away.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct KnownPackageView {
+pub struct KnownPackage {
     /// Registry hostname
     pub registry: String,
     /// Repository path
@@ -27,7 +27,7 @@ pub struct KnownPackageView {
     pub created_at: String,
 }
 
-impl KnownPackageView {
+impl KnownPackage {
     /// Returns the full reference string for this package (e.g., "ghcr.io/user/repo").
     #[must_use]
     pub fn reference(&self) -> String {
@@ -45,8 +45,8 @@ impl KnownPackageView {
     }
 }
 
-impl From<KnownPackage> for KnownPackageView {
-    fn from(pkg: KnownPackage) -> Self {
+impl From<RawKnownPackage> for KnownPackage {
+    fn from(pkg: RawKnownPackage) -> Self {
         Self {
             registry: pkg.registry,
             repository: pkg.repository,
@@ -64,11 +64,11 @@ impl From<KnownPackage> for KnownPackageView {
 mod tests {
     use super::*;
 
-    // ── KnownPackageView ────────────────────────────────────────────────
+    // ── KnownPackage ────────────────────────────────────────────────────
 
     #[test]
-    fn known_package_view_reference() {
-        let view = KnownPackageView {
+    fn known_package_reference() {
+        let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
             description: None,
@@ -78,12 +78,12 @@ mod tests {
             last_seen_at: String::new(),
             created_at: String::new(),
         };
-        assert_eq!(view.reference(), "ghcr.io/user/repo");
+        assert_eq!(pkg.reference(), "ghcr.io/user/repo");
     }
 
     #[test]
-    fn known_package_view_reference_with_tag() {
-        let view = KnownPackageView {
+    fn known_package_reference_with_tag() {
+        let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
             description: None,
@@ -93,12 +93,12 @@ mod tests {
             last_seen_at: String::new(),
             created_at: String::new(),
         };
-        assert_eq!(view.reference_with_tag(), "ghcr.io/user/repo:v1.0");
+        assert_eq!(pkg.reference_with_tag(), "ghcr.io/user/repo:v1.0");
     }
 
     #[test]
-    fn known_package_view_reference_with_tag_default() {
-        let view = KnownPackageView {
+    fn known_package_reference_with_tag_default() {
+        let pkg = KnownPackage {
             registry: "ghcr.io".into(),
             repository: "user/repo".into(),
             description: None,
@@ -108,6 +108,6 @@ mod tests {
             last_seen_at: String::new(),
             created_at: String::new(),
         };
-        assert_eq!(view.reference_with_tag(), "ghcr.io/user/repo:latest");
+        assert_eq!(pkg.reference_with_tag(), "ghcr.io/user/repo:latest");
     }
 }

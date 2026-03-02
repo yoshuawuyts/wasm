@@ -2,12 +2,15 @@ use rusqlite::Connection;
 
 use crate::oci::OciRepository;
 
-/// A known package that persists in the database even after local deletion.
+/// A raw known package that persists in the database even after local deletion.
 /// This is used to track packages the user has seen or searched for.
 ///
 /// Backed by `oci_repository` in the new schema.  Tags come from `oci_tag`.
+///
+/// This is the internal database-backed type. The public API exposes
+/// [`super::super::KnownPackage`] instead, which strips away internal IDs.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct KnownPackage {
+pub struct RawKnownPackage {
     #[allow(dead_code)]
     #[serde(skip)]
     id: i64,
@@ -31,7 +34,7 @@ pub struct KnownPackage {
     pub created_at: String,
 }
 
-impl KnownPackage {
+impl RawKnownPackage {
     /// Returns the full reference string for this package (e.g., "ghcr.io/user/repo").
     #[must_use]
     pub fn reference(&self) -> String {
@@ -150,7 +153,7 @@ impl KnownPackage {
         query: &str,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackage>> {
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let search_pattern = format!("%{query}%");
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, updated_at, created_at
@@ -175,7 +178,7 @@ impl KnownPackage {
             let (id, registry, repository, updated_at, created_at) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
-            packages.push(KnownPackage {
+            packages.push(RawKnownPackage {
                 id,
                 registry,
                 repository,
@@ -195,7 +198,7 @@ impl KnownPackage {
         conn: &Connection,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackage>> {
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
         let mut stmt = conn.prepare(
             "SELECT id, registry, repository, updated_at, created_at
              FROM oci_repository
@@ -218,7 +221,7 @@ impl KnownPackage {
             let (id, registry, repository, updated_at, created_at) = row?;
             let tags = Self::fetch_tags(conn, id);
             let description = Self::fetch_description(conn, id);
-            packages.push(KnownPackage {
+            packages.push(RawKnownPackage {
                 id,
                 registry,
                 repository,
@@ -238,7 +241,7 @@ impl KnownPackage {
         conn: &Connection,
         registry: &str,
         repository: &str,
-    ) -> anyhow::Result<Option<KnownPackage>> {
+    ) -> anyhow::Result<Option<RawKnownPackage>> {
         let result = conn.query_row(
             "SELECT id, registry, repository, updated_at, created_at
              FROM oci_repository
@@ -259,7 +262,7 @@ impl KnownPackage {
             Ok((id, reg, repo, updated_at, created_at)) => {
                 let tags = Self::fetch_tags(conn, id);
                 let description = Self::fetch_description(conn, id);
-                Ok(Some(KnownPackage {
+                Ok(Some(RawKnownPackage {
                     id,
                     registry: reg,
                     repository: repo,
@@ -283,7 +286,7 @@ impl KnownPackage {
     pub(crate) fn search_by_wit_name(
         conn: &Connection,
         wit_name: &str,
-    ) -> anyhow::Result<Option<KnownPackage>> {
+    ) -> anyhow::Result<Option<RawKnownPackage>> {
         // Convert "wasi:http" → "wasi/http" for repository search
         let search_pattern = wit_name.replace(':', "/");
         let like_pattern = format!("%{search_pattern}%");
@@ -310,7 +313,7 @@ impl KnownPackage {
             Ok((id, registry, repository, updated_at, created_at)) => {
                 let tags = Self::fetch_tags(conn, id);
                 let description = Self::fetch_description(conn, id);
-                Ok(Some(KnownPackage {
+                Ok(Some(RawKnownPackage {
                     id,
                     registry,
                     repository,
@@ -344,9 +347,9 @@ mod tests {
     #[test]
     fn test_known_package_upsert_new_package() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
 
-        let packages = KnownPackage::get_all(&conn, 0, 100).unwrap();
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
         assert_eq!(packages.len(), 1);
         assert_eq!(packages.first().unwrap().registry, "ghcr.io");
         assert_eq!(packages.first().unwrap().repository, "user/repo");
@@ -356,10 +359,10 @@ mod tests {
     #[test]
     fn test_known_package_upsert_updates_existing() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
 
-        let packages = KnownPackage::get_all(&conn, 0, 100).unwrap();
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
         assert_eq!(packages.len(), 1);
     }
 
@@ -367,17 +370,17 @@ mod tests {
     #[test]
     fn test_known_package_search() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "bytecode/component", None, None).unwrap();
-        KnownPackage::upsert(&conn, "docker.io", "library/nginx", None, None).unwrap();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/nginx-app", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "bytecode/component", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "docker.io", "library/nginx", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/nginx-app", None, None).unwrap();
 
-        let results = KnownPackage::search(&conn, "nginx", 0, 100).unwrap();
+        let results = RawKnownPackage::search(&conn, "nginx", 0, 100).unwrap();
         assert_eq!(results.len(), 2);
 
-        let results = KnownPackage::search(&conn, "ghcr", 0, 100).unwrap();
+        let results = RawKnownPackage::search(&conn, "ghcr", 0, 100).unwrap();
         assert_eq!(results.len(), 2);
 
-        let results = KnownPackage::search(&conn, "bytecode", 0, 100).unwrap();
+        let results = RawKnownPackage::search(&conn, "bytecode", 0, 100).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results.first().unwrap().repository, "bytecode/component");
     }
@@ -386,9 +389,9 @@ mod tests {
     #[test]
     fn test_known_package_search_no_results() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
 
-        let results = KnownPackage::search(&conn, "nonexistent", 0, 100).unwrap();
+        let results = RawKnownPackage::search(&conn, "nonexistent", 0, 100).unwrap();
         assert!(results.is_empty());
     }
 
@@ -396,15 +399,15 @@ mod tests {
     #[test]
     fn test_known_package_get() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
 
-        let package = KnownPackage::get(&conn, "ghcr.io", "user/repo").unwrap();
+        let package = RawKnownPackage::get(&conn, "ghcr.io", "user/repo").unwrap();
         assert!(package.is_some());
         let package = package.unwrap();
         assert_eq!(package.registry, "ghcr.io");
         assert_eq!(package.repository, "user/repo");
 
-        let package = KnownPackage::get(&conn, "docker.io", "nonexistent").unwrap();
+        let package = RawKnownPackage::get(&conn, "docker.io", "nonexistent").unwrap();
         assert!(package.is_none());
     }
 
@@ -412,9 +415,9 @@ mod tests {
     #[test]
     fn test_known_package_reference() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
 
-        let packages = KnownPackage::get_all(&conn, 0, 100).unwrap();
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
         assert_eq!(packages.first().unwrap().reference(), "ghcr.io/user/repo");
     }
 
@@ -422,8 +425,8 @@ mod tests {
     #[test]
     fn test_known_package_reference_with_tag_default() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
-        let packages = KnownPackage::get_all(&conn, 0, 100).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "user/repo", None, None).unwrap();
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
         assert_eq!(
             packages.first().unwrap().reference_with_tag(),
             "ghcr.io/user/repo:latest"
@@ -434,11 +437,11 @@ mod tests {
     #[test]
     fn test_known_package_search_by_wit_name() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/http", None, None).unwrap();
-        KnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/clocks", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/http", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/clocks", None, None).unwrap();
 
         // "wasi:http" → search pattern "wasi/http" → should match "webassembly/wasi/http"
-        let result = KnownPackage::search_by_wit_name(&conn, "wasi:http").unwrap();
+        let result = RawKnownPackage::search_by_wit_name(&conn, "wasi:http").unwrap();
         assert!(result.is_some());
         let pkg = result.unwrap();
         assert_eq!(pkg.repository, "webassembly/wasi/http");
@@ -448,9 +451,9 @@ mod tests {
     #[test]
     fn test_known_package_search_by_wit_name_not_found() {
         let conn = setup_test_db();
-        KnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/http", None, None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "webassembly/wasi/http", None, None).unwrap();
 
-        let result = KnownPackage::search_by_wit_name(&conn, "wasi:nonexistent").unwrap();
+        let result = RawKnownPackage::search_by_wit_name(&conn, "wasi:nonexistent").unwrap();
         assert!(result.is_none());
     }
 }

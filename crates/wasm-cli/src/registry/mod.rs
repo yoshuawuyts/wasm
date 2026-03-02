@@ -3,7 +3,7 @@
 use anyhow::Result;
 use comfy_table::{ContentArrangement, Table};
 use wasm_package_manager::manager::Manager;
-use wasm_package_manager::oci::{ImageView, InsertResult};
+use wasm_package_manager::oci::{ImageEntry, InsertResult};
 use wasm_package_manager::{Reference, format_size};
 
 mod inspect;
@@ -174,12 +174,12 @@ impl Opts {
     }
 }
 
-/// Render a list of [`ImageView`]s as a `comfy-table` table string.
+/// Render a list of [`ImageEntry`]s as a `comfy-table` table string.
 ///
 /// Extracted for testability — the CLI calls this via `Opts::run`,
 /// but unit tests can call it directly without a database.
 #[must_use]
-fn render_list_table(images: &[ImageView]) -> String {
+fn render_list_table(images: &[ImageEntry]) -> String {
     let mut table = Table::new();
     table.set_content_arrangement(ContentArrangement::Dynamic);
     table.set_header(vec!["PACKAGE", "TAG", "SIZE"]);
@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn test_render_list_table_with_images() {
         let images = vec![
-            ImageView {
+            ImageEntry {
                 ref_registry: "ghcr.io".into(),
                 ref_repository: "example/http-server".into(),
                 ref_mirror_registry: None,
@@ -211,7 +211,7 @@ mod tests {
                 manifest: OciImageManifest::default(),
                 size_on_disk: 1024 * 1024, // 1 MB
             },
-            ImageView {
+            ImageEntry {
                 ref_registry: "ghcr.io".into(),
                 ref_repository: "example/logger".into(),
                 ref_mirror_registry: None,

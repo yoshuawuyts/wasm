@@ -1,12 +1,12 @@
-use super::models::WitPackage;
+use super::raw::RawWitPackage;
 
 /// A public view of a WIT package, without internal database IDs.
 ///
 /// This type is freely constructable and is the primary public API type
-/// for representing WIT packages. Internal code uses [`WitPackage`]
-/// with database IDs; this view type strips those away.
+/// for representing WIT packages. Internal code uses [`RawWitPackage`]
+/// with database IDs; this type strips those away.
 #[derive(Debug, Clone)]
-pub struct WitPackageView {
+pub struct WitPackage {
     /// The WIT package name (e.g. "wasi:http").
     pub package_name: String,
     /// Semver version string, if known.
@@ -19,8 +19,8 @@ pub struct WitPackageView {
     pub created_at: String,
 }
 
-impl From<WitPackage> for WitPackageView {
-    fn from(wt: WitPackage) -> Self {
+impl From<RawWitPackage> for WitPackage {
+    fn from(wt: RawWitPackage) -> Self {
         Self {
             package_name: wt.package_name,
             version: wt.version,

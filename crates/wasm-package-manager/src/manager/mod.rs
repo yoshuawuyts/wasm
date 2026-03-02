@@ -6,10 +6,10 @@ use tokio_stream::StreamExt;
 mod logic;
 
 use crate::config::Config;
-use crate::oci::{Client, ImageView, InsertResult};
+use crate::oci::{Client, ImageEntry, InsertResult};
 use crate::progress::ProgressEvent;
-use crate::storage::{KnownPackageView, StateInfo, Store};
-use crate::types::WitPackageView;
+use crate::storage::{KnownPackage, StateInfo, Store};
+use crate::types::WitPackage;
 
 pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, vendor_filename};
 
@@ -613,20 +613,20 @@ impl Manager {
     }
 
     /// List all stored images and their metadata.
-    pub fn list_all(&self) -> anyhow::Result<Vec<ImageView>> {
+    pub fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
         Ok(self
             .store
             .list_all()?
             .into_iter()
-            .map(ImageView::from)
+            .map(ImageEntry::from)
             .collect())
     }
 
     /// Resolve a WIT dependency to an OCI [`Reference`].
     ///
     /// Resolution order:
-    /// 1. Exact match via `WitPackage::find_oci_reference()` (DB JOIN lookup).
-    /// 2. Fuzzy match via `KnownPackage::search_by_wit_name()` (repository pattern).
+    /// 1. Exact match via `RawWitPackage::find_oci_reference()` (DB JOIN lookup).
+    /// 2. Fuzzy match via `RawKnownPackage::search_by_wit_name()` (repository pattern).
     /// 3. Error with an actionable message.
     pub fn resolve_wit_dependency(
         &self,
@@ -686,12 +686,12 @@ impl Manager {
         query: &str,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackageView>> {
+    ) -> anyhow::Result<Vec<KnownPackage>> {
         Ok(self
             .store
             .search_known_packages(query, offset, limit)?
             .into_iter()
-            .map(KnownPackageView::from)
+            .map(KnownPackage::from)
             .collect())
     }
 
@@ -701,12 +701,12 @@ impl Manager {
         &self,
         offset: u32,
         limit: u32,
-    ) -> anyhow::Result<Vec<KnownPackageView>> {
+    ) -> anyhow::Result<Vec<KnownPackage>> {
         Ok(self
             .store
             .list_known_packages(offset, limit)?
             .into_iter()
-            .map(KnownPackageView::from)
+            .map(KnownPackage::from)
             .collect())
     }
 
@@ -763,11 +763,11 @@ impl Manager {
         &self,
         registry: &str,
         repository: &str,
-    ) -> anyhow::Result<Option<KnownPackageView>> {
+    ) -> anyhow::Result<Option<KnownPackage>> {
         Ok(self
             .store
             .get_known_package(registry, repository)?
-            .map(KnownPackageView::from))
+            .map(KnownPackage::from))
     }
 
     /// Index a package from the registry without downloading layers.
@@ -780,7 +780,7 @@ impl Manager {
     /// # Errors
     ///
     /// Returns an error if offline mode is enabled or if network operations fail.
-    pub async fn index_package(&self, reference: &Reference) -> anyhow::Result<KnownPackageView> {
+    pub async fn index_package(&self, reference: &Reference) -> anyhow::Result<KnownPackage> {
         if self.offline {
             anyhow::bail!("cannot index packages in offline mode");
         }
@@ -832,19 +832,17 @@ impl Manager {
         // Return the indexed package.
         self.store
             .get_known_package(reference.registry(), reference.repository())?
-            .map(KnownPackageView::from)
+            .map(KnownPackage::from)
             .ok_or_else(|| anyhow::anyhow!("failed to retrieve indexed package"))
     }
 
     /// Get all WIT types with their associated component references.
-    pub fn list_wit_packages_with_components(
-        &self,
-    ) -> anyhow::Result<Vec<(WitPackageView, String)>> {
+    pub fn list_wit_packages_with_components(&self) -> anyhow::Result<Vec<(WitPackage, String)>> {
         Ok(self
             .store
             .list_wit_packages_with_components()?
             .into_iter()
-            .map(|(wt, s)| (WitPackageView::from(wt), s))
+            .map(|(wt, s)| (WitPackage::from(wt), s))
             .collect())
     }
 
@@ -913,7 +911,7 @@ impl Manager {
     #[cfg(feature = "http-sync")]
     fn handle_update(
         &self,
-        packages: &[crate::storage::KnownPackage],
+        packages: &[KnownPackage],
         etag: Option<String>,
     ) -> anyhow::Result<SyncResult> {
         let count = packages.len();

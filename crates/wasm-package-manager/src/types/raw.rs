@@ -1,11 +1,14 @@
 use rusqlite::Connection;
 
-/// A WIT package stored in the database.
+/// A raw WIT package stored in the database.
 ///
 /// Each row represents a unique (package_name, version, oci_layer_id) tuple.
 /// The record is content-addressable: inserting a duplicate is a no-op.
+///
+/// This is the internal database-backed type. The public API exposes
+/// [`super::WitPackage`] instead, which strips away internal IDs.
 #[derive(Debug, Clone)]
-pub struct WitPackage {
+pub struct RawWitPackage {
     id: i64,
     /// The WIT package name (e.g. "wasi:http").
     pub package_name: String,
@@ -23,7 +26,7 @@ pub struct WitPackage {
     pub created_at: String,
 }
 
-impl WitPackage {
+impl RawWitPackage {
     /// Returns the primary-key ID of this WIT package.
     #[must_use]
     pub fn id(&self) -> i64 {
@@ -261,7 +264,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn, "ghcr.io", "webassembly/wasi/http");
 
-        WitPackage::insert(
+        RawWitPackage::insert(
             &conn,
             "wasi:http",
             Some("0.2.0"),
@@ -272,7 +275,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = WitPackage::find_oci_reference(&conn, "wasi:http", Some("0.2.0")).unwrap();
+        let result = RawWitPackage::find_oci_reference(&conn, "wasi:http", Some("0.2.0")).unwrap();
         assert!(result.is_some());
         let (registry, repository) = result.unwrap();
         assert_eq!(registry, "ghcr.io");
@@ -285,7 +288,7 @@ mod tests {
         let conn = setup_test_db();
 
         let result =
-            WitPackage::find_oci_reference(&conn, "wasi:nonexistent", Some("1.0.0")).unwrap();
+            RawWitPackage::find_oci_reference(&conn, "wasi:nonexistent", Some("1.0.0")).unwrap();
         assert!(result.is_none());
     }
 
@@ -295,7 +298,7 @@ mod tests {
         let conn = setup_test_db();
         let manifest_id = insert_test_manifest(&conn, "ghcr.io", "webassembly/wasi/clocks");
 
-        WitPackage::insert(
+        RawWitPackage::insert(
             &conn,
             "wasi:clocks",
             None,
@@ -306,7 +309,7 @@ mod tests {
         )
         .unwrap();
 
-        let result = WitPackage::find_oci_reference(&conn, "wasi:clocks", None).unwrap();
+        let result = RawWitPackage::find_oci_reference(&conn, "wasi:clocks", None).unwrap();
         assert!(result.is_some());
         let (registry, repository) = result.unwrap();
         assert_eq!(registry, "ghcr.io");

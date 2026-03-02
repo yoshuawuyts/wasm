@@ -1,18 +1,18 @@
 //! WIT package and world types.
 //!
 //! This module groups all WIT-related concepts: package and world
-//! data models, views, the WIT metadata parser, and WIT-package
+//! data models, the WIT metadata parser, and WIT-package
 //! detection logic.
 
 mod detect;
-mod models;
 mod parser;
-mod views;
+mod raw;
+mod wit_package;
 mod worlds;
 
 pub use detect::is_wit_package;
-pub use models::WitPackage;
 pub use parser::DependencyItem;
 pub(crate) use parser::extract_wit_metadata;
-pub use views::WitPackageView;
+pub(crate) use raw::RawWitPackage;
+pub use wit_package::WitPackage;
 pub use worlds::{WitPackageDependency, WitWorld, WitWorldExport, WitWorldImport};

@@ -2,18 +2,18 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Borders, Paragraph, Widget, Wrap},
 };
-use wasm_package_manager::oci::ImageView;
+use wasm_package_manager::oci::ImageEntry;
 
 /// View for displaying details of an installed package
 #[derive(Debug)]
 pub struct PackageDetailView<'a> {
-    package: &'a ImageView,
+    package: &'a ImageEntry,
 }
 
 impl<'a> PackageDetailView<'a> {
     /// Creates a new package detail view
     #[must_use]
-    pub fn new(package: &'a ImageView) -> Self {
+    pub fn new(package: &'a ImageEntry) -> Self {
         Self { package }
     }
 }

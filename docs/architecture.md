@@ -119,14 +119,14 @@ src/
 ├── oci/
 │   ├── client.rs       # OCI registry client (wraps oci-wasm + oci-client)
 │   ├── models.rs       # OCI data types
-│   ├── image_entry.rs  # Image metadata records
-│   ├── views.rs        # ImageView — public query result type
+│   ├── raw.rs          # RawImageEntry — internal image metadata with DB IDs
+│   ├── image_entry.rs  # ImageEntry — public query result type
 │   └── logic.rs        # Pure functions (filter_wasm_layers, classify_tag, compute_orphaned_layers)
-├── interfaces/
+├── types/
 │   ├── detect.rs       # WIT package detection (is_wit_package)
 │   ├── parser.rs       # WIT text parsing and metadata extraction
-│   ├── models.rs       # Interface data types
-│   ├── views.rs        # WitInterfaceView — public query result type
+│   ├── raw.rs          # RawWitPackage — internal type with DB IDs
+│   ├── wit_package.rs  # WitPackage — public query result type
 │   └── worlds.rs       # World-level analysis
 ├── components/
 │   └── models.rs       # Component data types
@@ -134,8 +134,8 @@ src/
 │   ├── mod.rs          # Store facade
 │   ├── store.rs        # SQLite operations + cacache layer caching
 │   ├── config.rs       # StateInfo (cache dirs, database path, log dir)
-│   ├── models.rs       # KnownPackage, Migrations
-│   ├── views.rs        # KnownPackageView, view type conversions
+│   ├── models/         # RawKnownPackage, Migrations
+│   ├── known_package.rs # KnownPackage — public query result type
 │   ├── schema.sql      # Canonical database schema (source of truth)
 │   └── migrations/     # Auto-generated SQL migration files
 └── network/            # Network utilities (RegistryClient)
@@ -243,8 +243,8 @@ SQL migrations are managed through `cargo xtask sql migrate` and
 - **XDG directories** — configuration, data, and state follow the XDG Base
   Directory specification.
 - **`#[must_use]`** — applied to public functions that return values.
-- **View types** — public API types (`ImageView`, `KnownPackageView`,
-  `WitInterfaceView`) omit database IDs and are separate from internal model
+- **Public types** — public API types (`ImageEntry`, `KnownPackage`,
+  `WitPackage`) omit database IDs and are separate from internal `Raw*` model
   types.
 - **Pure logic** — side-effect-free functions are grouped in `logic.rs` files
   for easy testing.

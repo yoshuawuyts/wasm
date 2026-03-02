@@ -1,5 +1,5 @@
-mod known_package;
 mod migration;
+mod raw_known_package;
 
-pub use known_package::KnownPackage;
 pub use migration::Migrations;
+pub(crate) use raw_known_package::RawKnownPackage;

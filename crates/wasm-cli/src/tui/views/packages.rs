@@ -2,7 +2,7 @@ use ratatui::{
     prelude::*,
     widgets::{Block, Cell, Paragraph, Row, StatefulWidget, Table, TableState, Widget},
 };
-use wasm_package_manager::oci::ImageView;
+use wasm_package_manager::oci::ImageEntry;
 
 use super::format_size;
 
@@ -54,13 +54,13 @@ impl PackagesViewState {
 /// View for displaying the list of installed packages
 #[derive(Debug)]
 pub struct PackagesView<'a> {
-    packages: &'a [ImageView],
+    packages: &'a [ImageEntry],
 }
 
 impl<'a> PackagesView<'a> {
     /// Creates a new packages view
     #[must_use]
-    pub fn new(packages: &'a [ImageView]) -> Self {
+    pub fn new(packages: &'a [ImageEntry]) -> Self {
         Self { packages }
     }
 }

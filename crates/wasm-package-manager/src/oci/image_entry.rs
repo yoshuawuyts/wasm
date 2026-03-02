@@ -1,19 +1,19 @@
 use oci_client::manifest::OciImageManifest;
-use rusqlite::Connection;
 
-/// Metadata for a stored OCI image.
+use super::raw::RawImageEntry;
+
+/// A public view of an OCI image entry, without internal database IDs.
 ///
-/// This is a view type constructed by joining `oci_manifest`, `oci_repository`,
-/// and optionally `oci_tag`. It is not backed by its own table.
+/// This type is freely constructable and is the primary public API type
+/// for representing stored OCI images. Internal code uses [`RawImageEntry`]
+/// with database IDs; this type strips those away.
 #[derive(Debug, Clone)]
 pub struct ImageEntry {
-    #[allow(dead_code)]
-    id: i64,
     /// Registry hostname
     pub ref_registry: String,
     /// Repository path
     pub ref_repository: String,
-    /// Optional mirror registry hostname (always `None` in the new schema)
+    /// Optional mirror registry hostname
     pub ref_mirror_registry: Option<String>,
     /// Optional tag
     pub ref_tag: Option<String>,
@@ -39,79 +39,67 @@ impl ImageEntry {
         }
         reference
     }
+}
 
-    /// Returns all stored images by joining `oci_manifest` with `oci_repository`
-    /// and optionally `oci_tag`, ordered alphabetically by repository.
-    pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<ImageEntry>> {
-        let mut stmt = conn.prepare(
-            "SELECT m.id, r.registry, r.repository, m.digest, m.raw_json, m.size_bytes,
-                    (SELECT t.tag FROM oci_tag t
-                     WHERE t.oci_repository_id = r.id AND t.manifest_digest = m.digest
-                     ORDER BY t.updated_at DESC LIMIT 1) as tag
-             FROM oci_manifest m
-             JOIN oci_repository r ON m.oci_repository_id = r.id
-             WHERE m.raw_json IS NOT NULL
-             ORDER BY r.repository ASC, r.registry ASC",
-        )?;
-
-        let mut entries = Vec::new();
-        let rows = stmt.query_map([], |row| {
-            let raw_json: Option<String> = row.get(4)?;
-            let size_bytes: Option<i64> = row.get(5)?;
-            Ok((
-                row.get::<_, i64>(0)?,
-                row.get::<_, String>(1)?,
-                row.get::<_, String>(2)?,
-                row.get::<_, String>(3)?,
-                raw_json,
-                size_bytes,
-                row.get::<_, Option<String>>(6)?,
-            ))
-        })?;
-
-        for row in rows {
-            let (id, registry, repository, digest, raw_json, size_bytes, tag) = row?;
-            let Some(json) = raw_json else {
-                continue;
-            };
-            let manifest = match serde_json::from_str::<OciImageManifest>(&json) {
-                Ok(m) => m,
-                Err(e) => {
-                    tracing::warn!("Skipping manifest {digest} in {registry}/{repository}: {e}");
-                    continue;
-                }
-            };
-            entries.push(ImageEntry {
-                id,
-                ref_registry: registry,
-                ref_repository: repository,
-                ref_mirror_registry: None,
-                ref_tag: tag,
-                ref_digest: Some(digest),
-                manifest,
-                size_on_disk: u64::try_from(size_bytes.unwrap_or(0)).unwrap_or(0),
-            });
+impl From<RawImageEntry> for ImageEntry {
+    fn from(entry: RawImageEntry) -> Self {
+        Self {
+            ref_registry: entry.ref_registry,
+            ref_repository: entry.ref_repository,
+            ref_mirror_registry: entry.ref_mirror_registry,
+            ref_tag: entry.ref_tag,
+            ref_digest: entry.ref_digest,
+            manifest: entry.manifest,
+            size_on_disk: entry.size_on_disk,
         }
-        Ok(entries)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::storage::Migrations;
 
-    /// Create an in-memory database with migrations applied for testing.
-    fn setup_test_db() -> Connection {
-        let conn = Connection::open_in_memory().unwrap();
-        Migrations::run_all(&conn).unwrap();
-        conn
+    // ── ImageEntry ──────────────────────────────────────────────────────
+
+    #[test]
+    fn image_entry_reference_with_tag() {
+        let entry = ImageEntry {
+            ref_registry: "ghcr.io".into(),
+            ref_repository: "user/repo".into(),
+            ref_mirror_registry: None,
+            ref_tag: Some("v1.0".into()),
+            ref_digest: Some("sha256:abc123".into()),
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(entry.reference(), "ghcr.io/user/repo:v1.0");
     }
 
     #[test]
-    fn test_image_entry_get_all_empty() {
-        let conn = setup_test_db();
-        let entries = ImageEntry::get_all(&conn).unwrap();
-        assert!(entries.is_empty());
+    fn image_entry_reference_with_digest_only() {
+        let entry = ImageEntry {
+            ref_registry: "docker.io".into(),
+            ref_repository: "library/nginx".into(),
+            ref_mirror_registry: None,
+            ref_tag: None,
+            ref_digest: Some("sha256:abc123".into()),
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(entry.reference(), "docker.io/library/nginx@sha256:abc123");
+    }
+
+    #[test]
+    fn image_entry_reference_no_tag_no_digest() {
+        let entry = ImageEntry {
+            ref_registry: "ghcr.io".into(),
+            ref_repository: "user/repo".into(),
+            ref_mirror_registry: None,
+            ref_tag: None,
+            ref_digest: None,
+            manifest: OciImageManifest::default(),
+            size_on_disk: 0,
+        };
+        assert_eq!(entry.reference(), "ghcr.io/user/repo");
     }
 }

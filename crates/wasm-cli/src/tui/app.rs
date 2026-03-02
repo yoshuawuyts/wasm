@@ -6,9 +6,9 @@ use ratatui::{
 use std::time::Duration;
 use tokio::sync::mpsc;
 use wasm_package_manager::manager::PullResult;
-use wasm_package_manager::oci::{ImageView, InsertResult};
-use wasm_package_manager::storage::{KnownPackageView, StateInfo};
-use wasm_package_manager::types::WitPackageView;
+use wasm_package_manager::oci::{ImageEntry, InsertResult};
+use wasm_package_manager::storage::{KnownPackage, StateInfo};
+use wasm_package_manager::types::WitPackage;
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
@@ -95,16 +95,16 @@ pub(crate) struct App {
     manager_state: ManagerState,
     current_tab: Tab,
     input_mode: InputMode,
-    packages: Vec<ImageView>,
+    packages: Vec<ImageEntry>,
     packages_view_state: PackagesViewState,
     /// State info from the manager
     state_info: Option<StateInfo>,
     /// Search view state
     search_view_state: SearchViewState,
     /// Known packages for search results
-    known_packages: Vec<KnownPackageView>,
+    known_packages: Vec<KnownPackage>,
     /// WIT types with their component references
-    wit_types: Vec<(WitPackageView, String)>,
+    wit_types: Vec<(WitPackage, String)>,
     /// Types view state
     types_view_state: TypesViewState,
     /// Local WASM files
@@ -671,7 +671,7 @@ impl App {
         self.is_manager_ready() && !self.offline
     }
 
-    fn filtered_packages(&self) -> Vec<&ImageView> {
+    fn filtered_packages(&self) -> Vec<&ImageEntry> {
         let query = self.packages_view_state.filter_query.to_lowercase();
         if query.is_empty() {
             self.packages.iter().collect()
