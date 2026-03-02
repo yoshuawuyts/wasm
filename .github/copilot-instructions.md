@@ -32,3 +32,48 @@ then run `cargo xtask sql migrate --name <description>`. Never hand-write migrat
 
 Run `cargo xtask sql check` (or `cargo xtask test`) to verify migrations are in sync
 before pushing.
+
+## Spec Coverage (Tracey)
+
+This project tracks traceability between specification requirements and code using
+[Tracey](https://github.com/bearcove/tracey). The spec files live in `spec/` and the
+Tracey configuration is at `.config/tracey/config.styx`.
+
+### Annotation Syntax
+
+The prefix for this project is `r`. Use `r[VERB req.id]` comments to link code to requirements:
+
+```rust
+// r[impl some.requirement]
+fn implementing_function() { ... }
+
+// r[verify some.requirement]
+#[test]
+fn test_that_verifies_requirement() { ... }
+```
+
+Supported verbs:
+
+| Verb | Meaning |
+|------|---------|
+| `impl` | This code implements the requirement (default if verb omitted) |
+| `verify` | This test verifies the requirement |
+| `depends` | This code must be reviewed if the requirement changes |
+| `related` | Loosely connected to the requirement |
+
+### When to Add Annotations
+
+- When **implementing** a requirement from `spec/`: add `// r[impl req.id]` above the function
+- When **writing a test** that verifies a requirement: add `// r[verify req.id]` above the test
+- Spec requirements are defined in `spec/**/*.md` using the `r[req.id]` syntax
+
+### Checking Coverage
+
+The `tracey` binary is available in the agent environment. Use it to find uncovered requirements:
+
+```bash
+tracey query uncovered   # requirements without implementation
+tracey query untested    # requirements without tests
+tracey query validate    # check for broken or stale references
+tracey query status      # overall coverage overview
+```

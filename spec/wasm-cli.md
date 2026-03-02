@@ -67,6 +67,9 @@ The CLI MUST provide `--help` output for the `install` command.
 r[cli.help.run]
 The CLI MUST provide `--help` output for the `run` command.
 
+r[cli.help.compose]
+The CLI MUST provide `--help` output for the `compose` command.
+
 r[cli.version]
 The CLI MUST print a version string containing the program name when invoked
 with `--version`.
@@ -149,6 +152,10 @@ r[init.explicit-path]
 Running `wasm init <path>` MUST create the directory structure and files at
 the specified path.
 
+r[init.composition-dirs]
+Running `wasm init` MUST create the composition workspace directories:
+`types/`, `seams/`, and `build/`.
+
 ## Install Command
 
 The `install` subcommand pulls and vendors WebAssembly packages.
@@ -174,6 +181,11 @@ The run command MUST reject core WebAssembly modules with a clear error message.
 
 r[run.missing-file]
 The run command MUST report a clear error when the target file does not exist.
+
+r[run.oci-layer-lookup]
+When running an OCI reference, the run command MUST retrieve the component
+bytes using the `application/wasm` layer digest from the pulled manifest, not
+the OCI reference string.
 
 ## Dotenv
 
