@@ -1,36 +1,36 @@
 use rusqlite::Connection;
 
-/// A WIT interface package stored in the database.
+/// A WIT package stored in the database.
 ///
 /// Each row represents a unique (package_name, version, oci_layer_id) tuple.
 /// The record is content-addressable: inserting a duplicate is a no-op.
 #[derive(Debug, Clone)]
-pub struct WitInterface {
+pub struct WitPackage {
     id: i64,
     /// The WIT package name (e.g. "wasi:http").
     pub package_name: String,
     /// Semver version string, if known.
     pub version: Option<String>,
-    /// Human-readable description of the interface.
+    /// Human-readable description of the type.
     pub description: Option<String>,
     /// Full WIT text representation, when available.
     pub wit_text: Option<String>,
-    /// OCI manifest this interface was extracted from.
+    /// OCI manifest this type was extracted from.
     pub oci_manifest_id: Option<i64>,
-    /// OCI layer this interface was extracted from.
+    /// OCI layer this type was extracted from.
     pub oci_layer_id: Option<i64>,
     /// When this row was created.
     pub created_at: String,
 }
 
-impl WitInterface {
-    /// Returns the primary-key ID of this WIT interface.
+impl WitPackage {
+    /// Returns the primary-key ID of this WIT package.
     #[must_use]
     pub fn id(&self) -> i64 {
         self.id
     }
 
-    /// Insert a new WIT interface and return its ID.
+    /// Insert a new WIT type and return its ID.
     ///
     /// Uses `INSERT … ON CONFLICT DO NOTHING` followed by a `SELECT` so that
     /// the caller always receives the canonical row ID for the given
@@ -46,7 +46,7 @@ impl WitInterface {
         oci_layer_id: Option<i64>,
     ) -> anyhow::Result<i64> {
         conn.execute(
-            "INSERT INTO wit_interface
+            "INSERT INTO wit_package
                  (package_name, version, description, wit_text, oci_manifest_id, oci_layer_id)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT DO NOTHING",
@@ -61,7 +61,7 @@ impl WitInterface {
         )?;
 
         let id: i64 = conn.query_row(
-            "SELECT id FROM wit_interface
+            "SELECT id FROM wit_package
              WHERE package_name = ?1
                AND COALESCE(version, '') = COALESCE(?2, '')
                AND COALESCE(oci_layer_id, -1) = COALESCE(?3, -1)",
@@ -72,7 +72,7 @@ impl WitInterface {
         Ok(id)
     }
 
-    /// Find a WIT interface by package name and optional version.
+    /// Find a WIT package by package name and optional version.
     #[allow(dead_code)]
     pub(crate) fn find(
         conn: &Connection,
@@ -82,7 +82,7 @@ impl WitInterface {
         let result = conn.query_row(
             "SELECT id, package_name, version, description, wit_text,
                     oci_manifest_id, oci_layer_id, created_at
-             FROM wit_interface
+             FROM wit_package
              WHERE package_name = ?1
                AND COALESCE(version, '') = COALESCE(?2, '')",
             rusqlite::params![package_name, version],
@@ -90,7 +90,7 @@ impl WitInterface {
         );
 
         match result {
-            Ok(iface) => Ok(Some(iface)),
+            Ok(wt) => Ok(Some(wt)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
             Err(e) => Err(e.into()),
         }
@@ -108,7 +108,7 @@ impl WitInterface {
         let mut stmt = conn.prepare(
             "SELECT id, package_name, version, description, wit_text,
                     oci_manifest_id, oci_layer_id, created_at
-             FROM wit_interface
+             FROM wit_package
              WHERE package_name LIKE ?1 OR description LIKE ?1
              ORDER BY package_name ASC, version ASC
              LIMIT ?2 OFFSET ?3",
@@ -123,12 +123,12 @@ impl WitInterface {
         Ok(result)
     }
 
-    /// Return every WIT interface, ordered by name then version.
+    /// Return every WIT package, ordered by name then version.
     pub(crate) fn get_all(conn: &Connection) -> anyhow::Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, package_name, version, description, wit_text,
                     oci_manifest_id, oci_layer_id, created_at
-             FROM wit_interface
+             FROM wit_package
              ORDER BY package_name ASC, version ASC",
         )?;
 
@@ -141,7 +141,7 @@ impl WitInterface {
         Ok(result)
     }
 
-    /// Return every WIT interface together with its OCI reference string.
+    /// Return every WIT package together with its OCI reference string.
     ///
     /// Joins through `oci_manifest` → `oci_repository` to build the reference.
     pub(crate) fn get_all_with_images(conn: &Connection) -> anyhow::Result<Vec<(Self, String)>> {
@@ -149,7 +149,7 @@ impl WitInterface {
             "SELECT w.id, w.package_name, w.version, w.description, w.wit_text,
                     w.oci_manifest_id, w.oci_layer_id, w.created_at,
                     r.registry || '/' || r.repository AS reference
-             FROM wit_interface w
+             FROM wit_package w
              JOIN oci_manifest m ON w.oci_manifest_id = m.id
              JOIN oci_repository r ON m.oci_repository_id = r.id
              ORDER BY w.package_name ASC, w.version ASC, r.repository ASC",

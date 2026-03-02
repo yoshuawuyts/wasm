@@ -4,13 +4,13 @@ use rusqlite::Connection;
 // WitWorld
 // ---------------------------------------------------------------------------
 
-/// A world declared inside a WIT interface package.
+/// A world declared inside a WIT package.
 #[derive(Debug, Clone)]
 #[allow(unreachable_pub)]
 pub struct WitWorld {
     id: i64,
-    /// Foreign key to `wit_interface`.
-    pub wit_interface_id: i64,
+    /// Foreign key to `wit_package`.
+    pub wit_package_id: i64,
     /// World name (e.g. "proxy", "command").
     pub name: String,
     /// Optional human-readable description.
@@ -30,43 +30,43 @@ impl WitWorld {
     /// Insert a new world, returning its row ID.
     pub(crate) fn insert(
         conn: &Connection,
-        wit_interface_id: i64,
+        wit_package_id: i64,
         name: &str,
         description: Option<&str>,
     ) -> anyhow::Result<i64> {
         conn.execute(
-            "INSERT INTO wit_world (wit_interface_id, name, description)
+            "INSERT INTO wit_world (wit_package_id, name, description)
              VALUES (?1, ?2, ?3)
-             ON CONFLICT(wit_interface_id, name) DO NOTHING",
-            rusqlite::params![wit_interface_id, name, description],
+             ON CONFLICT(wit_package_id, name) DO NOTHING",
+            rusqlite::params![wit_package_id, name, description],
         )?;
 
         let id: i64 = conn.query_row(
-            "SELECT id FROM wit_world WHERE wit_interface_id = ?1 AND name = ?2",
-            rusqlite::params![wit_interface_id, name],
+            "SELECT id FROM wit_world WHERE wit_package_id = ?1 AND name = ?2",
+            rusqlite::params![wit_package_id, name],
             |row| row.get(0),
         )?;
 
         Ok(id)
     }
 
-    /// List all worlds belonging to a given interface.
+    /// List all worlds belonging to a given package.
     #[allow(dead_code)]
-    pub(crate) fn list_by_interface(
+    pub(crate) fn list_by_type(
         conn: &Connection,
-        wit_interface_id: i64,
+        wit_package_id: i64,
     ) -> anyhow::Result<Vec<Self>> {
         let mut stmt = conn.prepare(
-            "SELECT id, wit_interface_id, name, description, created_at
+            "SELECT id, wit_package_id, name, description, created_at
              FROM wit_world
-             WHERE wit_interface_id = ?1
+             WHERE wit_package_id = ?1
              ORDER BY name ASC",
         )?;
 
-        let rows = stmt.query_map([wit_interface_id], |row| {
+        let rows = stmt.query_map([wit_package_id], |row| {
             Ok(Self {
                 id: row.get(0)?,
-                wit_interface_id: row.get(1)?,
+                wit_package_id: row.get(1)?,
                 name: row.get(2)?,
                 description: row.get(3)?,
                 created_at: row.get(4)?,
@@ -80,22 +80,22 @@ impl WitWorld {
         Ok(result)
     }
 
-    /// Find a single world by interface ID and name.
+    /// Find a single world by package ID and name.
     #[allow(dead_code)]
     pub(crate) fn find_by_name(
         conn: &Connection,
-        wit_interface_id: i64,
+        wit_package_id: i64,
         name: &str,
     ) -> anyhow::Result<Option<Self>> {
         let result = conn.query_row(
-            "SELECT id, wit_interface_id, name, description, created_at
+            "SELECT id, wit_package_id, name, description, created_at
              FROM wit_world
-             WHERE wit_interface_id = ?1 AND name = ?2",
-            rusqlite::params![wit_interface_id, name],
+             WHERE wit_package_id = ?1 AND name = ?2",
+            rusqlite::params![wit_package_id, name],
             |row| {
                 Ok(Self {
                     id: row.get(0)?,
-                    wit_interface_id: row.get(1)?,
+                    wit_package_id: row.get(1)?,
                     name: row.get(2)?,
                     description: row.get(3)?,
                     created_at: row.get(4)?,
@@ -128,8 +128,8 @@ pub struct WitWorldImport {
     pub declared_interface: Option<String>,
     /// Declared version constraint, if any.
     pub declared_version: Option<String>,
-    /// Resolved foreign key to `wit_interface`, if matched.
-    pub resolved_interface_id: Option<i64>,
+    /// Resolved foreign key to `wit_package`, if matched.
+    pub resolved_package_id: Option<i64>,
 }
 
 impl WitWorldImport {
@@ -147,12 +147,12 @@ impl WitWorldImport {
         declared_package: &str,
         declared_interface: Option<&str>,
         declared_version: Option<&str>,
-        resolved_interface_id: Option<i64>,
+        resolved_package_id: Option<i64>,
     ) -> anyhow::Result<i64> {
         conn.execute(
             "INSERT INTO wit_world_import
                  (wit_world_id, declared_package, declared_interface,
-                  declared_version, resolved_interface_id)
+                  declared_version, resolved_package_id)
              VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT DO NOTHING",
             rusqlite::params![
@@ -160,7 +160,7 @@ impl WitWorldImport {
                 declared_package,
                 declared_interface,
                 declared_version,
-                resolved_interface_id,
+                resolved_package_id,
             ],
         )?;
 
@@ -200,8 +200,8 @@ pub struct WitWorldExport {
     pub declared_interface: Option<String>,
     /// Declared version constraint, if any.
     pub declared_version: Option<String>,
-    /// Resolved foreign key to `wit_interface`, if matched.
-    pub resolved_interface_id: Option<i64>,
+    /// Resolved foreign key to `wit_package`, if matched.
+    pub resolved_package_id: Option<i64>,
 }
 
 impl WitWorldExport {
@@ -219,12 +219,12 @@ impl WitWorldExport {
         declared_package: &str,
         declared_interface: Option<&str>,
         declared_version: Option<&str>,
-        resolved_interface_id: Option<i64>,
+        resolved_package_id: Option<i64>,
     ) -> anyhow::Result<i64> {
         conn.execute(
             "INSERT INTO wit_world_export
                  (wit_world_id, declared_package, declared_interface,
-                  declared_version, resolved_interface_id)
+                  declared_version, resolved_package_id)
              VALUES (?1, ?2, ?3, ?4, ?5)
              ON CONFLICT DO NOTHING",
             rusqlite::params![
@@ -232,7 +232,7 @@ impl WitWorldExport {
                 declared_package,
                 declared_interface,
                 declared_version,
-                resolved_interface_id,
+                resolved_package_id,
             ],
         )?;
 
@@ -256,25 +256,25 @@ impl WitWorldExport {
 }
 
 // ---------------------------------------------------------------------------
-// WitInterfaceDependency
+// WitPackageDependency
 // ---------------------------------------------------------------------------
 
-/// A dependency edge between two WIT interface packages.
+/// A dependency edge between two WIT packages.
 #[derive(Debug, Clone)]
 #[allow(unreachable_pub)]
-pub struct WitInterfaceDependency {
+pub struct WitPackageDependency {
     id: i64,
-    /// The interface that *has* the dependency (foreign key to `wit_interface`).
+    /// The package that *has* the dependency (foreign key to `wit_package`).
     pub dependent_id: i64,
     /// Declared package name of the dependency.
     pub declared_package: String,
     /// Declared version constraint, if any.
     pub declared_version: Option<String>,
-    /// Resolved foreign key to `wit_interface`, if matched.
-    pub resolved_interface_id: Option<i64>,
+    /// Resolved foreign key to `wit_package`, if matched.
+    pub resolved_package_id: Option<i64>,
 }
 
-impl WitInterfaceDependency {
+impl WitPackageDependency {
     /// Returns the primary-key ID.
     #[must_use]
     #[allow(unreachable_pub)]
@@ -282,29 +282,29 @@ impl WitInterfaceDependency {
         self.id
     }
 
-    /// Insert a new interface dependency, returning its row ID.
+    /// Insert a new package dependency, returning its row ID.
     pub(crate) fn insert(
         conn: &Connection,
         dependent_id: i64,
         declared_package: &str,
         declared_version: Option<&str>,
-        resolved_interface_id: Option<i64>,
+        resolved_package_id: Option<i64>,
     ) -> anyhow::Result<i64> {
         conn.execute(
-            "INSERT INTO wit_interface_dependency
-                 (dependent_id, declared_package, declared_version, resolved_interface_id)
+            "INSERT INTO wit_package_dependency
+                 (dependent_id, declared_package, declared_version, resolved_package_id)
              VALUES (?1, ?2, ?3, ?4)
              ON CONFLICT DO NOTHING",
             rusqlite::params![
                 dependent_id,
                 declared_package,
                 declared_version,
-                resolved_interface_id,
+                resolved_package_id,
             ],
         )?;
 
         let id: i64 = conn.query_row(
-            "SELECT id FROM wit_interface_dependency
+            "SELECT id FROM wit_package_dependency
              WHERE dependent_id = ?1
                AND declared_package = ?2
                AND COALESCE(declared_version, '') = COALESCE(?3, '')",

@@ -39,18 +39,18 @@ impl Opts {
         let mut existing_names: std::collections::HashSet<String> = manifest
             .components
             .keys()
-            .chain(manifest.interfaces.keys())
+            .chain(manifest.types.keys())
             .cloned()
             .collect();
 
         for reference in &self.references {
             let result = manager.add(reference, &existing_names).await?;
 
-            // Add to manifest (compact format) — default to interfaces since
+            // Add to manifest (compact format) — default to types since
             // we don't inspect the layers to determine the type.
             let reference_str = reference.whole().clone();
             let dep = wasm_manifest::Dependency::Compact(reference_str);
-            manifest.interfaces.insert(result.dep_name.clone(), dep);
+            manifest.types.insert(result.dep_name.clone(), dep);
             existing_names.insert(result.dep_name.clone());
 
             println!(

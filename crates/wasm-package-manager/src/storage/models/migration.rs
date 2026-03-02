@@ -9,11 +9,18 @@ struct MigrationDef {
 }
 
 /// All migrations in order. Each migration is run exactly once.
-const MIGRATIONS: &[MigrationDef] = &[MigrationDef {
-    version: 1,
-    name: "init",
-    sql: include_str!("../migrations/01_init.sql"),
-}];
+const MIGRATIONS: &[MigrationDef] = &[
+    MigrationDef {
+        version: 1,
+        name: "init",
+        sql: include_str!("../migrations/01_init.sql"),
+    },
+    MigrationDef {
+        version: 2,
+        name: "rename_wit_interface_to_wit_type",
+        sql: include_str!("../migrations/02_rename_wit_interface_to_wit_type.sql"),
+    },
+];
 
 /// Information about the current migration state.
 #[derive(Debug, Clone)]
@@ -98,7 +105,7 @@ mod tests {
         conn.execute("SELECT 1 FROM oci_layer LIMIT 1", []).unwrap();
 
         // Verify WIT layer tables exist
-        conn.execute("SELECT 1 FROM wit_interface LIMIT 1", [])
+        conn.execute("SELECT 1 FROM wit_package LIMIT 1", [])
             .unwrap();
         conn.execute("SELECT 1 FROM wit_world LIMIT 1", []).unwrap();
 

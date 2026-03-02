@@ -5,16 +5,16 @@ use ratatui::{
 };
 use std::time::Duration;
 use tokio::sync::mpsc;
-use wasm_package_manager::interfaces::WitInterfaceView;
 use wasm_package_manager::manager::PullResult;
 use wasm_package_manager::oci::{ImageView, InsertResult};
 use wasm_package_manager::storage::{KnownPackageView, StateInfo};
+use wasm_package_manager::types::WitPackageView;
 
 use super::components::{TabBar, TabItem};
 use super::views::packages::PackagesViewState;
 use super::views::{
-    InterfacesView, InterfacesViewState, LocalView, LogView, PackageDetailView, PackagesView,
-    SearchView, SearchViewState, SettingsView,
+    LocalView, LogView, PackageDetailView, PackagesView, SearchView, SearchViewState, SettingsView,
+    TypesView, TypesViewState,
 };
 use super::{AppEvent, ManagerEvent};
 
@@ -22,7 +22,7 @@ use super::{AppEvent, ManagerEvent};
 pub(crate) enum Tab {
     Local,
     Components,
-    Interfaces,
+    Types,
     Search,
     Settings,
     Log,
@@ -32,7 +32,7 @@ impl Tab {
     const ALL: [Tab; 6] = [
         Tab::Local,
         Tab::Components,
-        Tab::Interfaces,
+        Tab::Types,
         Tab::Search,
         Tab::Settings,
         Tab::Log,
@@ -48,7 +48,7 @@ impl TabItem for Tab {
         match self {
             Tab::Local => "Local [1]",
             Tab::Components => "Components [2]",
-            Tab::Interfaces => "Interfaces [3]",
+            Tab::Types => "Types [3]",
             Tab::Search => "Search [4]",
             Tab::Settings => "Settings [5]",
             Tab::Log => "Log [6]",
@@ -64,8 +64,8 @@ pub(crate) enum InputMode {
     Normal,
     /// Viewing a package detail (with the package index)
     PackageDetail(usize),
-    /// Viewing interface detail
-    InterfaceDetail,
+    /// Viewing type detail
+    TypeDetail,
     /// Pull prompt is active
     PullPrompt(PullPromptState),
     /// Search input is active
@@ -103,10 +103,10 @@ pub(crate) struct App {
     search_view_state: SearchViewState,
     /// Known packages for search results
     known_packages: Vec<KnownPackageView>,
-    /// WIT interfaces with their component references
-    wit_interfaces: Vec<(WitInterfaceView, String)>,
-    /// Interfaces view state
-    interfaces_view_state: InterfacesViewState,
+    /// WIT types with their component references
+    wit_types: Vec<(WitPackageView, String)>,
+    /// Types view state
+    types_view_state: TypesViewState,
     /// Local WASM files
     local_wasm_files: Vec<wasm_detector::WasmEntry>,
     /// Log file lines
@@ -135,8 +135,8 @@ impl App {
             state_info: None,
             search_view_state: SearchViewState::new(),
             known_packages: Vec::new(),
-            wit_interfaces: Vec::new(),
-            interfaces_view_state: InterfacesViewState::new(),
+            wit_types: Vec::new(),
+            types_view_state: TypesViewState::new(),
             local_wasm_files: Vec::new(),
             log_lines: Vec::new(),
             log_scroll: 0,
@@ -198,11 +198,11 @@ impl App {
                     );
                 }
             }
-            Tab::Interfaces => {
+            Tab::Types => {
                 frame.render_stateful_widget(
-                    InterfacesView::new(&self.wit_interfaces),
+                    TypesView::new(&self.wit_types),
                     content_area,
-                    &mut self.interfaces_view_state,
+                    &mut self.types_view_state,
                 );
             }
             Tab::Search => {
@@ -311,7 +311,7 @@ impl App {
                     let _ = self.event_sender.try_send(AppEvent::RequestPackages);
                     let _ = self.event_sender.try_send(AppEvent::RequestStateInfo);
                     let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
-                    let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                    let _ = self.event_sender.try_send(AppEvent::RequestWitTypes);
                     let _ = self.event_sender.try_send(AppEvent::DetectLocalWasm);
                 }
                 ManagerEvent::PackagesList(packages) => {
@@ -333,8 +333,8 @@ impl App {
                 ManagerEvent::RefreshTagsResult(_result) => {
                     // Tag refresh completed, packages list will be refreshed automatically
                 }
-                ManagerEvent::WitInterfacesList(interfaces) => {
-                    self.wit_interfaces = interfaces;
+                ManagerEvent::WitTypesList(types) => {
+                    self.wit_types = types;
                 }
                 ManagerEvent::LocalWasmList(files) => {
                     self.local_wasm_files = files;
@@ -369,7 +369,7 @@ impl App {
                 };
                 // Refresh known packages and WIT interfaces
                 let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);
-                let _ = self.event_sender.try_send(AppEvent::RequestWitInterfaces);
+                let _ = self.event_sender.try_send(AppEvent::RequestWitTypes);
             }
             Err(e) => {
                 // Keep the prompt open with the error
@@ -387,7 +387,7 @@ impl App {
             InputMode::SearchInput => self.handle_search_key(key, modifiers),
             InputMode::FilterInput => self.handle_filter_key(key, modifiers),
             InputMode::PackageDetail(_) => self.handle_package_detail_key(key, modifiers),
-            InputMode::InterfaceDetail => self.handle_interface_detail_key(key, modifiers),
+            InputMode::TypeDetail => self.handle_type_detail_key(key, modifiers),
             InputMode::Normal => self.handle_normal_key(key, modifiers),
         }
     }
@@ -403,17 +403,17 @@ impl App {
         }
     }
 
-    fn handle_interface_detail_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
+    fn handle_type_detail_key(&mut self, key: KeyCode, modifiers: KeyModifiers) {
         match key {
             KeyCode::Esc | KeyCode::Backspace => {
-                self.interfaces_view_state.viewing_detail = false;
+                self.types_view_state.viewing_detail = false;
                 self.input_mode = InputMode::Normal;
             }
             KeyCode::Up | KeyCode::Char('k') => {
-                self.interfaces_view_state.scroll_up();
+                self.types_view_state.scroll_up();
             }
             KeyCode::Down | KeyCode::Char('j') => {
-                self.interfaces_view_state.scroll_down();
+                self.types_view_state.scroll_down();
             }
             KeyCode::Char('q') => self.running = false,
             KeyCode::Char('c') if modifiers == KeyModifiers::CONTROL => self.running = false,
@@ -434,7 +434,7 @@ impl App {
             }
             (KeyCode::Char('1'), _) => self.current_tab = Tab::Local,
             (KeyCode::Char('2'), _) => self.current_tab = Tab::Components,
-            (KeyCode::Char('3'), _) => self.current_tab = Tab::Interfaces,
+            (KeyCode::Char('3'), _) => self.current_tab = Tab::Types,
             (KeyCode::Char('4'), _) => self.current_tab = Tab::Search,
             (KeyCode::Char('5'), _) => self.current_tab = Tab::Settings,
             (KeyCode::Char('6'), _) => {
@@ -509,20 +509,18 @@ impl App {
             (KeyCode::Char('/'), _) if self.current_tab == Tab::Search => {
                 self.input_mode = InputMode::SearchInput;
             }
-            // Interfaces tab navigation
-            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state
-                    .select_prev(self.wit_interfaces.len());
+            // Types tab navigation
+            (KeyCode::Up | KeyCode::Char('k'), _) if self.current_tab == Tab::Types => {
+                self.types_view_state.select_prev(self.wit_types.len());
             }
-            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Interfaces => {
-                self.interfaces_view_state
-                    .select_next(self.wit_interfaces.len());
+            (KeyCode::Down | KeyCode::Char('j'), _) if self.current_tab == Tab::Types => {
+                self.types_view_state.select_next(self.wit_types.len());
             }
-            (KeyCode::Enter, _) if self.current_tab == Tab::Interfaces => {
-                if !self.wit_interfaces.is_empty() {
-                    self.interfaces_view_state.viewing_detail = true;
-                    self.interfaces_view_state.detail_scroll = 0;
-                    self.input_mode = InputMode::InterfaceDetail;
+            (KeyCode::Enter, _) if self.current_tab == Tab::Types => {
+                if !self.wit_types.is_empty() {
+                    self.types_view_state.viewing_detail = true;
+                    self.types_view_state.detail_scroll = 0;
+                    self.input_mode = InputMode::TypeDetail;
                 }
             }
             // Pull selected package from search results (not in offline mode)

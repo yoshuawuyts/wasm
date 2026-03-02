@@ -6,10 +6,10 @@ use tokio_stream::StreamExt;
 mod logic;
 
 use crate::config::Config;
-use crate::interfaces::WitInterfaceView;
 use crate::oci::{Client, ImageView, InsertResult};
 use crate::progress::ProgressEvent;
 use crate::storage::{KnownPackageView, StateInfo, Store};
+use crate::types::WitPackageView;
 
 pub use logic::{derive_component_name, sanitize_to_wit_identifier, should_sync, vendor_filename};
 
@@ -398,8 +398,8 @@ impl Manager {
         reference: Reference,
         vendor_dir: &Path,
     ) -> anyhow::Result<InstallResult> {
-        use crate::interfaces::{extract_wit_metadata, is_wit_package};
         use crate::oci::filter_wasm_layers;
+        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self.pull(reference.clone()).await?;
 
@@ -474,8 +474,8 @@ impl Manager {
         vendor_dir: &Path,
         progress_tx: &tokio::sync::mpsc::Sender<ProgressEvent>,
     ) -> anyhow::Result<InstallResult> {
-        use crate::interfaces::{extract_wit_metadata, is_wit_package};
         use crate::oci::filter_wasm_layers;
+        use crate::types::{extract_wit_metadata, is_wit_package};
 
         let pull_result = self
             .pull_with_progress(reference.clone(), progress_tx)
@@ -539,6 +539,7 @@ impl Manager {
             is_component,
         })
     }
+
     /// Add a package reference to the manifest without pulling layers.
     ///
     /// Resolves the dependency name using the following priority:
@@ -792,15 +793,15 @@ impl Manager {
             .ok_or_else(|| anyhow::anyhow!("failed to retrieve indexed package"))
     }
 
-    /// Get all WIT interfaces with their associated component references.
-    pub fn list_wit_interfaces_with_components(
+    /// Get all WIT types with their associated component references.
+    pub fn list_wit_packages_with_components(
         &self,
-    ) -> anyhow::Result<Vec<(WitInterfaceView, String)>> {
+    ) -> anyhow::Result<Vec<(WitPackageView, String)>> {
         Ok(self
             .store
-            .list_wit_interfaces_with_components()?
+            .list_wit_packages_with_components()?
             .into_iter()
-            .map(|(iface, s)| (WitInterfaceView::from(iface), s))
+            .map(|(wt, s)| (WitPackageView::from(wt), s))
             .collect())
     }
 

@@ -14,8 +14,8 @@
 --   1. OCI layer  — models the OCI distribution spec: repositories,
 --                    manifests, tags, layers, annotations, referrers
 --   2. WIT layer  — models the WebAssembly Interface Type system:
---                    interfaces (packages), worlds, imports, exports,
---                    and inter-interface dependencies
+--                    packages, worlds, imports, exports,
+--                    and inter-package dependencies
 --   3. Wasm layer — models compiled WebAssembly components and
 --                    which worlds they target
 --
@@ -346,9 +346,9 @@ CREATE TABLE oci_referrer (
 );
 
 -- ============================================================
--- WIT LAYER: Interfaces, Worlds, Imports, Exports, Dependencies
+-- WIT LAYER: Packages, Worlds, Imports, Exports, Dependencies
 --
--- A WIT interface is the top-level publishable artifact in the
+-- A WIT package is the top-level publishable artifact in the
 -- WebAssembly Interface Types system.  It declares a package name
 -- and version (e.g. "wasi:http@0.3.0") and contains zero or more
 -- named worlds.
@@ -359,37 +359,37 @@ CREATE TABLE oci_referrer (
 -- both ghcr.io and webassembly.org) and lets the end-user choose.
 -- ============================================================
 
-CREATE TABLE wit_interface (
+CREATE TABLE wit_package (
     -- Surrogate primary key.
     id INTEGER PRIMARY KEY,
     -- The WIT package name (namespace:name), e.g. "wasi:http".
-    -- This is the primary search key for interface lookups.
+    -- This is the primary search key for package lookups.
     package_name TEXT NOT NULL,
     -- The semver version string, e.g. "0.3.0".
-    -- NULL if the interface was recorded without a version.
+    -- NULL if the package was recorded without a version.
     version TEXT,
-    -- Human-readable description of this WIT interface, used for
+    -- Human-readable description of this WIT package, used for
     -- search results and thin-sync metadata.
     description TEXT,
     -- The full WIT source text, stored verbatim for offline
     -- inspection and tooling without re-fetching from the registry.
     wit_text TEXT,
 
-    -- Provenance: which OCI artifact was this WIT interface
-    -- extracted from?  Both are nullable because a WIT interface
+    -- Provenance: which OCI artifact was this WIT package
+    -- extracted from?  Both are nullable because a WIT package
     -- can be registered out-of-band (e.g. manually or from a
     -- local file) without any OCI backing.
 
-    -- The OCI manifest this WIT interface was found in.
+    -- The OCI manifest this WIT package was found in.
     -- SET NULL on delete so the WIT metadata survives even if
     -- the OCI manifest is purged.
     oci_manifest_id INTEGER,
-    -- The specific OCI layer (blob) this WIT interface was
+    -- The specific OCI layer (blob) this WIT package was
     -- extracted from — either a .wit text file or a .wasm
     -- binary with embedded WIT.
     oci_layer_id INTEGER,
 
-    -- ISO 8601 timestamp of when this interface was first recorded.
+    -- ISO 8601 timestamp of when this package was first recorded.
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (oci_manifest_id) REFERENCES oci_manifest(id)
         ON UPDATE NO ACTION ON DELETE SET NULL,
@@ -400,21 +400,21 @@ CREATE TABLE wit_interface (
 -- Deduplication index using COALESCE to canonicalize NULLs,
 -- preventing SQLite's NULL ≠ NULL semantics from allowing
 -- duplicate rows.
-CREATE UNIQUE INDEX uq_wit_interface ON wit_interface(
+CREATE UNIQUE INDEX uq_wit_packages ON wit_package(
     package_name,
     COALESCE(version, ''),
     COALESCE(oci_layer_id, -1)
 );
 
--- A named world defined inside a WIT interface.  A world is a
+-- A named world defined inside a WIT package.  A world is a
 -- contract that declares which interfaces a component must import
 -- and export in order to run.  For example, "proxy" inside
 -- wasi:http defines the "wasi:http/proxy@0.3.0" world.
 CREATE TABLE wit_world (
     -- Surrogate primary key.
     id INTEGER PRIMARY KEY,
-    -- The WIT interface (package) this world is defined in.
-    wit_interface_id INTEGER NOT NULL,
+    -- The WIT package this world is defined in.
+    wit_package_id INTEGER NOT NULL,
     -- The world's name within the package, e.g. "proxy", "command".
     name TEXT NOT NULL,
     -- Human-readable description of what this world contract
@@ -422,15 +422,15 @@ CREATE TABLE wit_world (
     description TEXT,
     -- ISO 8601 timestamp of when this world was first recorded.
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(wit_interface_id, name),
-    FOREIGN KEY (wit_interface_id) REFERENCES wit_interface(id)
+    UNIQUE(wit_package_id, name),
+    FOREIGN KEY (wit_package_id) REFERENCES wit_package(id)
         ON UPDATE NO ACTION ON DELETE CASCADE
 );
 
 -- Records that a world imports (depends on) an interface.
 -- References are nominal: the declared name is always stored, and
--- resolution to a specific wit_interface row is optional.
--- NULL resolved_interface_id means "not yet resolved" or
+-- resolution to a specific wit_package row is optional.
+-- NULL resolved_package_id means "not yet resolved" or
 -- "ambiguous across multiple OCI sources."
 CREATE TABLE wit_world_import (
     -- Surrogate primary key.
@@ -447,14 +447,14 @@ CREATE TABLE wit_world_import (
     -- The declared version of the imported interface,
     -- e.g. "0.2.2".  NULL if no version was specified.
     declared_version TEXT,
-    -- Optionally resolved to a specific wit_interface row.
+    -- Optionally resolved to a specific wit_package row.
     -- NULL if resolution has not been performed or if multiple
-    -- OCI sources publish the same interface and the choice is
+    -- OCI sources publish the same package and the choice is
     -- ambiguous.
-    resolved_interface_id INTEGER,
+    resolved_package_id INTEGER,
     FOREIGN KEY (wit_world_id) REFERENCES wit_world(id)
         ON UPDATE NO ACTION ON DELETE CASCADE,
-    FOREIGN KEY (resolved_interface_id) REFERENCES wit_interface(id)
+    FOREIGN KEY (resolved_package_id) REFERENCES wit_package(id)
         ON UPDATE NO ACTION ON DELETE SET NULL
 );
 
@@ -481,12 +481,12 @@ CREATE TABLE wit_world_export (
     -- The declared version of the exported interface.
     -- NULL if no version was specified.
     declared_version TEXT,
-    -- Optionally resolved to a specific wit_interface row.
+    -- Optionally resolved to a specific wit_package row.
     -- NULL if unresolved or ambiguous.
-    resolved_interface_id INTEGER,
+    resolved_package_id INTEGER,
     FOREIGN KEY (wit_world_id) REFERENCES wit_world(id)
         ON UPDATE NO ACTION ON DELETE CASCADE,
-    FOREIGN KEY (resolved_interface_id) REFERENCES wit_interface(id)
+    FOREIGN KEY (resolved_package_id) REFERENCES wit_package(id)
         ON UPDATE NO ACTION ON DELETE SET NULL
 );
 
@@ -497,14 +497,14 @@ CREATE UNIQUE INDEX uq_wit_world_export ON wit_world_export(
     COALESCE(declared_version, '')
 );
 
--- Records that one WIT interface depends on another at the package
+-- Records that one WIT package depends on another at the package
 -- level.  For example, wasi:http depends on wasi:io.  This enables
 -- dependency graph traversal and impact analysis ("what breaks if
 -- wasi:io changes?").  Nominal, with optional resolution.
-CREATE TABLE wit_interface_dependency (
+CREATE TABLE wit_package_dependency (
     -- Surrogate primary key.
     id INTEGER PRIMARY KEY,
-    -- The WIT interface that declares this dependency.
+    -- The WIT package that declares this dependency.
     dependent_id INTEGER NOT NULL,
     -- The declared package name of the dependency,
     -- e.g. "wasi:io".
@@ -512,16 +512,16 @@ CREATE TABLE wit_interface_dependency (
     -- The declared version of the dependency, e.g. "0.2.2".
     -- NULL if no version was specified.
     declared_version TEXT,
-    -- Optionally resolved to a specific wit_interface row.
+    -- Optionally resolved to a specific wit_package row.
     -- NULL if unresolved or ambiguous.
-    resolved_interface_id INTEGER,
-    FOREIGN KEY (dependent_id) REFERENCES wit_interface(id)
+    resolved_package_id INTEGER,
+    FOREIGN KEY (dependent_id) REFERENCES wit_package(id)
         ON UPDATE NO ACTION ON DELETE CASCADE,
-    FOREIGN KEY (resolved_interface_id) REFERENCES wit_interface(id)
+    FOREIGN KEY (resolved_package_id) REFERENCES wit_package(id)
         ON UPDATE NO ACTION ON DELETE SET NULL
 );
 
-CREATE UNIQUE INDEX uq_wit_interface_dependency ON wit_interface_dependency(
+CREATE UNIQUE INDEX uq_wit_package_dependency ON wit_package_dependency(
     dependent_id,
     declared_package,
     COALESCE(declared_version, '')
@@ -576,7 +576,7 @@ CREATE TABLE component_target (
     id INTEGER PRIMARY KEY,
     -- The component that declares this target.
     wasm_component_id INTEGER NOT NULL,
-    -- The declared package name of the targeted world's interface,
+    -- The declared package name of the targeted world's type,
     -- e.g. "wasi:http".
     declared_package TEXT NOT NULL,
     -- The declared world name within the package, e.g. "proxy".
@@ -617,11 +617,11 @@ CREATE UNIQUE INDEX uq_component_target ON component_target(
 --                        UNIQUE(oci_manifest_id, position)
 --   oci_layer_ann     — UNIQUE(oci_layer_id, key)
 --   oci_referrer      — UNIQUE(subject_manifest_id, referrer_manifest_id)
---   wit_interface     — uq_wit_interface(package_name, ...)
---   wit_world         — UNIQUE(wit_interface_id, name)
+--   wit_package      — uq_wit_packages(package_name, ...)
+--   wit_world         — UNIQUE(wit_package_id, name)
 --   wit_world_import  — uq_wit_world_import(wit_world_id, ...)
 --   wit_world_export  — uq_wit_world_export(wit_world_id, ...)
---   wit_interface_dep — uq_wit_interface_dependency(dependent_id, ...)
+--   wit_package_dep   — uq_wit_package_dependency(dependent_id, ...)
 --   wasm_component    — uq_wasm_component(oci_manifest_id, ...)
 --   component_target  — uq_component_target(wasm_component_id, ...)
 -- ============================================================
@@ -630,7 +630,7 @@ CREATE UNIQUE INDEX uq_component_target ON component_target(
 -- of which repository it belongs to.
 CREATE INDEX idx_oci_manifest_digest ON oci_manifest(digest);
 -- Filter manifests by artifact type, e.g. find all Wasm components
--- or all WIT interface artifacts across the registry.
+-- or all WIT package artifacts across the registry.
 CREATE INDEX idx_oci_manifest_artifact_type ON oci_manifest(artifact_type);
 -- Reverse tag lookup: find all tags that point to a given digest,
 -- e.g. for displaying all names for a manifest.
@@ -653,30 +653,30 @@ CREATE INDEX idx_oci_referrer_type ON oci_referrer(subject_manifest_id, artifact
 -- and bidirectional graph traversal.
 CREATE INDEX idx_oci_referrer_referrer ON oci_referrer(referrer_manifest_id);
 -- Exact (package_name, version) lookup on raw columns, without
--- the COALESCE overhead of uq_wit_interface.
-CREATE INDEX idx_wit_iface_name_version ON wit_interface(package_name, version);
--- Find all WIT interfaces extracted from a given OCI manifest,
+-- the COALESCE overhead of uq_wit_packages.
+CREATE INDEX idx_wit_package_name_version ON wit_package(package_name, version);
+-- Find all WIT packages extracted from a given OCI manifest,
 -- for provenance tracking and re-indexing.
-CREATE INDEX idx_wit_iface_provenance ON wit_interface(oci_manifest_id);
+CREATE INDEX idx_wit_package_provenance ON wit_package(oci_manifest_id);
 -- Cross-package world name search, e.g. "find all worlds named
--- 'proxy' across all WIT interfaces".
+-- 'proxy' across all WIT packages".
 CREATE INDEX idx_wit_world_name ON wit_world(name);
 -- Reverse lookup on world imports: find all worlds that import
 -- a given package (by declared name and version).
 CREATE INDEX idx_world_import_declared ON wit_world_import(declared_package, declared_version);
 -- Reverse lookup on resolved world imports: find all worlds
--- that resolved their import to a specific wit_interface row.
-CREATE INDEX idx_world_import_resolved ON wit_world_import(resolved_interface_id);
+-- that resolved their import to a specific wit_package row.
+CREATE INDEX idx_world_import_resolved ON wit_world_import(resolved_package_id);
 -- Reverse lookup on world exports: find all worlds that export
 -- a given package (by declared name and version).
 CREATE INDEX idx_world_export_declared ON wit_world_export(declared_package, declared_version);
 -- Reverse lookup on resolved world exports.
-CREATE INDEX idx_world_export_resolved ON wit_world_export(resolved_interface_id);
--- Reverse lookup on interface dependencies: find all interfaces
+CREATE INDEX idx_world_export_resolved ON wit_world_export(resolved_package_id);
+-- Reverse lookup on package dependencies: find all packages
 -- that depend on a given package (by declared name and version).
-CREATE INDEX idx_wit_dep_declared ON wit_interface_dependency(declared_package, declared_version);
--- Reverse lookup on resolved interface dependencies.
-CREATE INDEX idx_wit_dep_resolved ON wit_interface_dependency(resolved_interface_id);
+CREATE INDEX idx_wit_dep_declared ON wit_package_dependency(declared_package, declared_version);
+-- Reverse lookup on resolved package dependencies.
+CREATE INDEX idx_wit_dep_resolved ON wit_package_dependency(resolved_package_id);
 -- Search components by their human-readable name.
 CREATE INDEX idx_wasm_component_name ON wasm_component(name);
 -- Reverse lookup on component targets: find all components that
