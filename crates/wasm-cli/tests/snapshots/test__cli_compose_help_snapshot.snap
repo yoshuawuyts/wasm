@@ -8,7 +8,7 @@ Usage: wasm compose [OPTIONS] [NAME]
 
 Arguments:
   [NAME]
-          Name of a `.wac` file in `seams/`, or a path to a `.wac` file.
+          Name of a `.wac` file in `seams/` to compose.
           
           For example, `wasm compose foo` resolves to `seams/foo.wac`. If omitted, all `.wac` files in `seams/` are composed.
 

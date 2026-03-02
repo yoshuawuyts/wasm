@@ -19,7 +19,7 @@ pub(crate) enum LinkerMode {
 /// Compose Wasm components from WAC scripts
 #[derive(clap::Args)]
 pub(crate) struct Opts {
-    /// Name of a `.wac` file in `seams/`, or a path to a `.wac` file.
+    /// Name of a `.wac` file in `seams/` to compose.
     ///
     /// For example, `wasm compose foo` resolves to `seams/foo.wac`.
     /// If omitted, all `.wac` files in `seams/` are composed.
@@ -62,17 +62,7 @@ impl Opts {
         let seams_dir = PathBuf::from("seams");
 
         if let Some(ref name) = self.name {
-            let as_path = PathBuf::from(name);
-
-            // If it looks like an explicit path (has extension or path separators), use it directly.
-            if as_path.extension().is_some() || name.contains('/') || name.contains('\\') {
-                if !as_path.exists() {
-                    bail!("WAC file '{}' not found", as_path.display());
-                }
-                return Ok(vec![as_path]);
-            }
-
-            // Otherwise treat it as a name and look under seams/
+            // Treat the argument as a name and look under seams/
             let wac_path = seams_dir.join(format!("{name}.wac"));
             if wac_path.exists() {
                 return Ok(vec![wac_path]);

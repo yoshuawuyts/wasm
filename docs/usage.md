@@ -355,9 +355,6 @@ wasm compose my-composition
 # Compose all WAC files in seams/
 wasm compose
 
-# Compose from an explicit file path
-wasm compose path/to/file.wac
-
 # Use dynamic linking (import dependencies instead of embedding)
 wasm compose my-composition --linker=dynamic
 
