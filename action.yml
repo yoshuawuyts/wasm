@@ -45,7 +45,7 @@ runs:
   using: composite
   steps:
     - name: Cache wasm CLI binary
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: ~/.cargo/bin/wasm
         key: wasm-cli-${{ runner.os }}
