@@ -11,84 +11,13 @@ use wasm_package_manager::storage::{KnownPackage, StateInfo};
 use wasm_package_manager::types::WitPackage;
 
 use super::components::{TabBar, TabItem};
+use super::models::{InputMode, ManagerState, PullPromptState, Tab};
 use super::views::packages::PackagesViewState;
 use super::views::{
     LocalView, LogView, PackageDetailView, PackagesView, SearchView, SearchViewState, SettingsView,
     TypesView, TypesViewState,
 };
 use super::{AppEvent, ManagerEvent};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Tab {
-    Local,
-    Components,
-    Interfaces,
-    Search,
-    Settings,
-    Log,
-}
-
-impl Tab {
-    const ALL: [Tab; 6] = [
-        Tab::Local,
-        Tab::Components,
-        Tab::Interfaces,
-        Tab::Search,
-        Tab::Settings,
-        Tab::Log,
-    ];
-}
-
-impl TabItem for Tab {
-    fn all() -> &'static [Self] {
-        &Self::ALL
-    }
-
-    fn title(&self) -> &'static str {
-        match self {
-            Tab::Local => "Local [1]",
-            Tab::Components => "Components [2]",
-            Tab::Interfaces => "Interfaces [3]",
-            Tab::Search => "Search [4]",
-            Tab::Settings => "Settings [5]",
-            Tab::Log => "Log [6]",
-        }
-    }
-}
-
-/// The current input mode of the application
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub(crate) enum InputMode {
-    /// Normal navigation mode
-    #[default]
-    Normal,
-    /// Viewing a package detail (with the package index)
-    PackageDetail(usize),
-    /// Viewing type detail
-    TypeDetail,
-    /// Pull prompt is active
-    PullPrompt(PullPromptState),
-    /// Search input is active
-    SearchInput,
-    /// Filter input is active (for packages tab)
-    FilterInput,
-}
-
-/// State of the pull prompt
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub(crate) struct PullPromptState {
-    pub input: String,
-    pub error: Option<String>,
-    pub in_progress: bool,
-}
-
-/// Manager readiness state
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub(crate) enum ManagerState {
-    #[default]
-    Loading,
-    Ready,
-}
 
 pub(crate) struct App {
     running: bool,
@@ -358,14 +287,13 @@ impl App {
                 } else {
                     None
                 };
-                self.input_mode = if let Some(e) = error {
-                    InputMode::PullPrompt(PullPromptState {
+                self.input_mode = match error {
+                    Some(e) => InputMode::PullPrompt(PullPromptState {
                         input: String::new(),
                         error: Some(e),
                         in_progress: false,
-                    })
-                } else {
-                    InputMode::Normal
+                    }),
+                    None => InputMode::Normal,
                 };
                 // Refresh known packages and WIT interfaces
                 let _ = self.event_sender.try_send(AppEvent::RequestKnownPackages);

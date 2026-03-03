@@ -3,6 +3,8 @@
 mod app;
 /// TUI components
 pub mod components;
+/// TUI models
+mod models;
 /// TUI views
 pub mod views;
 
