@@ -81,9 +81,10 @@ fn main() -> Result<()> {
             run_command("cargo", &cargo_args)?;
         }
         Xtask::RunRegistry { args } => {
-            let mut cargo_args = vec!["run", "--package", "wasm-meta-registry"];
-            if !args.is_empty() {
-                cargo_args.push("--");
+            let mut cargo_args = vec!["run", "--package", "wasm-meta-registry", "--"];
+            if args.is_empty() {
+                cargo_args.push("registry");
+            } else {
                 cargo_args.extend(args.iter().map(String::as_str));
             }
             run_command("cargo", &cargo_args)?;
