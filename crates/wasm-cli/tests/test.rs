@@ -43,7 +43,7 @@ fn run_cli(args: &[&str]) -> String {
 // Main CLI Help Tests
 // =============================================================================
 
-// r[verify cli.help.main]
+// r[verify cli.help]
 #[test]
 fn test_cli_main_help_snapshot() {
     let output = run_cli(&["--help"]);
@@ -62,14 +62,14 @@ fn test_cli_version_snapshot() {
 // Local Command Help Tests
 // =============================================================================
 
-// r[verify cli.help.local]
+// r[verify cli.local.help]
 #[test]
 fn test_cli_local_help_snapshot() {
     let output = run_cli(&["local", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.local-list]
+// r[verify cli.local-list.help]
 #[test]
 fn test_cli_local_list_help_snapshot() {
     let output = run_cli(&["local", "list", "--help"]);
@@ -80,70 +80,70 @@ fn test_cli_local_list_help_snapshot() {
 // Registry Command Help Tests
 // =============================================================================
 
-// r[verify cli.help.registry]
+// r[verify cli.registry.help]
 #[test]
 fn test_cli_registry_help_snapshot() {
     let output = run_cli(&["registry", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-pull]
+// r[verify cli.registry-pull.help]
 #[test]
 fn test_cli_registry_pull_help_snapshot() {
     let output = run_cli(&["registry", "pull", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-tags]
+// r[verify cli.registry-tags.help]
 #[test]
 fn test_cli_registry_tags_help_snapshot() {
     let output = run_cli(&["registry", "tags", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-search]
+// r[verify cli.registry-search.help]
 #[test]
 fn test_cli_registry_search_help_snapshot() {
     let output = run_cli(&["registry", "search", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-sync]
+// r[verify cli.registry-sync.help]
 #[test]
 fn test_cli_registry_sync_help_snapshot() {
     let output = run_cli(&["registry", "sync", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-delete]
+// r[verify cli.registry-delete.help]
 #[test]
 fn test_cli_registry_delete_help_snapshot() {
     let output = run_cli(&["registry", "delete", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-list]
+// r[verify cli.registry-list.help]
 #[test]
 fn test_cli_registry_list_help_snapshot() {
     let output = run_cli(&["registry", "list", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-known]
+// r[verify cli.registry-known.help]
 #[test]
 fn test_cli_registry_known_help_snapshot() {
     let output = run_cli(&["registry", "known", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.registry-inspect]
+// r[verify cli.registry-inspect.help]
 #[test]
 fn test_cli_registry_inspect_help_snapshot() {
     let output = run_cli(&["registry", "inspect", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.self-clean]
+// r[verify cli.self-clean.help]
 #[test]
 fn test_cli_self_clean_help_snapshot() {
     let output = run_cli(&["self", "clean", "--help"]);
@@ -154,21 +154,21 @@ fn test_cli_self_clean_help_snapshot() {
 // Self Command Help Tests
 // =============================================================================
 
-// r[verify cli.help.self]
+// r[verify cli.self.help]
 #[test]
 fn test_cli_self_help_snapshot() {
     let output = run_cli(&["self", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.self-state]
+// r[verify cli.self-state.help]
 #[test]
 fn test_cli_self_state_help_snapshot() {
     let output = run_cli(&["self", "state", "--help"]);
     assert_snapshot!(output);
 }
 
-// r[verify cli.help.self-log]
+// r[verify cli.self-log.help]
 #[test]
 fn test_cli_self_log_help_snapshot() {
     let output = run_cli(&["self", "log", "--help"]);
@@ -527,7 +527,7 @@ fn test_init_creates_files_at_explicit_path() {
     assert!(target.join("deps/wasm.lock.toml").is_file());
 }
 
-// r[verify cli.help.init]
+// r[verify cli.init.help]
 #[test]
 fn test_init_help_snapshot() {
     let output = run_cli(&["init", "--help"]);
@@ -538,7 +538,7 @@ fn test_init_help_snapshot() {
 // Install Command Help Tests
 // =============================================================================
 
-// r[verify cli.help.install]
+// r[verify cli.install.help]
 #[test]
 fn test_install_help_snapshot() {
     let output = run_cli(&["install", "--help"]);
@@ -549,7 +549,7 @@ fn test_install_help_snapshot() {
 // Run Command Tests
 // =============================================================================
 
-// r[verify cli.help.run]
+// r[verify cli.run.help]
 #[test]
 fn test_cli_run_help_snapshot() {
     let output = run_cli(&["run", "--help"]);
@@ -707,7 +707,7 @@ fn test_system_env_takes_precedence_over_dotenv() {
 // Compose Command Help Tests
 // =============================================================================
 
-// r[verify cli.help.compose]
+// r[verify cli.compose.help]
 #[test]
 fn test_cli_compose_help_snapshot() {
     let output = run_cli(&["compose", "--help"]);

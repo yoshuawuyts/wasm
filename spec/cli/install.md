@@ -2,6 +2,9 @@
 
 The `install` subcommand pulls and vendors WebAssembly packages.
 
+r[cli.install.help]
+The CLI MUST provide `--help` output for the `install` command.
+
 r[install.wit-deps]
 When installing a component, the CLI MUST extract its WIT dependencies
 and recursively install each resolvable dependency into `deps/vendor/wit/`.

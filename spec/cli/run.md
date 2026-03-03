@@ -2,6 +2,9 @@
 
 The `run` subcommand executes a WebAssembly component.
 
+r[cli.run.help]
+The CLI MUST provide `--help` output for the `run` command.
+
 r[run.core-module-rejected]
 The run command MUST reject core WebAssembly modules with a clear error message.
 
