@@ -739,3 +739,128 @@ fn test_init_creates_composition_directories() {
     assert!(dir.path().join("seams").is_dir());
     assert!(dir.path().join("build").is_dir());
 }
+
+// =============================================================================
+// GitHub Action Consistency Tests
+// =============================================================================
+
+/// Extract the subcommand names listed in the `command` input description.
+///
+/// Looks for a parenthesized list like `(run, install, init, local, registry)`.
+fn extract_action_commands(yml: &str) -> Vec<String> {
+    for line in yml.lines() {
+        if line.contains("The wasm subcommand to run") {
+            if let Some(start) = line.rfind('(') {
+                if let Some(end) = line.rfind(')') {
+                    let list = &line[start + 1..end];
+                    return list
+                        .split(',')
+                        .map(|s| s.trim().to_string())
+                        .filter(|s| !s.is_empty())
+                        .collect();
+                }
+            }
+        }
+    }
+    vec![]
+}
+
+/// Extract CLI flag names (e.g. `--offline`) from `action.yml` input
+/// descriptions.
+///
+/// Returns flags whose description contains a `(--flag)` suffix. When
+/// `run_only` is true, only returns flags whose description mentions
+/// `` `wasm run` ``; when false, returns the remaining (global) flags.
+fn extract_action_flags(yml: &str, run_only: bool) -> Vec<String> {
+    let mut flags = vec![];
+    for line in yml.lines() {
+        let trimmed = line.trim();
+        if !trimmed.starts_with("description:") {
+            continue;
+        }
+        if let Some(start) = trimmed.rfind("(--") {
+            if let Some(end) = trimmed[start..].find(')') {
+                let flag = &trimmed[start + 1..start + end];
+                // Descriptions mentioning `wasm run` are run-specific flags;
+                // the rest are global flags.
+                let is_run_specific = trimmed.contains("wasm run");
+                if run_only == is_run_specific {
+                    flags.push(flag.to_string());
+                }
+            }
+        }
+    }
+    flags
+}
+
+/// Read the repository-root `action.yml`.
+fn read_action_yml() -> String {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../action.yml");
+    std::fs::read_to_string(path).expect("Failed to read action.yml")
+}
+
+// r[verify action.commands]
+#[test]
+fn test_action_commands_exist_in_cli() {
+    let yml = read_action_yml();
+    let commands = extract_action_commands(&yml);
+    assert!(
+        !commands.is_empty(),
+        "Expected to find subcommands in action.yml command description"
+    );
+
+    for cmd in &commands {
+        let output = Command::new(env!("CARGO_BIN_EXE_wasm"))
+            .args([cmd.as_str(), "--help"])
+            .output()
+            .unwrap_or_else(|_| panic!("Failed to execute: wasm {cmd} --help"));
+
+        assert!(
+            output.status.success(),
+            "Command `wasm {cmd} --help` failed — \
+             action.yml advertises `{cmd}` but the CLI does not support it.\n\
+             stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+// r[verify action.global-flags]
+#[test]
+fn test_action_global_flags_exist_in_cli() {
+    let yml = read_action_yml();
+    let flags = extract_action_flags(&yml, false);
+    assert!(
+        !flags.is_empty(),
+        "Expected to find global flags in action.yml"
+    );
+
+    let main_help = run_cli(&["--help"]);
+    for flag in &flags {
+        assert!(
+            main_help.contains(flag),
+            "Global flag `{flag}` referenced in action.yml \
+             not found in `wasm --help` output"
+        );
+    }
+}
+
+// r[verify action.run-flags]
+#[test]
+fn test_action_run_flags_exist_in_cli() {
+    let yml = read_action_yml();
+    let flags = extract_action_flags(&yml, true);
+    assert!(
+        !flags.is_empty(),
+        "Expected to find `wasm run` flags in action.yml"
+    );
+
+    let run_help = run_cli(&["run", "--help"]);
+    for flag in &flags {
+        assert!(
+            run_help.contains(flag),
+            "Run flag `{flag}` referenced in action.yml \
+             not found in `wasm run --help` output"
+        );
+    }
+}
