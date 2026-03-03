@@ -23,5 +23,5 @@ name = "gomodule-go"
 repository = "gomodule-go"
 
 [[component]]
-name = "timeserver-js"
-repository = "timeserver-js"
+name = "time-server-js"
+repository = "time-server-js"

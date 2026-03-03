@@ -81,9 +81,14 @@ fn main() -> Result<()> {
             run_command("cargo", &cargo_args)?;
         }
         Xtask::RunRegistry { args } => {
+            let root = workspace_root()?;
+            let registry_dir = root.join("registry");
+            let registry_dir_str = registry_dir
+                .to_str()
+                .expect("workspace root path is valid UTF-8");
             let mut cargo_args = vec!["run", "--package", "wasm-meta-registry", "--"];
             if args.is_empty() {
-                cargo_args.push("registry");
+                cargo_args.push(registry_dir_str);
             } else {
                 cargo_args.extend(args.iter().map(String::as_str));
             }
