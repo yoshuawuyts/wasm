@@ -1,9 +1,4 @@
-# wasm-detector Specification
-
-This document defines the requirements for the `wasm-detector` library crate.
-Requirements are derived from the existing test suite.
-
-## Wasm Detector
+# Wasm Detection
 
 The `wasm-detector` crate finds `.wasm` files on the local filesystem.
 

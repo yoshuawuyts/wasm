@@ -1,8 +1,4 @@
-# wasm-meta-registry-client Specification
-
-This document defines the requirements for the `wasm-meta-registry-client`
-library crate. It provides the HTTP client for fetching package metadata from
-a `wasm-meta-registry` instance.
+# Registry Client
 
 ## Known Package
 

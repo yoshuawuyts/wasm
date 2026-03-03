@@ -1,7 +1,4 @@
-# wasm-meta-registry Specification
-
-This document defines the requirements for the `wasm-meta-registry` server
-crate. Requirements are derived from the existing test suite.
+# Registry Configuration
 
 ## Registry File Parsing
 
@@ -57,8 +54,3 @@ Loading an empty directory MUST succeed with no packages.
 
 r[registry.dir.ignore-non-toml]
 Non-TOML files in the directory MUST be ignored.
-
-## HTTP Server
-
-r[server.health]
-The `/v1/health` endpoint MUST return `200 OK` with `{"status": "ok"}`.
