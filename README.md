@@ -35,7 +35,7 @@
       Releases
     </a>
     <span> | </span>
-    <a href="https://github.com/yoshuawuyts/wasm/blob/master.github/CONTRIBUTING.md">
+    <a href="CONTRIBUTING.md">
       Contributing
     </a>
   </h3>
@@ -157,7 +157,7 @@ look at some of these issues:
 - [Issues labeled "good first issue"][good-first-issue]
 - [Issues labeled "help wanted"][help-wanted]
 
-[contributing]: https://github.com/yoshuawuyts/wasm/blob/master.github/CONTRIBUTING.md
+[contributing]: CONTRIBUTING.md
 [good-first-issue]: https://github.com/yoshuawuyts/wasm/labels/good%20first%20issue
 [help-wanted]: https://github.com/yoshuawuyts/wasm/labels/help%20wanted
 
