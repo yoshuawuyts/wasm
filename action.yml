@@ -58,12 +58,18 @@ runs:
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${REPO}/releases/latest" \
             | node -e "
-              let d='';
-              process.stdin.on('data',c=>d+=c);
-              process.stdin.on('end',()=>{
-                try{const j=JSON.parse(d);if(typeof j.tag_name==='string')process.stdout.write(j.tag_name)}
-                catch{}
-              })
+              let data = '';
+              process.stdin.on('data', chunk => data += chunk);
+              process.stdin.on('end', () => {
+                try {
+                  const json = JSON.parse(data);
+                  if (typeof json.tag_name === 'string') {
+                    process.stdout.write(json.tag_name);
+                  }
+                } catch (err) {
+                  process.stderr.write('Failed to parse release JSON: ' + err.message + '\n');
+                }
+              });
             ") || true
           if [ -n "$TAG" ]; then
             echo "tag=$TAG" >> "$GITHUB_OUTPUT"
