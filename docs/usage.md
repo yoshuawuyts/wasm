@@ -4,6 +4,18 @@ This guide covers basic usage patterns for `wasm(1)`, a unified developer tool f
 
 ## Installation
 
+### Shell (Linux / macOS)
+
+```bash
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.sh | sh
+```
+
+### PowerShell (Windows)
+
+```powershell
+irm https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.ps1 | iex
+```
+
 ### From crates.io
 
 ```bash

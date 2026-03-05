@@ -63,6 +63,9 @@ jobs:
           - runner: macos-latest
             target: aarch64-apple-darwin
             archive: tar.gz
+          - runner: macos-13
+            target: x86_64-apple-darwin
+            archive: tar.gz
           - runner: windows-latest
             target: x86_64-pc-windows-msvc
             archive: zip
@@ -192,6 +195,8 @@ jobs:
           mkdir -p release-assets
           find artifacts -type f \( -name '*.tar.gz' -o -name '*.zip' \) \
             -exec mv {} release-assets/ \;
+          cp scripts/install.sh release-assets/install.sh
+          cp scripts/install.ps1 release-assets/install.ps1
           ls -la release-assets/
 
       - name: Create GitHub Release

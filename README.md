@@ -47,10 +47,24 @@
 
 ## Installation
 
-To install the `wasm` command and make it available from the command line, run:
+### Shell (Linux / macOS)
 
 ```sh
-$ cargo install wasm
+curl --proto '=https' --tlsv1.2 -LsSf https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.sh | sh
+```
+
+### PowerShell (Windows)
+
+```powershell
+irm https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.ps1 | iex
+```
+
+### Cargo
+
+Alternatively, install from [crates.io](https://crates.io/crates/wasm) using Cargo:
+
+```sh
+cargo install wasm
 ```
 
 To interface with the package manager backend programatically from Rust, you can
