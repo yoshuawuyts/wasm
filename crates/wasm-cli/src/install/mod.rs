@@ -68,6 +68,7 @@ impl Opts {
         // When inputs are provided, each can be:
         //   - An OCI reference → install and add to manifest
         //   - A scope:component manifest key → resolve from manifest and install
+        //   - A WIT-style name (e.g. wasi:http) → resolve via known-package DB
         let to_install: Vec<(Reference, bool)> = if self.inputs.is_empty() {
             manifest
                 .all_dependencies()
@@ -75,7 +76,7 @@ impl Opts {
                 .collect::<anyhow::Result<Vec<_>>>()
                 .map_err(crate::util::into_miette)?
         } else {
-            resolve_install_inputs(&self.inputs, &manifest)?
+            resolve_install_inputs(&self.inputs, &manifest, &manager)?
         };
 
         // Shared progress display for all concurrent installs.
@@ -464,11 +465,14 @@ fn reference_from_dependency(dep: &wasm_manifest::Dependency) -> anyhow::Result<
 /// Resolve CLI install inputs into `(Reference, update_manifest)` pairs.
 ///
 /// Each input is first checked against manifest keys (e.g., `wasi:logging`).
-/// If no match is found, it is tried as an OCI reference. Returns an error
-/// when neither interpretation works.
+/// If no match is found and the input looks like a WIT-style name
+/// (`namespace:package`), it is resolved via the known-package database.
+/// Otherwise, it is tried as an OCI reference. Returns an error when
+/// neither interpretation works.
 fn resolve_install_inputs(
     inputs: &[String],
     manifest: &wasm_manifest::Manifest,
+    manager: &Manager,
 ) -> miette::Result<Vec<(Reference, bool)>> {
     let mut result = Vec::with_capacity(inputs.len());
     for input in inputs {
@@ -484,6 +488,15 @@ fn resolve_install_inputs(
             continue;
         }
 
+        // If it looks like a WIT-style name (e.g. `wasi:http`), resolve via
+        // the known-package database instead of treating it as a bare OCI
+        // reference (which would incorrectly default to docker.io/library/).
+        if looks_like_wit_name(input) {
+            let reference = resolve_wit_name(input, manager).map_err(crate::util::into_miette)?;
+            result.push((reference, true));
+            continue;
+        }
+
         // Try as OCI reference
         match crate::util::parse_reference(input) {
             Ok(reference) => result.push((reference, true)),
@@ -496,6 +509,34 @@ fn resolve_install_inputs(
         }
     }
     Ok(result)
+}
+
+/// Check whether `input` looks like a WIT-style name (`namespace:package`).
+///
+/// WIT-style names use `namespace:package` syntax (e.g. `wasi:http`)
+/// without dots or slashes, which distinguishes them from OCI references
+/// (e.g. `ghcr.io/user/repo:tag`).
+fn looks_like_wit_name(input: &str) -> bool {
+    let Some((scope, component)) = input.split_once(':') else {
+        return false;
+    };
+    !scope.is_empty() && !component.is_empty() && !input.contains('/') && !input.contains('.')
+}
+
+/// Resolve a WIT-style name (e.g. `wasi:http`) to an OCI [`Reference`]
+/// via the known-package database.
+fn resolve_wit_name(input: &str, manager: &Manager) -> anyhow::Result<Reference> {
+    let dep = DependencyItem {
+        package: input.to_string(),
+        version: None,
+    };
+    match manager.resolve_wit_dependency(&dep)? {
+        Some(reference) => Ok(reference),
+        None => Err(InstallError::UnknownPackage {
+            input: input.to_string(),
+        }
+        .into()),
+    }
 }
 
 /// Consume progress events and render tree-style multi-progress bars.
