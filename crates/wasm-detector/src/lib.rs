@@ -28,6 +28,17 @@ use std::path::{Path, PathBuf};
 ///
 /// These directories are scanned separately without respecting `.gitignore` rules
 /// to ensure important wasm output locations are always included.
+///
+/// # Example
+///
+/// ```
+/// use wasm_detector::WELL_KNOWN_WASM_DIRS;
+///
+/// for dir in WELL_KNOWN_WASM_DIRS {
+///     println!("Scanning well-known dir: {dir}");
+/// }
+/// assert!(WELL_KNOWN_WASM_DIRS.contains(&"target"));
+/// ```
 pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
     // Rust wasm targets (the target directory is scanned for wasm32-* subdirs)
     "target", // wasm-pack output
@@ -39,6 +50,16 @@ pub const WELL_KNOWN_WASM_DIRS: &[&str] = &[
 const TARGET_WASM_PREFIXES: &[&str] = &["wasm32-"];
 
 /// A discovered WebAssembly file entry.
+///
+/// # Example
+///
+/// ```
+/// use wasm_detector::WasmEntry;
+/// use std::path::PathBuf;
+///
+/// let entry = WasmEntry::new(PathBuf::from("pkg/hello.wasm"));
+/// assert_eq!(entry.file_name(), Some("hello.wasm"));
+/// ```
 #[derive(Debug, Clone)]
 pub struct WasmEntry {
     path: PathBuf,
@@ -46,24 +67,65 @@ pub struct WasmEntry {
 
 impl WasmEntry {
     /// Create a new WasmEntry from a path.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use wasm_detector::WasmEntry;
+    /// use std::path::PathBuf;
+    ///
+    /// let entry = WasmEntry::new(PathBuf::from("dist/app.wasm"));
+    /// assert_eq!(entry.path().to_str(), Some("dist/app.wasm"));
+    /// ```
     #[must_use]
     pub fn new(path: PathBuf) -> Self {
         Self { path }
     }
 
     /// Returns the path to the `.wasm` file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use wasm_detector::WasmEntry;
+    /// use std::path::PathBuf;
+    ///
+    /// let entry = WasmEntry::new(PathBuf::from("pkg/module.wasm"));
+    /// assert_eq!(entry.path(), PathBuf::from("pkg/module.wasm"));
+    /// ```
     #[must_use]
     pub fn path(&self) -> &Path {
         &self.path
     }
 
     /// Returns the file name of the `.wasm` file.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use wasm_detector::WasmEntry;
+    /// use std::path::PathBuf;
+    ///
+    /// let entry = WasmEntry::new(PathBuf::from("dist/app.wasm"));
+    /// assert_eq!(entry.file_name(), Some("app.wasm"));
+    /// ```
     #[must_use]
     pub fn file_name(&self) -> Option<&str> {
         self.path.file_name().and_then(|s| s.to_str())
     }
 
     /// Consumes the entry and returns the underlying path.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use wasm_detector::WasmEntry;
+    /// use std::path::PathBuf;
+    ///
+    /// let entry = WasmEntry::new(PathBuf::from("pkg/lib.wasm"));
+    /// let path: PathBuf = entry.into_path();
+    /// assert_eq!(path, PathBuf::from("pkg/lib.wasm"));
+    /// ```
     #[must_use]
     pub fn into_path(self) -> PathBuf {
         self.path
@@ -200,6 +262,21 @@ impl IntoIterator for &WasmDetector {
 /// This iterator combines results from multiple walks:
 /// 1. A main walk that respects `.gitignore`
 /// 2. Additional walks for well-known directories (ignoring `.gitignore`)
+///
+/// # Example
+///
+/// ```no_run
+/// use wasm_detector::WasmDetector;
+/// use std::path::Path;
+///
+/// let detector = WasmDetector::new(Path::new("."));
+/// let mut iter = detector.iter();
+/// while let Some(result) = iter.next() {
+///     if let Ok(entry) = result {
+///         println!("Found: {}", entry.path().display());
+///     }
+/// }
+/// ```
 pub struct WasmDetectorIter {
     /// The main walker that respects gitignore
     main_walker: ignore::Walk,
