@@ -29,6 +29,9 @@ missing_docs = "warn"
 unreachable_pub = "warn"
 unused_qualifications = "warn"
 
+[workspace.lints.rustdoc]
+missing_doc_code_examples = "warn"
+
 [workspace.lints.clippy]
 # Lint groups (as baselines, priority -1 so individual overrides win)
 pedantic = { level = "warn", priority = -1 }
