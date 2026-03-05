@@ -61,11 +61,20 @@ fn run_cli_error(args: &[&str], working_dir: Option<&std::path::Path>) -> String
 
     let stderr = String::from_utf8_lossy(&output.stderr);
     // Filter out tracing warnings (e.g. from tracing-subscriber) that appear on stderr
-    stderr
+    let filtered: String = stderr
         .lines()
         .filter(|line| !line.starts_with("WARN ") && !line.starts_with("  at "))
         .collect::<Vec<_>>()
-        .join("\n")
+        .join("\n");
+
+    // Normalize platform differences for consistent cross-platform snapshots:
+    // - Windows path separators: `deps\wasm.toml` → `deps/wasm.toml`
+    // - Windows OS error: "The system cannot find the path specified. (os error 3)"
+    //   → Unix: "No such file or directory (os error 2)"
+    filtered.replace('\\', "/").replace(
+        "The system cannot find the path specified. (os error 3)",
+        "No such file or directory (os error 2)",
+    )
 }
 
 // =============================================================================
