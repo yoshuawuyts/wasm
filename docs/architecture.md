@@ -236,7 +236,7 @@ the full CI suite:
 1. `cargo nextest run` — test suite ([cargo-nextest] for parallel execution)
 2. `cargo test --doc` — doc tests (not supported by nextest)
 3. `cargo clippy` — lint check (with `-D warnings`)
-4. `cargo fmt` — formatting check
+4. `cargo fmt --check` — formatting check
 5. `cargo xtask sql check` — verify migrations are in sync with `schema.sql`
 6. README freshness check — ensures `README.md` matches `wasm --help` output
 
