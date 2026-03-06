@@ -38,7 +38,7 @@ pub(crate) struct Cli {
 
     /// Controls logging verbosity via `-v`/`--verbose` and `-q`/`--quiet`
     /// flags.
-    #[command(flatten)]
+    #[command(flatten, next_help_heading = "Global Options")]
     verbosity: Verbosity,
 
     #[command(subcommand)]
