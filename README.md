@@ -99,6 +99,8 @@ Options:
 Global Options:
       --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]
       --offline       Run in offline mode
+  -v, --verbose...    Increase logging verbosity
+  -q, --quiet...      Decrease logging verbosity
 ```
 <!-- commands-end -->
 

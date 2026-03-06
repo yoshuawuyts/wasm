@@ -30,3 +30,9 @@ Global Options:
 
       --offline
           Run in offline mode
+
+  -v, --verbose...
+          Increase logging verbosity
+
+  -q, --quiet...
+          Decrease logging verbosity
