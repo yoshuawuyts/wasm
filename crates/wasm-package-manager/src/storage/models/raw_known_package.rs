@@ -397,6 +397,8 @@ impl RawKnownPackage {
                 attestation_tags: Vec::new(),
                 last_seen_at: updated_at,
                 created_at,
+                wit_namespace: None,
+                wit_name: None,
             });
         }
         Ok(packages)
@@ -794,6 +796,8 @@ mod tests {
         let results = RawKnownPackage::search_by_import(&conn, "wasi:http", 0, 100).unwrap();
         assert_eq!(results.len(), 1);
         assert_eq!(results[0].repository, "example/multi");
+    }
+
     // r[verify db.known-packages.search-by-wit-name-exact]
     /// When wit_namespace and wit_name are stored, the exact lookup should
     /// succeed even when the repository path does not contain the namespace.
