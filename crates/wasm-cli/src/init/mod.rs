@@ -9,9 +9,8 @@ use crate::util::write_lock_file;
 /// Options for the `init` command.
 #[derive(clap::Parser)]
 pub(crate) struct Opts {
-    /// The directory in which to create the wasm package files.
-    ///
-    /// Defaults to the current directory.
+    /// The directory in which to create the wasm package files. Defaults to the
+    /// current directory.
     #[arg(default_value = ".")]
     path: PathBuf,
 }
