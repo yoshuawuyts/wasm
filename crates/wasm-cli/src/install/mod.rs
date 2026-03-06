@@ -1,9 +1,10 @@
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
 mod errors;
+mod progress_bar;
 
 use futures_concurrency::prelude::*;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::MultiProgress;
 use miette::{IntoDiagnostic, WrapErr};
 use wasm_package_manager::manager::{
     InstallResult, Manager, SyncPolicy, SyncResult, derive_component_name,
@@ -13,6 +14,9 @@ use wasm_package_manager::{ProgressEvent, Reference};
 
 use crate::util::write_lock_file;
 use errors::InstallError;
+use progress_bar::{
+    create_package_bar, finish_package_bar, package_display_parts, run_progress_bars,
+};
 
 /// Default meta-registry URL.
 const REGISTRY_URL: &str = "http://localhost:8080";
@@ -117,6 +121,10 @@ impl Opts {
         // the reference without requiring Arc or any synchronisation primitive.
         let manager_ref: &Manager = &manager;
 
+        // Pre-compute display parts for each package.
+        // We don't know if there will be transitive deps, so all direct
+        // installs use `├──`. The last bar's glyph will be fixed up later.
+
         // Run all installs concurrently.
         let results: anyhow::Result<Vec<_>> = to_install
             .into_co_stream()
@@ -125,8 +133,26 @@ impl Opts {
                 let vendor_dir = wasm_vendor_dir.clone();
                 let wit_vendor_dir = wit_vendor_dir.clone();
                 async move {
-                    let result =
-                        install_one(manager_ref, multi, offline, &reference, &vendor_dir).await?;
+                    let (name, version) =
+                        package_display_parts(explicit_name.as_deref(), reference.tag());
+                    let display = PackageDisplay {
+                        name: if name.is_empty() {
+                            reference.repository().to_string()
+                        } else {
+                            name
+                        },
+                        version,
+                        is_last: false, // never last during concurrent install
+                    };
+                    let result = install_one(
+                        manager_ref,
+                        &multi,
+                        offline,
+                        &reference,
+                        &vendor_dir,
+                        &display,
+                    )
+                    .await?;
                     re_vendor_wit_files(&result, &wit_vendor_dir).await?;
                     anyhow::Ok((result, reference, update_manifest, explicit_name))
                 }
@@ -260,44 +286,56 @@ impl Opts {
     }
 }
 
+/// Display metadata for a package being installed.
+struct PackageDisplay {
+    /// The `namespace:name` form of the package.
+    name: String,
+    /// The resolved version string (without leading `v`).
+    version: Option<String>,
+    /// Whether this is the last item in the tree.
+    is_last: bool,
+}
+
 /// Install a single package and report progress.
 ///
 /// In offline mode a plain status line is printed. In online mode a
-/// [`MultiProgress`] header bar is created for the package and per-layer
-/// bars are rendered by a background task.
+/// progress bar is created for the package showing aggregated download
+/// progress across all layers.
 async fn install_one(
     manager: &Manager,
-    multi: MultiProgress,
+    multi: &MultiProgress,
     offline: bool,
     reference: &Reference,
     vendor_dir: &std::path::Path,
+    display: &PackageDisplay,
 ) -> anyhow::Result<InstallResult> {
-    let reference_display = reference.whole().clone();
-
     if offline {
         // No progress bars in offline mode — just print the line
+        let version_str = display
+            .version
+            .as_deref()
+            .map(|v| format!("@{v}"))
+            .unwrap_or_default();
         println!(
-            "{:>12} {}",
-            console::style("Installing").cyan().bold(),
-            reference_display,
+            "{} {}{}",
+            tree_glyph_str(display.is_last),
+            console::style(&display.name).green(),
+            console::style(version_str).dim(),
         );
         return manager.install(reference.clone(), vendor_dir).await;
     }
 
     let (progress_tx, progress_rx) = tokio::sync::mpsc::channel::<ProgressEvent>(64);
 
-    // Add a header line managed by the shared multi-progress so it
-    // stays above the per-layer bars and can be rewritten.
-    let header = multi.add(ProgressBar::new_spinner());
-    header.set_style(ProgressStyle::with_template("{msg}").expect("valid progress bar template"));
-    header.set_message(format!(
-        "{:>12} {}",
-        console::style("Installing").cyan().bold(),
-        reference_display,
-    ));
+    let pb = create_package_bar(
+        multi,
+        &display.name,
+        display.version.as_deref(),
+        display.is_last,
+    );
 
     // Spawn progress rendering task
-    let progress_handle = tokio::task::spawn(run_progress_bars(multi, progress_rx));
+    let progress_handle = tokio::task::spawn(run_progress_bars(pb.clone(), progress_rx));
 
     let result = manager
         .install_with_progress(reference.clone(), vendor_dir, &progress_tx)
@@ -309,15 +347,20 @@ async fn install_one(
     // Wait for progress bars to finish rendering
     let _ = progress_handle.await;
 
-    // Rewrite the header line: blue → green
-    header.set_message(format!(
-        "{:>12} {}",
-        console::style("Installing").green().bold(),
-        reference_display,
-    ));
-    header.finish();
+    // Mark the bar as complete: yellow → green, bar hidden
+    finish_package_bar(
+        &pb,
+        &display.name,
+        display.version.as_deref(),
+        display.is_last,
+    );
 
     result
+}
+
+/// Return a tree glyph string for offline / non-indicatif use.
+fn tree_glyph_str(is_last: bool) -> &'static str {
+    if is_last { "└──" } else { "├──" }
 }
 
 /// Move vendored WIT files from the wasm vendor dir into the wit vendor dir.
@@ -376,8 +419,20 @@ async fn install_transitive_deps(
             continue;
         };
 
+        let (name, version) = package_display_parts(Some(&dep.package), dep_ref.tag());
+        let display = PackageDisplay {
+            name: if name.is_empty() {
+                dep.package.clone()
+            } else {
+                name
+            },
+            version,
+            // Best-effort: mark as last when the work queue is empty.
+            is_last: work_queue.is_empty(),
+        };
+
         let dep_result =
-            match install_one(manager, multi.clone(), false, &dep_ref, wasm_vendor_dir).await {
+            match install_one(manager, multi, false, &dep_ref, wasm_vendor_dir, &display).await {
                 Ok(r) => r,
                 Err(e) => {
                     tracing::debug!(
@@ -610,109 +665,6 @@ fn resolve_wit_name(input: &str, manager: &Manager) -> anyhow::Result<Reference>
             input: input.to_string(),
         }
         .into()),
-    }
-}
-
-/// Consume progress events and render tree-style multi-progress bars.
-async fn run_progress_bars(
-    multi: MultiProgress,
-    mut rx: tokio::sync::mpsc::Receiver<ProgressEvent>,
-) {
-    let mut bars: Vec<ProgressBar> = Vec::new();
-    let mut layer_count: usize = 0;
-
-    // In-progress style: blue bar + blue bytes + eta
-    let bar_style_progress = ProgressStyle::with_template(
-        "{prefix} {bar:12.blue} {bytes:.blue}/{total_bytes:.blue} {eta}",
-    )
-    .expect("valid progress bar template")
-    .progress_chars("━━┄");
-
-    // In-progress spinner style (unknown size)
-    let bar_style_spinner = ProgressStyle::with_template("{prefix} {spinner:.blue} {bytes}")
-        .expect("valid progress bar template");
-
-    // Completed style: green filled bar + green bytes
-    let bar_style_done = ProgressStyle::with_template("{prefix} {bar:12.green} {total_bytes}")
-        .expect("valid progress bar template")
-        .progress_chars("━━━");
-
-    while let Some(event) = rx.recv().await {
-        match event {
-            ProgressEvent::ManifestFetched {
-                layer_count: count, ..
-            } => {
-                layer_count = count;
-            }
-            ProgressEvent::LayerStarted {
-                index,
-                ref digest,
-                total_bytes,
-                ref title,
-                ref media_type,
-            } => {
-                // Tree glyph: ├── for non-last, └── for last
-                let tree_glyph = if layer_count > 0 && index + 1 < layer_count {
-                    "├──"
-                } else {
-                    "└──"
-                };
-
-                let short_digest = digest
-                    .strip_prefix("sha256:")
-                    .unwrap_or(digest)
-                    .get(..5)
-                    .unwrap_or(digest);
-
-                // Prefer title annotation, fall back to media type
-                let label = title.as_deref().unwrap_or(media_type);
-                let prefix = format!("   {tree_glyph} [{short_digest}] {label}");
-
-                let pb = if let Some(total) = total_bytes {
-                    let pb = multi.add(ProgressBar::new(total));
-                    pb.set_style(bar_style_progress.clone());
-                    pb
-                } else {
-                    let pb = multi.add(ProgressBar::new_spinner());
-                    pb.set_style(bar_style_spinner.clone());
-                    pb
-                };
-                pb.set_prefix(prefix);
-
-                // Ensure the bars vec is large enough
-                while bars.len() <= index {
-                    bars.push(ProgressBar::hidden());
-                }
-                if let Some(slot) = bars.get_mut(index) {
-                    *slot = pb;
-                }
-            }
-            ProgressEvent::LayerProgress {
-                index,
-                bytes_downloaded,
-            } => {
-                if let Some(pb) = bars.get(index) {
-                    pb.set_position(bytes_downloaded);
-                }
-            }
-            ProgressEvent::LayerDownloaded { .. } => {
-                // Download complete — will be marked done on LayerStored
-            }
-            ProgressEvent::LayerStored { index } => {
-                if let Some(pb) = bars.get(index) {
-                    pb.set_style(bar_style_done.clone());
-                    pb.finish();
-                }
-            }
-            ProgressEvent::InstallComplete => {
-                for pb in &bars {
-                    if !pb.is_finished() {
-                        pb.set_style(bar_style_done.clone());
-                        pb.finish();
-                    }
-                }
-            }
-        }
     }
 }
 
