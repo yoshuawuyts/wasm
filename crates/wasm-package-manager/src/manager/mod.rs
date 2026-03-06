@@ -577,6 +577,38 @@ impl Manager {
             .collect())
     }
 
+    /// Search for known packages that import a given interface.
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn search_packages_by_import(
+        &self,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        Ok(self
+            .store
+            .search_known_packages_by_import(interface, offset, limit)?
+            .into_iter()
+            .map(KnownPackage::from)
+            .collect())
+    }
+
+    /// Search for known packages that export a given interface.
+    /// Uses pagination with `offset` and `limit` parameters.
+    pub fn search_packages_by_export(
+        &self,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<KnownPackage>> {
+        Ok(self
+            .store
+            .search_known_packages_by_export(interface, offset, limit)?
+            .into_iter()
+            .map(KnownPackage::from)
+            .collect())
+    }
+
     /// Get all known packages.
     /// Uses pagination with `offset` and `limit` parameters.
     pub fn list_known_packages(

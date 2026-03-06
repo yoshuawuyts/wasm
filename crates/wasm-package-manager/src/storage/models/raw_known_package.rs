@@ -279,6 +279,96 @@ impl RawKnownPackage {
         }
     }
 
+    /// Search for known packages that import a given interface.
+    ///
+    /// Joins through `oci_manifest` → `wit_package` → `wit_world` → `wit_world_import`
+    /// and matches on `declared_package` using a LIKE pattern.
+    pub(crate) fn search_by_import(
+        conn: &Connection,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        let pattern = format!("%{interface}%");
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT r.id, r.registry, r.repository, r.updated_at, r.created_at
+             FROM oci_repository r
+             JOIN oci_manifest m ON m.oci_repository_id = r.id
+             JOIN wit_package wp ON wp.oci_manifest_id = m.id
+             JOIN wit_world ww ON ww.wit_package_id = wp.id
+             JOIN wit_world_import wi ON wi.wit_world_id = ww.id
+             WHERE wi.declared_package LIKE ?1
+             ORDER BY r.repository ASC, r.registry ASC
+             LIMIT ?2 OFFSET ?3",
+        )?;
+
+        Self::collect_repo_rows(conn, &mut stmt, (&pattern, limit, offset))
+    }
+
+    /// Search for known packages that export a given interface.
+    ///
+    /// Joins through `oci_manifest` → `wit_package` → `wit_world` → `wit_world_export`
+    /// and matches on `declared_package` using a LIKE pattern.
+    pub(crate) fn search_by_export(
+        conn: &Connection,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        let pattern = format!("%{interface}%");
+        let mut stmt = conn.prepare(
+            "SELECT DISTINCT r.id, r.registry, r.repository, r.updated_at, r.created_at
+             FROM oci_repository r
+             JOIN oci_manifest m ON m.oci_repository_id = r.id
+             JOIN wit_package wp ON wp.oci_manifest_id = m.id
+             JOIN wit_world ww ON ww.wit_package_id = wp.id
+             JOIN wit_world_export we ON we.wit_world_id = ww.id
+             WHERE we.declared_package LIKE ?1
+             ORDER BY r.repository ASC, r.registry ASC
+             LIMIT ?2 OFFSET ?3",
+        )?;
+
+        Self::collect_repo_rows(conn, &mut stmt, (&pattern, limit, offset))
+    }
+
+    /// Execute a prepared statement that returns `(id, registry, repository,
+    /// updated_at, created_at)` rows and inflate each into a full
+    /// `RawKnownPackage` with tags and description.
+    fn collect_repo_rows(
+        conn: &Connection,
+        stmt: &mut rusqlite::Statement<'_>,
+        params: (&str, u32, u32),
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        let rows = stmt.query_map(params, |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, String>(3)?,
+                row.get::<_, String>(4)?,
+            ))
+        })?;
+
+        let mut packages = Vec::new();
+        for row in rows {
+            let (id, registry, repository, updated_at, created_at) = row?;
+            let tags = Self::fetch_tags(conn, id);
+            let description = Self::fetch_description(conn, id);
+            packages.push(RawKnownPackage {
+                id,
+                registry,
+                repository,
+                description,
+                tags,
+                signature_tags: Vec::new(),
+                attestation_tags: Vec::new(),
+                last_seen_at: updated_at,
+                created_at,
+            });
+        }
+        Ok(packages)
+    }
+
     /// Search for a known package by WIT package name.
     ///
     /// Converts a WIT name like `"wasi:http"` to the search pattern `"wasi/http"`
@@ -455,5 +545,147 @@ mod tests {
 
         let result = RawKnownPackage::search_by_wit_name(&conn, "wasi:nonexistent").unwrap();
         assert!(result.is_none());
+    }
+
+    /// Helper: create a repo + manifest + wit_package + wit_world chain in the test DB.
+    /// Returns the world ID for attaching imports/exports.
+    fn setup_wit_chain(
+        conn: &Connection,
+        registry: &str,
+        repository: &str,
+        wit_name: &str,
+        world_name: &str,
+    ) -> i64 {
+        use crate::oci::{OciManifest, OciRepository as OciRepo};
+        use crate::types::RawWitPackage;
+        use crate::types::WitWorld;
+        use std::collections::HashMap;
+
+        let repo_id = OciRepo::upsert(conn, registry, repository).unwrap();
+        let (manifest_id, _) = OciManifest::upsert(
+            conn,
+            repo_id,
+            "sha256:abc123",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+        let pkg_id = RawWitPackage::insert(
+            conn,
+            wit_name,
+            Some("0.2.0"),
+            None,
+            None,
+            Some(manifest_id),
+            None,
+        )
+        .unwrap();
+        WitWorld::insert(conn, pkg_id, world_name, None).unwrap()
+    }
+
+    #[test]
+    fn test_search_by_import_returns_matching_packages() {
+        use crate::types::WitWorldImport;
+
+        let conn = setup_test_db();
+        let world_id = setup_wit_chain(&conn, "ghcr.io", "example/my-app", "my:app", "main");
+
+        WitWorldImport::insert(&conn, world_id, "wasi:http", Some("handler"), None, None).unwrap();
+        WitWorldImport::insert(&conn, world_id, "wasi:io", Some("streams"), None, None).unwrap();
+
+        let results = RawKnownPackage::search_by_import(&conn, "wasi:http", 0, 100).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].repository, "example/my-app");
+
+        let results = RawKnownPackage::search_by_import(&conn, "wasi:io", 0, 100).unwrap();
+        assert_eq!(results.len(), 1);
+    }
+
+    #[test]
+    fn test_search_by_import_no_results() {
+        let conn = setup_test_db();
+        let results = RawKnownPackage::search_by_import(&conn, "wasi:nonexistent", 0, 100).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_search_by_export_returns_matching_packages() {
+        use crate::types::WitWorldExport;
+
+        let conn = setup_test_db();
+        let world_id =
+            setup_wit_chain(&conn, "ghcr.io", "example/http-server", "my:server", "main");
+
+        WitWorldExport::insert(&conn, world_id, "wasi:http", Some("handler"), None, None).unwrap();
+
+        let results = RawKnownPackage::search_by_export(&conn, "wasi:http", 0, 100).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].repository, "example/http-server");
+    }
+
+    #[test]
+    fn test_search_by_export_no_results() {
+        let conn = setup_test_db();
+        let results = RawKnownPackage::search_by_export(&conn, "wasi:nonexistent", 0, 100).unwrap();
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_search_by_import_deduplicates_repos() {
+        use crate::oci::{OciManifest, OciRepository as OciRepo};
+        use crate::types::RawWitPackage;
+        use crate::types::{WitWorld, WitWorldImport};
+        use std::collections::HashMap;
+
+        let conn = setup_test_db();
+
+        // One repo with two manifests that both import wasi:http
+        let repo_id = OciRepo::upsert(&conn, "ghcr.io", "example/multi").unwrap();
+        let (m1, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:aaa",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+        let (m2, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:bbb",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(2048),
+            None,
+            None,
+            None,
+            &HashMap::new(),
+        )
+        .unwrap();
+
+        let p1 = RawWitPackage::insert(&conn, "my:app", Some("0.1.0"), None, None, Some(m1), None)
+            .unwrap();
+        let w1 = WitWorld::insert(&conn, p1, "main", None).unwrap();
+        WitWorldImport::insert(&conn, w1, "wasi:http", None, None, None).unwrap();
+
+        let p2 = RawWitPackage::insert(&conn, "my:app", Some("0.2.0"), None, None, Some(m2), None)
+            .unwrap();
+        let w2 = WitWorld::insert(&conn, p2, "main", None).unwrap();
+        WitWorldImport::insert(&conn, w2, "wasi:http", None, None, None).unwrap();
+
+        // Should return only 1 row (DISTINCT on oci_repository)
+        let results = RawKnownPackage::search_by_import(&conn, "wasi:http", 0, 100).unwrap();
+        assert_eq!(results.len(), 1);
+        assert_eq!(results[0].repository, "example/multi");
     }
 }

@@ -16,6 +16,14 @@ pub(crate) struct SearchOpts {
     /// Search query (matches package name and description).
     query: String,
 
+    /// Filter to packages that export a given interface (e.g. wasi:http).
+    #[arg(long)]
+    exports: Option<String>,
+
+    /// Filter to packages that import a given interface (e.g. wasi:http).
+    #[arg(long)]
+    imports: Option<String>,
+
     /// Maximum number of results to show.
     #[arg(long, default_value = "20")]
     limit: u32,
@@ -48,7 +56,11 @@ impl SearchOpts {
             }
         }
 
-        let packages = manager.search_packages(&self.query, 0, self.limit)?;
+        let packages = match (&self.exports, &self.imports) {
+            (Some(iface), _) => manager.search_packages_by_export(iface, 0, self.limit)?,
+            (_, Some(iface)) => manager.search_packages_by_import(iface, 0, self.limit)?,
+            _ => manager.search_packages(&self.query, 0, self.limit)?,
+        };
 
         if packages.is_empty() {
             println!("No packages found matching '{}'", self.query);
