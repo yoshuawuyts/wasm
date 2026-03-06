@@ -551,23 +551,47 @@ fn resolve_install_inputs(
 
 /// Check whether `input` looks like a WIT-style name (`namespace:package`).
 ///
-/// WIT-style names use `namespace:package` syntax (e.g. `wasi:http`)
-/// without dots or slashes, which distinguishes them from OCI references
-/// (e.g. `ghcr.io/user/repo:tag`).
+/// WIT-style names use `namespace:package` syntax (e.g. `wasi:http`) or
+/// `namespace:package@version` (e.g. `wasi:http@0.2.10`) without dots or
+/// slashes in the namespace/package part, which distinguishes them from OCI
+/// references (e.g. `ghcr.io/user/repo:tag`).
+///
+/// Inputs with an empty version after `@` (e.g. `wasi:http@`) or multiple
+/// `@` signs are rejected.
 fn looks_like_wit_name(input: &str) -> bool {
-    let Some((scope, component)) = input.split_once(':') else {
+    let Some((scope, rest)) = input.split_once(':') else {
         return false;
     };
-    !scope.is_empty() && !component.is_empty() && !input.contains('/') && !input.contains('.')
+    // Split the component from an optional `@version` suffix.
+    let component = match rest.split_once('@') {
+        Some((comp, ver)) => {
+            // Reject empty version or multiple `@` signs.
+            if ver.is_empty() || ver.contains('@') {
+                return false;
+            }
+            comp
+        }
+        None => rest,
+    };
+    !scope.is_empty()
+        && !component.is_empty()
+        && !scope.contains('/')
+        && !scope.contains('.')
+        && !component.contains('/')
+        && !component.contains('.')
 }
 
-/// Resolve a WIT-style name (e.g. `wasi:http`) to an OCI [`Reference`]
-/// via the known-package database.
+/// Resolve a WIT-style name (e.g. `wasi:http` or `wasi:http@0.2.10`) to
+/// an OCI [`Reference`] via the known-package database.
+///
+/// The caller must ensure the input passes [`looks_like_wit_name`] first,
+/// which rejects empty versions and multiple `@` signs.
 fn resolve_wit_name(input: &str, manager: &Manager) -> anyhow::Result<Reference> {
-    let dep = DependencyItem {
-        package: input.to_string(),
-        version: None,
+    let (package, version) = match input.split_once('@') {
+        Some((pkg, ver)) if !ver.is_empty() => (pkg.to_string(), Some(ver.to_string())),
+        _ => (input.to_string(), None),
     };
+    let dep = DependencyItem { package, version };
     match manager.resolve_wit_dependency(&dep)? {
         Some(reference) => Ok(reference),
         None => Err(InstallError::UnknownPackage {
@@ -677,5 +701,45 @@ async fn run_progress_bars(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn looks_like_wit_name_bare() {
+        assert!(looks_like_wit_name("wasi:http"));
+        assert!(looks_like_wit_name("wasi:logging"));
+    }
+
+    #[test]
+    fn looks_like_wit_name_with_version() {
+        assert!(looks_like_wit_name("wasi:http@0.2.10"));
+        assert!(looks_like_wit_name("wasi:http@0.3.0-preview-2026-02-20"));
+    }
+
+    #[test]
+    fn looks_like_wit_name_rejects_oci() {
+        assert!(!looks_like_wit_name("ghcr.io/user/repo:tag"));
+        assert!(!looks_like_wit_name("docker.io/library/nginx:latest"));
+    }
+
+    #[test]
+    fn looks_like_wit_name_rejects_invalid() {
+        assert!(!looks_like_wit_name("no-colon"));
+        assert!(!looks_like_wit_name(":missing-scope"));
+        assert!(!looks_like_wit_name("missing-component:"));
+    }
+
+    #[test]
+    fn looks_like_wit_name_rejects_empty_version() {
+        assert!(!looks_like_wit_name("wasi:http@"));
+    }
+
+    #[test]
+    fn looks_like_wit_name_rejects_multiple_at() {
+        assert!(!looks_like_wit_name("wasi:http@0.2@extra"));
     }
 }
