@@ -633,6 +633,26 @@ impl Manager {
             .add_known_package(registry, repository, tag, description)
     }
 
+    /// Add or update a known package entry with WIT namespace mapping.
+    pub fn add_known_package_with_wit(
+        &self,
+        registry: &str,
+        repository: &str,
+        tag: Option<&str>,
+        description: Option<&str>,
+        wit_namespace: Option<&str>,
+        wit_name: Option<&str>,
+    ) -> anyhow::Result<()> {
+        self.store.add_known_package_with_wit(
+            registry,
+            repository,
+            tag,
+            description,
+            wit_namespace,
+            wit_name,
+        )
+    }
+
     /// List all tags for a given reference from the registry.
     ///
     /// In offline mode, returns cached tags from the local database instead of
@@ -689,10 +709,20 @@ impl Manager {
     /// table. This is useful for building a search index without storing
     /// actual wasm content.
     ///
+    /// When `wit_namespace` / `wit_name` are provided, the WIT namespace
+    /// mapping is stored alongside the OCI coordinates so that WIT-style
+    /// lookups (e.g. `ba:sample-wasi-http-rust`) can resolve to the correct
+    /// OCI repository.
+    ///
     /// # Errors
     ///
     /// Returns an error if offline mode is enabled or if network operations fail.
-    pub async fn index_package(&self, reference: &Reference) -> anyhow::Result<KnownPackage> {
+    pub async fn index_package(
+        &self,
+        reference: &Reference,
+        wit_namespace: Option<&str>,
+        wit_name: Option<&str>,
+    ) -> anyhow::Result<KnownPackage> {
         if self.offline {
             return Err(ManagerError::OfflineIndex.into());
         }
@@ -734,11 +764,13 @@ impl Manager {
 
         // Store every discovered tag.
         for tag in &tags {
-            self.store.add_known_package(
+            self.store.add_known_package_with_wit(
                 reference.registry(),
                 reference.repository(),
                 Some(tag),
                 description.as_deref(),
+                wit_namespace,
+                wit_name,
             )?;
         }
 
@@ -833,19 +865,23 @@ impl Manager {
         // Bulk upsert all packages.
         for pkg in packages {
             let first_tag = pkg.tags.first().map(String::as_str);
-            self.store.add_known_package(
+            self.store.add_known_package_with_wit(
                 &pkg.registry,
                 &pkg.repository,
                 first_tag,
                 pkg.description.as_deref(),
+                pkg.wit_namespace.as_deref(),
+                pkg.wit_name.as_deref(),
             )?;
             // Also add remaining tags.
             for tag in pkg.tags.iter().skip(1) {
-                self.store.add_known_package(
+                self.store.add_known_package_with_wit(
                     &pkg.registry,
                     &pkg.repository,
                     Some(tag),
                     pkg.description.as_deref(),
+                    pkg.wit_namespace.as_deref(),
+                    pkg.wit_name.as_deref(),
                 )?;
             }
         }

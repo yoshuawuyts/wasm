@@ -96,10 +96,14 @@ impl Opts {
         //   - An OCI reference → install and add to manifest
         //   - A scope:component manifest key → resolve from manifest and install
         //   - A WIT-style name (e.g. wasi:http) → resolve via known-package DB
-        let to_install: Vec<(Reference, bool)> = if self.inputs.is_empty() {
+        // Each entry is (reference, update_manifest, explicit_name).
+        // `explicit_name` is set when the user provided a WIT-style name
+        // (e.g. `ba:sample-wasi-http-rust`) so that we use it as the manifest
+        // key instead of re-deriving from binary metadata.
+        let to_install: Vec<(Reference, bool, Option<String>)> = if self.inputs.is_empty() {
             manifest
                 .all_dependencies()
-                .map(|(_, dep, _)| reference_from_dependency(dep).map(|r| (r, false)))
+                .map(|(_, dep, _)| reference_from_dependency(dep).map(|r| (r, false, None)))
                 .collect::<anyhow::Result<Vec<_>>>()
                 .map_err(crate::util::into_miette)?
         } else {
@@ -116,7 +120,7 @@ impl Opts {
         // Run all installs concurrently.
         let results: anyhow::Result<Vec<_>> = to_install
             .into_co_stream()
-            .map(|(reference, update_manifest)| {
+            .map(|(reference, update_manifest, explicit_name)| {
                 let multi = multi.clone();
                 let vendor_dir = wasm_vendor_dir.clone();
                 let wit_vendor_dir = wit_vendor_dir.clone();
@@ -124,18 +128,25 @@ impl Opts {
                     let result =
                         install_one(manager_ref, multi, offline, &reference, &vendor_dir).await?;
                     re_vendor_wit_files(&result, &wit_vendor_dir).await?;
-                    anyhow::Ok((result, reference, update_manifest))
+                    anyhow::Ok((result, reference, update_manifest, explicit_name))
                 }
             })
             .collect()
             .await;
 
-        for (result, _reference, update_manifest) in results.map_err(crate::util::into_miette)? {
+        for (result, _reference, update_manifest, explicit_name) in
+            results.map_err(crate::util::into_miette)?
+        {
             // Derive the dependency name.
-            // For components, use `derive_component_name` which tries WIT metadata,
-            // OCI title annotation, last repository segment, then full path.
-            // For interfaces, use the WIT package name (always available).
-            let dep_name = if result.is_component {
+            // When the user provided an explicit WIT-style name (e.g.
+            // `ba:sample-wasi-http-rust`), use that directly — the embedded
+            // WIT metadata may contain a placeholder like `root:component`.
+            // Otherwise, for components use `derive_component_name` which
+            // tries WIT metadata, OCI title, last repository segment, then
+            // full path.  For interfaces, use the WIT package name.
+            let dep_name = if let Some(name) = explicit_name {
+                name
+            } else if result.is_component {
                 let existing_names: std::collections::HashSet<String> = manifest
                     .dependencies
                     .components
@@ -509,7 +520,7 @@ fn resolve_install_inputs(
     inputs: &[String],
     manifest: &wasm_manifest::Manifest,
     manager: &Manager,
-) -> miette::Result<Vec<(Reference, bool)>> {
+) -> miette::Result<Vec<(Reference, bool, Option<String>)>> {
     let mut result = Vec::with_capacity(inputs.len());
     for input in inputs {
         // Try as scope:component manifest key first
@@ -521,22 +532,24 @@ fn resolve_install_inputs(
 
         if let Some(dep) = dep {
             let reference = reference_from_dependency(dep).map_err(crate::util::into_miette)?;
-            result.push((reference, false));
+            result.push((reference, false, None));
             continue;
         }
 
         // If it looks like a WIT-style name (e.g. `wasi:http`), resolve via
         // the known-package database instead of treating it as a bare OCI
         // reference (which would incorrectly default to docker.io/library/).
+        // Preserve the user's input as the explicit name so it becomes the
+        // manifest key — the embedded WIT metadata may use a placeholder.
         if looks_like_wit_name(input) {
             let reference = resolve_wit_name(input, manager).map_err(crate::util::into_miette)?;
-            result.push((reference, true));
+            result.push((reference, true, Some(input.clone())));
             continue;
         }
 
         // Try as OCI reference
         match crate::util::parse_reference(input) {
-            Ok(reference) => result.push((reference, true)),
+            Ok(reference) => result.push((reference, true, None)),
             Err(_) => {
                 return Err(InstallError::InvalidInput {
                     input: input.clone(),

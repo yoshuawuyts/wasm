@@ -5,9 +5,15 @@
 //! Runs a Wasm Component from a local file or OCI reference. The component is
 //! sandboxed by default — WASI capabilities (env, filesystem, network, stdio)
 //! are only granted through CLI flags or layered config.
+//!
+//! Both `wasi:cli/command` and `wasi:http/proxy` worlds are supported.
+//! Components that export `wasi:http/incoming-handler` are served as HTTP
+//! servers; all others are executed as CLI commands.
 
 mod errors;
+mod http;
 
+use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use errors::RunError;
@@ -48,6 +54,11 @@ pub(crate) struct Opts {
     /// Suppress stdin/stdout/stderr inheritance.
     #[arg(long)]
     no_stdio: bool,
+
+    /// Address to bind the HTTP server to when running a `wasi:http/proxy`
+    /// component.
+    #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
+    listen: SocketAddr,
 }
 
 /// Host state wired into `Store<WasiState>`.
@@ -115,16 +126,22 @@ impl Opts {
         // 4. Resolve permissions (4-layer merge).
         let permissions = self.resolve_permissions(reference.as_ref());
 
-        // 5. Build Wasmtime runtime and execute.
-        //    This is CPU-bound work so we use spawn_blocking.
-        let result = tokio::task::spawn_blocking(move || execute_component(&bytes, &permissions))
-            .await
-            .into_diagnostic()
-            .wrap_err("runtime task panicked")??;
+        // 5. Detect world and execute.
+        if http::exports_http_incoming_handler(&bytes) {
+            // wasi:http/proxy — start an HTTP server.
+            http::serve(&bytes, &permissions, self.listen).await?;
+        } else {
+            // wasi:cli/command — run as a CLI program.
+            let result =
+                tokio::task::spawn_blocking(move || execute_cli_component(&bytes, &permissions))
+                    .await
+                    .into_diagnostic()
+                    .wrap_err("runtime task panicked")??;
 
-        // 6. Map exit.
-        if let Err(()) = result {
-            std::process::exit(1);
+            // 6. Map exit.
+            if let Err(()) = result {
+                std::process::exit(1);
+            }
         }
         Ok(())
     }
@@ -255,7 +272,7 @@ fn validate_component(bytes: &[u8]) -> miette::Result<()> {
 
 /// Build the Wasmtime runtime, instantiate the component, and invoke
 /// `wasi:cli/run@0.2.0#run`.
-fn execute_component(
+fn execute_cli_component(
     bytes: &[u8],
     permissions: &wasm_manifest::ResolvedPermissions,
 ) -> miette::Result<Result<(), ()>> {
