@@ -57,6 +57,8 @@ oci-client = { workspace = true }
 tempfile = { workspace = true }
 wasm-detector = { workspace = true }
 wasm-package-manager = { workspace = true }
+wit-component = { workspace = true }
+wit-parser = { workspace = true }
 
 [lints]
 workspace = true

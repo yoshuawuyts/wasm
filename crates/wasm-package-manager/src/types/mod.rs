@@ -13,6 +13,7 @@ mod worlds;
 pub use detect::is_wit_package;
 pub use parser::DependencyItem;
 pub(crate) use parser::extract_wit_metadata;
+pub use parser::extract_wit_text;
 pub(crate) use raw::RawWitPackage;
 pub use wit_package::WitPackage;
 pub use worlds::{WitPackageDependency, WitWorld, WitWorldExport, WitWorldImport};

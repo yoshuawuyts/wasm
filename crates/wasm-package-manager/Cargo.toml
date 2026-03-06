@@ -38,6 +38,7 @@ toml = { workspace = true }
 wasm-manifest = { workspace = true }
 wasm-meta-registry-client = { workspace = true }
 wasmparser = { workspace = true }
+wit-component = { workspace = true }
 wit-parser = { workspace = true }
 
 [dev-dependencies]

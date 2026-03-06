@@ -1,3 +1,4 @@
+use wit_component::WitPrinter;
 use wit_parser::decoding::{DecodedWasm, decode};
 
 /// An import or export declaration inside a WIT world.
@@ -112,6 +113,41 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
         is_component,
         wit_text,
     })
+}
+
+/// Decode a binary WIT package (`.wasm`) into its textual WIT representation.
+///
+/// Uses `wit-component`'s [`WitPrinter`] to produce well-formed WIT text that
+/// is round-trippable through `wit-parser`.
+///
+/// Returns `None` if the bytes are not a valid WIT package.
+///
+/// # Example
+///
+/// ```
+/// use wasm_package_manager::types::extract_wit_text;
+///
+/// // Invalid bytes produce None.
+/// assert!(extract_wit_text(b"not wasm").is_none());
+/// ```
+// r[impl install.wit-unpack]
+#[must_use]
+pub fn extract_wit_text(wasm_bytes: &[u8]) -> Option<String> {
+    let decoded = decode(wasm_bytes).ok()?;
+    match &decoded {
+        DecodedWasm::WitPackage(resolve, package_id) => {
+            let nested: Vec<_> = resolve
+                .packages
+                .iter()
+                .filter(|(id, _)| *id != *package_id)
+                .map(|(id, _)| id)
+                .collect();
+            let mut printer = WitPrinter::default();
+            printer.print(resolve, *package_id, &nested).ok()?;
+            Some(printer.output.to_string())
+        }
+        DecodedWasm::Component(..) => None,
+    }
 }
 
 /// Extract world metadata from all worlds in the decoded component.
@@ -818,5 +854,91 @@ mod tests {
         // Component → is_component should be true
         let decoded = DecodedWasm::Component(resolve, world_id);
         assert!(matches!(decoded, DecodedWasm::Component(..)));
+    }
+
+    // r[verify install.wit-unpack]
+    #[test]
+    fn extract_wit_text_round_trips_through_wit_parser() {
+        use wit_parser::{PackageName, Resolve};
+
+        // Build a minimal WIT package with an interface and a world.
+        let mut resolve = Resolve::default();
+        let package = wit_parser::Package {
+            name: PackageName {
+                namespace: "test".to_string(),
+                name: "example".to_string(),
+                version: Some(semver::Version::new(1, 0, 0)),
+            },
+            docs: Default::default(),
+            interfaces: Default::default(),
+            worlds: Default::default(),
+        };
+        let package_id = resolve.packages.alloc(package);
+
+        let interface = wit_parser::Interface {
+            name: Some("greeter".to_string()),
+            docs: Default::default(),
+            types: Default::default(),
+            functions: Default::default(),
+            package: Some(package_id),
+            stability: Default::default(),
+            span: Default::default(),
+            clone_of: None,
+        };
+        let iface_id = resolve.interfaces.alloc(interface);
+        resolve.packages[package_id]
+            .interfaces
+            .insert("greeter".into(), iface_id);
+
+        let world = wit_parser::World {
+            name: "hello".to_string(),
+            docs: Default::default(),
+            imports: Default::default(),
+            exports: Default::default(),
+            includes: Default::default(),
+            package: Some(package_id),
+            stability: Default::default(),
+            span: Default::default(),
+        };
+        let world_id = resolve.worlds.alloc(world);
+        resolve.packages[package_id]
+            .worlds
+            .insert("hello".into(), world_id);
+
+        // Encode the Resolve into a binary WIT package (.wasm)
+        let wasm_bytes =
+            wit_component::encode(&resolve, package_id).expect("encoding should succeed");
+
+        // extract_wit_text should produce Some(text)
+        let wit_text = extract_wit_text(&wasm_bytes).expect("should produce WIT text");
+        assert!(
+            wit_text.contains("package test:example@1.0.0"),
+            "WIT text should contain the package declaration, got:\n{wit_text}"
+        );
+
+        // Validate the output by parsing it with wit-parser
+        let mut roundtrip = Resolve::default();
+        roundtrip
+            .push_str("test.wit", &wit_text)
+            .expect("produced WIT text must be valid WIT");
+    }
+
+    #[test]
+    fn extract_wit_text_returns_none_for_component() {
+        // A minimal component header (not a WIT package)
+        let minimal_component = [
+            0x00, 0x61, 0x73, 0x6d, // \0asm magic
+            0x0d, 0x00, 0x01, 0x00, // component version
+        ];
+        assert!(
+            extract_wit_text(&minimal_component).is_none(),
+            "components should return None"
+        );
+    }
+
+    #[test]
+    fn extract_wit_text_returns_none_for_garbage() {
+        assert!(extract_wit_text(b"not wasm").is_none());
+        assert!(extract_wit_text(&[]).is_none());
     }
 }

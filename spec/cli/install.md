@@ -21,3 +21,9 @@ for transitive dependencies.
 
 r[install.wit-deps.skip-offline]
 Transitive WIT dependency resolution MUST be skipped in offline mode.
+
+r[install.wit-unpack]
+When vendoring a WIT-only package, the CLI MUST decode the binary `.wasm`
+representation into textual `.wit` format and write the resulting `.wit`
+file to `vendor/wit/`. The vendored `.wit` file MUST be parseable by
+`wit-parser`.

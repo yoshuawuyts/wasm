@@ -309,11 +309,13 @@ async fn install_one(
     result
 }
 
-/// Move vendored WIT files from the wasm vendor dir into the wit vendor dir.
+/// Unpack vendored WIT `.wasm` binaries into `.wit` text files.
 ///
 /// WIT-only packages (types) are initially stored alongside components in
-/// `vendor/wasm/`. This function moves them to `vendor/wit/` so that
-/// WIT tooling can find them at the conventional location.
+/// `vendor/wasm/`. This function decodes each binary into its textual WIT
+/// representation and writes it to `vendor/wit/` so that WIT tooling can
+/// find them at the conventional location.
+// r[impl install.wit-unpack]
 async fn re_vendor_wit_files(
     result: &InstallResult,
     wit_vendor_dir: &std::path::Path,
@@ -322,15 +324,19 @@ async fn re_vendor_wit_files(
         return Ok(());
     }
     for file in &result.vendored_files {
+        let wasm_bytes = tokio::fs::read(file).await?;
+        let wit_text = wasm_package_manager::types::extract_wit_text(&wasm_bytes)
+            .ok_or_else(|| anyhow::anyhow!("failed to decode WIT from '{}'", file.display()))?;
+
         if let Some(filename) = file.file_name() {
             let wit_dest = wit_vendor_dir.join(filename).with_extension("wit");
             tokio::fs::create_dir_all(wit_vendor_dir).await?;
             let _ = tokio::fs::remove_file(&wit_dest).await;
-            // Also remove any stale .wasm file from a previous install.
-            let stale_wasm = wit_vendor_dir.join(filename);
-            let _ = tokio::fs::remove_file(&stale_wasm).await;
-            tokio::fs::rename(file, &wit_dest).await?;
+            tokio::fs::write(&wit_dest, wit_text).await?;
         }
+
+        // Remove the original binary now that it has been unpacked.
+        let _ = tokio::fs::remove_file(file).await;
     }
     Ok(())
 }

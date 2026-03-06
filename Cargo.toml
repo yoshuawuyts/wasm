@@ -134,6 +134,7 @@ semver = { version = "1.0.27", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "1.0"
 wasmparser = "0.245"
+wit-component = "0.245"
 wit-parser = "0.245"
 
 # server dependencies
