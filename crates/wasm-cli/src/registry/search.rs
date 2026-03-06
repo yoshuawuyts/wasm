@@ -57,14 +57,19 @@ impl SearchOpts {
             }
         }
 
-        let packages = match (&self.exports, &self.imports) {
+        let query = self.query.as_deref().unwrap_or_default();
+
+        let mut packages = match (&self.exports, &self.imports) {
             (Some(iface), _) => manager.search_packages_by_export(iface, 0, self.limit)?,
             (_, Some(iface)) => manager.search_packages_by_import(iface, 0, self.limit)?,
-            _ => {
-                let query = self.query.as_deref().unwrap_or_default();
-                manager.search_packages(query, 0, self.limit)?
-            }
+            _ => manager.search_packages(query, 0, self.limit)?,
         };
+
+        // When an interface filter is provided together with a text query,
+        // further narrow the interface-filtered results by the text query.
+        if !query.is_empty() && (self.exports.is_some() || self.imports.is_some()) {
+            packages = filter_by_text(packages, query, self.limit);
+        }
 
         if packages.is_empty() {
             let message = match (&self.exports, &self.imports) {
@@ -108,6 +113,25 @@ pub(crate) fn render_search_table(
     }
 
     table.to_string()
+}
+
+/// Narrow a list of packages to those whose reference or description
+/// contains `query` (case-insensitive), keeping at most `limit` results.
+fn filter_by_text(
+    packages: Vec<wasm_package_manager::storage::KnownPackage>,
+    query: &str,
+    limit: u32,
+) -> Vec<wasm_package_manager::storage::KnownPackage> {
+    let query_lc = query.to_lowercase();
+    packages
+        .into_iter()
+        .filter(|pkg| {
+            let reference = pkg.reference().to_lowercase();
+            let description = pkg.description.as_deref().unwrap_or_default().to_lowercase();
+            reference.contains(&query_lc) || description.contains(&query_lc)
+        })
+        .take(limit as usize)
+        .collect()
 }
 
 #[cfg(test)]
