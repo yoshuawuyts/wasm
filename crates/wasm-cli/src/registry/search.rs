@@ -17,11 +17,11 @@ pub(crate) struct SearchOpts {
     query: String,
 
     /// Filter to packages that export a given interface (e.g. wasi:http).
-    #[arg(long)]
+    #[arg(long, conflicts_with = "imports")]
     exports: Option<String>,
 
     /// Filter to packages that import a given interface (e.g. wasi:http).
-    #[arg(long)]
+    #[arg(long, conflicts_with = "exports")]
     imports: Option<String>,
 
     /// Maximum number of results to show.
@@ -63,7 +63,12 @@ impl SearchOpts {
         };
 
         if packages.is_empty() {
-            println!("No packages found matching '{}'", self.query);
+            let message = match (&self.exports, &self.imports) {
+                (Some(iface), _) => format!("No packages found exporting '{iface}'"),
+                (_, Some(iface)) => format!("No packages found importing '{iface}'"),
+                _ => format!("No packages found matching '{}'", self.query),
+            };
+            println!("{message}");
             return Ok(());
         }
 
