@@ -36,6 +36,8 @@ pub(crate) struct Cli {
     #[arg(long, global = true, help_heading = "Global Options")]
     offline: bool,
 
+    /// Controls logging verbosity via `-v`/`--verbose` and `-q`/`--quiet`
+    /// flags.
     #[command(flatten)]
     verbosity: Verbosity,
 
