@@ -630,6 +630,26 @@ impl Store {
         RawKnownPackage::search(&self.conn, query, offset, limit)
     }
 
+    /// Search for known packages that import a given interface.
+    pub(crate) fn search_known_packages_by_import(
+        &self,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        RawKnownPackage::search_by_import(&self.conn, interface, offset, limit)
+    }
+
+    /// Search for known packages that export a given interface.
+    pub(crate) fn search_known_packages_by_export(
+        &self,
+        interface: &str,
+        offset: u32,
+        limit: u32,
+    ) -> anyhow::Result<Vec<RawKnownPackage>> {
+        RawKnownPackage::search_by_export(&self.conn, interface, offset, limit)
+    }
+
     /// Get all known packages.
     pub(crate) fn list_known_packages(
         &self,
