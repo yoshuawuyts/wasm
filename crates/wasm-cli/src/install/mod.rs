@@ -212,13 +212,23 @@ impl Opts {
                 }
             }
 
-            // Build lockfile dependencies from WIT metadata
+            // Build lockfile dependencies from WIT metadata.
+            // Only include dependencies that have a resolved version.
+            // Registry and digest are left empty here and resolved later
+            // by `Lockfile::resolve_dependency_details()` once all transitive
+            // dependencies have been installed.
             let lockfile_deps: Vec<wasm_manifest::PackageDependency> = result
                 .dependencies
                 .iter()
-                .map(|d| wasm_manifest::PackageDependency {
-                    name: d.package.clone(),
-                    version: d.version.clone().unwrap_or_default(),
+                .filter_map(|d| {
+                    d.version
+                        .clone()
+                        .map(|version| wasm_manifest::PackageDependency {
+                            name: d.package.clone(),
+                            version,
+                            registry: String::new(),
+                            digest: String::new(),
+                        })
                 })
                 .collect();
 
@@ -263,6 +273,12 @@ impl Opts {
         tokio::fs::write(&manifest_path, manifest_str.as_bytes())
             .await
             .into_diagnostic()?;
+
+        // Resolve registry and digest for all dependency entries from their
+        // matching top-level package entries. Dependency entries whose
+        // packages are not in the lockfile (e.g. offline / skipped) are
+        // silently removed.
+        lockfile.resolve_dependency_details();
 
         // Write updated lockfile
         write_lock_file(&lockfile_path, &lockfile)
@@ -476,9 +492,18 @@ fn upsert_lockfile_type(lockfile: &mut wasm_manifest::Lockfile, result: &Install
         dependencies: result
             .dependencies
             .iter()
-            .map(|d| wasm_manifest::PackageDependency {
-                name: d.package.clone(),
-                version: d.version.clone().unwrap_or_default(),
+            // Only include dependencies with a resolved version.
+            // Registry and digest are resolved later by
+            // `Lockfile::resolve_dependency_details()`.
+            .filter_map(|d| {
+                d.version
+                    .clone()
+                    .map(|version| wasm_manifest::PackageDependency {
+                        name: d.package.clone(),
+                        version,
+                        registry: String::new(),
+                        digest: String::new(),
+                    })
             })
             .collect(),
     };
