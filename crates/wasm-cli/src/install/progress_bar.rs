@@ -118,36 +118,34 @@ impl ProgressTree {
     // r[impl cli.progress-bar.bar-hidden-on-complete]
     pub(crate) fn finish_bar(&mut self, bar_id: BarId) {
         // Find this bar's index in the entries list by unique ID.
-        let idx = self.entries.iter().position(|e| e.id == bar_id);
-
-        // Build the prefix and apply style/finish to the stored bar.
-        if let Some(entry) = idx.and_then(|i| self.entries.get(i)) {
-            let is_last = idx == Some(self.entries.len() - 1);
-            let prefix = build_prefix(
-                tree_glyph(is_last),
-                &entry.name,
-                entry.version.as_deref(),
-                true,
-            );
-
-            // When all layer totals were None, the bar length is still 0.
-            // Set it to the current position so done_style() renders the
-            // actual downloaded byte count instead of "0 B".
-            if entry.bar.length() == Some(0) {
-                entry.bar.set_length(entry.bar.position());
-            }
-
-            entry.bar.set_style(done_style());
-            entry.bar.set_prefix(prefix);
-            entry.bar.finish();
-        } else {
+        let Some(idx) = self.entries.iter().position(|e| e.id == bar_id) else {
             tracing::debug!("finish_bar called with unknown BarId({bar_id:?})");
+            return;
+        };
+
+        let is_last = idx == self.entries.len() - 1;
+        let Some(entry) = self.entries.get_mut(idx) else {
+            return;
+        };
+
+        let prefix = build_prefix(
+            tree_glyph(is_last),
+            &entry.name,
+            entry.version.as_deref(),
+            true,
+        );
+
+        // When all layer totals were None, the bar length is still 0.
+        // Set it to the current position so done_style() renders the
+        // actual downloaded byte count instead of "0 B".
+        if entry.bar.length() == Some(0) {
+            entry.bar.set_length(entry.bar.position());
         }
 
-        // Update the stored entry's completion state.
-        if let Some(entry) = idx.and_then(|i| self.entries.get_mut(i)) {
-            entry.is_complete = true;
-        }
+        entry.bar.set_style(done_style());
+        entry.bar.set_prefix(prefix);
+        entry.bar.finish();
+        entry.is_complete = true;
     }
 
     /// Demote the current "last" entry from `└──` to `├──`.

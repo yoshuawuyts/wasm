@@ -532,7 +532,8 @@ fn resolve_manifest_dependency(
 ) -> anyhow::Result<(Reference, Option<String>)> {
     match dep {
         wasm_manifest::Dependency::Compact(s) if !s.contains('/') && looks_like_wit_name(key) => {
-            // Compact format with a version-only string (e.g. "0.1.6").
+            // The compact value contains no '/' so it is a version string
+            // (e.g. "0.1.6") rather than an OCI reference path.
             // Resolve through the known-package DB using the manifest key.
             let input = format!("{key}@{s}");
             let reference = resolve_wit_name(&input, manager)?;
