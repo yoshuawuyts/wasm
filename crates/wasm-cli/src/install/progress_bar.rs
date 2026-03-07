@@ -109,30 +109,40 @@ impl ProgressTree {
     }
 
     /// Mark a progress bar as complete: green name, bar hidden, size only.
+    ///
+    /// The bar is looked up exclusively via `bar_id`; the caller does not
+    /// need to pass the [`ProgressBar`] handle.  If all layer totals were
+    /// `None` (so the bar length is still 0), the length is set to the
+    /// current position so that [`DONE_TEMPLATE`] renders the actual
+    /// downloaded byte count instead of `0 B`.
     // r[impl cli.progress-bar.bar-hidden-on-complete]
-    pub(crate) fn finish_bar(&mut self, pb: &ProgressBar, bar_id: BarId) {
+    pub(crate) fn finish_bar(&mut self, bar_id: BarId) {
         // Find this bar's index in the entries list by unique ID.
         let idx = self.entries.iter().position(|e| e.id == bar_id);
 
-        // Build the prefix from the stored entry (immutable borrow), then
-        // apply it to the progress bar before we take a mutable borrow to
-        // mark the entry complete.
-        let prefix = if let Some(entry) = idx.and_then(|i| self.entries.get(i)) {
+        // Build the prefix and apply style/finish to the stored bar.
+        if let Some(entry) = idx.and_then(|i| self.entries.get(i)) {
             let is_last = idx == Some(self.entries.len() - 1);
-            build_prefix(
+            let prefix = build_prefix(
                 tree_glyph(is_last),
                 &entry.name,
                 entry.version.as_deref(),
                 true,
-            )
+            );
+
+            // When all layer totals were None, the bar length is still 0.
+            // Set it to the current position so done_style() renders the
+            // actual downloaded byte count instead of "0 B".
+            if entry.bar.length() == Some(0) {
+                entry.bar.set_length(entry.bar.position());
+            }
+
+            entry.bar.set_style(done_style());
+            entry.bar.set_prefix(prefix);
+            entry.bar.finish();
         } else {
             tracing::debug!("finish_bar called with unknown BarId({bar_id:?})");
-            build_prefix(tree_glyph(true), "", None, true)
-        };
-
-        pb.set_style(done_style());
-        pb.set_prefix(prefix);
-        pb.finish();
+        }
 
         // Update the stored entry's completion state.
         if let Some(entry) = idx.and_then(|i| self.entries.get_mut(i)) {
@@ -498,14 +508,14 @@ mod tests {
         let (pb2, id2) = tree.add_bar("wasi:io", Some("0.2.0"));
 
         // Finish pb1 — it should remain ├── since pb2 is last
-        tree.finish_bar(&pb1, id1);
+        tree.finish_bar(id1);
         assert!(
             console::strip_ansi_codes(&pb1.prefix()).starts_with(TREE_GLYPH_MID),
             "finished non-last bar should be ├──"
         );
 
         // Finish pb2 — it's the last, should stay └──
-        tree.finish_bar(&pb2, id2);
+        tree.finish_bar(id2);
         assert!(
             console::strip_ansi_codes(&pb2.prefix()).starts_with(TREE_GLYPH_END),
             "finished last bar should be └──"
@@ -521,7 +531,7 @@ mod tests {
         let mut tree = ProgressTree::new(multi);
 
         let (pb1, id1) = tree.add_bar("wasi:http", Some("0.2.0"));
-        tree.finish_bar(&pb1, id1);
+        tree.finish_bar(id1);
 
         // pb1 was └── and finished. Now add pb2 — pb1 should be demoted to ├──
         let (pb2, _id2) = tree.add_bar("wasi:io", Some("0.2.0"));

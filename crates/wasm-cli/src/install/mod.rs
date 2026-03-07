@@ -304,7 +304,7 @@ async fn install_one(
         let version_str = display_version.map(|v| format!("@{v}")).unwrap_or_default();
         println!(
             "├── {}{}",
-            console::style(display_name).green(),
+            console::style(display_name).yellow(),
             console::style(version_str).white(),
         );
         return manager.install(reference.clone(), vendor_dir).await;
@@ -329,7 +329,7 @@ async fn install_one(
 
     // Only mark the bar as complete (green, hidden) on successful installs.
     if result.is_ok() {
-        tree.lock().await.finish_bar(&pb, bar_id);
+        tree.lock().await.finish_bar(bar_id);
     }
 
     result
