@@ -127,7 +127,11 @@ fn filter_by_text(
         .into_iter()
         .filter(|pkg| {
             let reference = pkg.reference().to_lowercase();
-            let description = pkg.description.as_deref().unwrap_or_default().to_lowercase();
+            let description = pkg
+                .description
+                .as_deref()
+                .unwrap_or_default()
+                .to_lowercase();
             reference.contains(&query_lc) || description.contains(&query_lc)
         })
         .take(limit as usize)
