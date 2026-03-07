@@ -191,7 +191,10 @@ impl Opts {
                 }
             }
 
-            // Build lockfile dependencies from WIT metadata
+            // Build lockfile dependencies from WIT metadata.
+            // Registry and digest are left empty here and resolved later
+            // by `Lockfile::resolve_dependency_details()` once all transitive
+            // dependencies have been installed.
             let lockfile_deps: Vec<wasm_manifest::PackageDependency> = result
                 .dependencies
                 .iter()
@@ -451,6 +454,8 @@ fn upsert_lockfile_type(lockfile: &mut wasm_manifest::Lockfile, result: &Install
         dependencies: result
             .dependencies
             .iter()
+            // Registry and digest are resolved later by
+            // `Lockfile::resolve_dependency_details()`.
             .map(|d| wasm_manifest::PackageDependency {
                 name: d.package.clone(),
                 version: d.version.clone().unwrap_or_default(),
