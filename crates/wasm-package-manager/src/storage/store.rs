@@ -45,7 +45,7 @@ async fn dir_size(path: &Path) -> u64 {
 #[derive(Debug)]
 pub(crate) struct Store {
     pub(crate) state_info: StateInfo,
-    conn: Connection,
+    pub(crate) conn: Connection,
 }
 
 impl Store {
@@ -842,7 +842,6 @@ impl Store {
     /// `wit_package.package_name` (and optional version), bypassing the OCI
     /// registry/repository path. Useful for tests and for the dependency
     /// resolver which works with WIT names, not OCI coordinates.
-    #[allow(dead_code)]
     pub(crate) fn get_package_dependencies_by_name(
         &self,
         package_name: &str,
@@ -865,6 +864,34 @@ impl Store {
         for row in rows {
             let (package, version) = row?;
             result.push(wasm_meta_registry_client::PackageDependencyRef { package, version });
+        }
+        Ok(result)
+    }
+
+    /// Return all known versions for a package, as stored in the `wit_package`
+    /// table.  The list is sorted by insertion order (newest first) and then
+    /// filtered / sorted by the caller as needed.
+    ///
+    /// Used by the dependency resolver to enumerate candidate versions when
+    /// selecting the best match for a version range.
+    // r[impl resolution.per-version-deps]
+    pub(crate) fn list_wit_package_versions(
+        &self,
+        package_name: &str,
+    ) -> anyhow::Result<Vec<String>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT DISTINCT version
+             FROM wit_package
+             WHERE package_name = ?1
+               AND version IS NOT NULL
+             ORDER BY id DESC",
+        )?;
+
+        let rows = stmt.query_map([package_name], |row| row.get::<_, String>(0))?;
+
+        let mut result = Vec::new();
+        for row in rows {
+            result.push(row?);
         }
         Ok(result)
     }

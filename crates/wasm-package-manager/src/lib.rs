@@ -44,6 +44,8 @@ mod credential_helper;
 pub mod manager;
 pub mod oci;
 mod progress;
+/// Dependency resolver using the PubGrub version-solving algorithm.
+pub mod resolver;
 /// Storage layer for persisting package metadata and state.
 pub mod storage;
 pub mod types;

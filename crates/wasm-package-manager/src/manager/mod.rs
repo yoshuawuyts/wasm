@@ -880,6 +880,29 @@ impl Manager {
             .get_package_dependencies_by_name(package_name, version)
     }
 
+    /// Resolve the complete transitive dependency graph for a root package and
+    /// version using the PubGrub algorithm over locally-cached metadata.
+    ///
+    /// Returns a map from WIT package name to the single selected version for
+    /// every package in the resolved set (including the root).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::resolver::ResolveError::NoSolution`] when no
+    /// conflict-free version assignment exists.
+    /// Returns [`crate::resolver::ResolveError::Db`] when a database query
+    /// fails.
+    pub fn resolve_dependencies(
+        &self,
+        package: &str,
+        version: crate::resolver::WitVersion,
+    ) -> Result<
+        std::collections::HashMap<String, crate::resolver::WitVersion>,
+        crate::resolver::ResolveError,
+    > {
+        crate::resolver::resolve_from_db(&self.store, package, version)
+    }
+
     /// Sync the local package index from a meta-registry over HTTP.
     ///
     /// Checks the `_sync_meta` table for `last_synced_at` and skips the sync
