@@ -36,6 +36,30 @@ mod client;
 #[cfg(feature = "client")]
 pub use client::{FetchResult, RegistryClient};
 
+/// A declared dependency on another WIT package, as returned in the
+/// `/v1/packages` response.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_meta_registry_client::PackageDependencyRef;
+///
+/// let dep = PackageDependencyRef {
+///     package: "wasi:io".into(),
+///     version: Some("0.2.0".into()),
+/// };
+/// assert_eq!(dep.package, "wasi:io");
+/// assert_eq!(dep.version.as_deref(), Some("0.2.0"));
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PackageDependencyRef {
+    /// Declared package name (e.g. `"wasi:io"`).
+    pub package: String,
+    /// Declared version, if any (e.g. `"0.2.0"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
+}
+
 /// A public view of a known package from a meta-registry.
 ///
 /// This type matches the JSON schema returned by the `/v1/packages` endpoint
@@ -58,6 +82,7 @@ pub use client::{FetchResult, RegistryClient};
 ///     created_at: "2024-06-15T12:00:00Z".into(),
 ///     wit_namespace: None,
 ///     wit_name: None,
+///     dependencies: vec![],
 /// };
 ///
 /// assert_eq!(pkg.reference(), "ghcr.io/user/my-component");
@@ -88,6 +113,13 @@ pub struct KnownPackage {
     /// Optional WIT package name within the namespace (e.g. `"http"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit_name: Option<String>,
+    /// Declared WIT dependencies of this package's latest indexed version.
+    ///
+    /// The field MAY be omitted when no WIT metadata has been extracted for
+    /// this package; omission MUST be treated as equivalent to an empty list.
+    // r[impl client.known-package.dependencies]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub dependencies: Vec<PackageDependencyRef>,
 }
 
 impl KnownPackage {
@@ -109,6 +141,7 @@ impl KnownPackage {
     ///     created_at: String::new(),
     ///     wit_namespace: None,
     ///     wit_name: None,
+    ///     dependencies: vec![],
     /// };
     ///
     /// assert_eq!(pkg.reference(), "ghcr.io/user/repo");
@@ -139,6 +172,7 @@ impl KnownPackage {
     ///     created_at: String::new(),
     ///     wit_namespace: None,
     ///     wit_name: None,
+    ///     dependencies: vec![],
     /// };
     ///
     /// assert_eq!(pkg.reference_with_tag(), "ghcr.io/user/repo:v1.0");
@@ -171,6 +205,7 @@ mod tests {
             created_at: String::new(),
             wit_namespace: None,
             wit_name: None,
+            dependencies: vec![],
         };
         assert_eq!(pkg.reference(), "ghcr.io/user/repo");
     }
@@ -189,6 +224,7 @@ mod tests {
             created_at: String::new(),
             wit_namespace: None,
             wit_name: None,
+            dependencies: vec![],
         };
         assert_eq!(pkg.reference_with_tag(), "ghcr.io/user/repo:v1.0");
     }
@@ -207,7 +243,65 @@ mod tests {
             created_at: String::new(),
             wit_namespace: None,
             wit_name: None,
+            dependencies: vec![],
         };
         assert_eq!(pkg.reference_with_tag(), "ghcr.io/user/repo:latest");
+    }
+
+    // r[verify client.known-package.dependencies]
+    #[test]
+    fn known_package_dependencies_serialization() {
+        let pkg = KnownPackage {
+            registry: "ghcr.io".into(),
+            repository: "user/repo".into(),
+            description: None,
+            tags: vec!["v1.0".into()],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: String::new(),
+            created_at: String::new(),
+            wit_namespace: Some("wasi".into()),
+            wit_name: Some("http".into()),
+            dependencies: vec![
+                PackageDependencyRef {
+                    package: "wasi:io".into(),
+                    version: Some("0.2.0".into()),
+                },
+                PackageDependencyRef {
+                    package: "wasi:clocks".into(),
+                    version: None,
+                },
+            ],
+        };
+
+        let json = serde_json::to_string(&pkg).unwrap();
+        let parsed: KnownPackage = serde_json::from_str(&json).unwrap();
+        assert_eq!(parsed.dependencies.len(), 2);
+        assert_eq!(parsed.dependencies[0].package, "wasi:io");
+        assert_eq!(parsed.dependencies[0].version.as_deref(), Some("0.2.0"));
+        assert_eq!(parsed.dependencies[1].package, "wasi:clocks");
+        assert!(parsed.dependencies[1].version.is_none());
+    }
+
+    // r[verify client.known-package.dependencies]
+    #[test]
+    fn known_package_empty_dependencies_skipped_in_json() {
+        let pkg = KnownPackage {
+            registry: "ghcr.io".into(),
+            repository: "user/repo".into(),
+            description: None,
+            tags: vec![],
+            signature_tags: vec![],
+            attestation_tags: vec![],
+            last_seen_at: String::new(),
+            created_at: String::new(),
+            wit_namespace: None,
+            wit_name: None,
+            dependencies: vec![],
+        };
+
+        let json = serde_json::to_string(&pkg).unwrap();
+        // Empty dependencies should not appear in JSON
+        assert!(!json.contains("dependencies"));
     }
 }

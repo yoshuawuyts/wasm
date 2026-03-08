@@ -640,17 +640,31 @@ impl Manager {
 
     /// Get all known packages.
     /// Uses pagination with `offset` and `limit` parameters.
+    ///
+    /// Each returned [`KnownPackage`] has its `dependencies` field populated
+    /// from the local `wit_package_dependency` table.
+    ///
+    /// **Note:** the current implementation performs one dependency query per
+    /// package (N+1). This is acceptable for the typical page sizes used by
+    /// the TUI search (~50 items) and keeps the code simple. A future
+    /// optimisation could batch-load all dependencies in a single query keyed
+    /// by `(registry, repository)` pairs.
     pub fn list_known_packages(
         &self,
         offset: u32,
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
-        Ok(self
-            .store
+        self.store
             .list_known_packages(offset, limit)?
             .into_iter()
-            .map(KnownPackage::from)
-            .collect())
+            .map(|raw| {
+                let mut pkg = KnownPackage::from(raw);
+                pkg.dependencies = self
+                    .store
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)?;
+                Ok(pkg)
+            })
+            .collect()
     }
 
     /// Add or update a known package entry.
@@ -723,23 +737,31 @@ impl Manager {
     }
 
     /// Get a known package by registry and repository.
+    ///
+    /// The returned [`KnownPackage`] has its `dependencies` field populated
+    /// from the local `wit_package_dependency` table.
     pub fn get_known_package(
         &self,
         registry: &str,
         repository: &str,
     ) -> anyhow::Result<Option<KnownPackage>> {
-        Ok(self
-            .store
-            .get_known_package(registry, repository)?
-            .map(KnownPackage::from))
+        match self.store.get_known_package(registry, repository)? {
+            None => Ok(None),
+            Some(raw) => {
+                let mut pkg = KnownPackage::from(raw);
+                pkg.dependencies = self.store.get_package_dependencies(registry, repository)?;
+                Ok(Some(pkg))
+            }
+        }
     }
 
-    /// Index a package from the registry without downloading layers.
+    /// Index a package from the registry, also extracting WIT dependency
+    /// metadata from the package's wasm layer.
     ///
     /// Fetches the manifest and config to extract metadata (description from
     /// OCI annotations), lists all tags, and upserts into the known packages
-    /// table. This is useful for building a search index without storing
-    /// actual wasm content.
+    /// table. Also pulls the wasm layer for the most recent tag to extract
+    /// WIT dependency information and store it in the local database.
     ///
     /// When `wit_namespace` / `wit_name` are provided, the WIT namespace
     /// mapping is stored alongside the OCI coordinates so that WIT-style
@@ -806,12 +828,39 @@ impl Manager {
             )?;
         }
 
-        // Return the indexed package.
-        Ok(self
+        // Best-effort: pull the wasm layer for the latest stable tag so that
+        // WIT dependency metadata is extracted and stored in the database.
+        // Using the latest stable tag ensures `KnownPackage.dependencies` always
+        // reflects the most recent stable version rather than an arbitrary tag.
+        // r[impl server.index.dependencies]
+        let dep_tag = pick_latest_stable_tag(&tags).unwrap_or_else(|| meta_tag.to_string());
+        let dep_ref: Reference = format!(
+            "{}/{}:{}",
+            reference.registry(),
+            reference.repository(),
+            dep_tag
+        )
+        .parse()?;
+        if let Err(e) = self.pull(dep_ref).await {
+            tracing::debug!(
+                registry = %reference.registry(),
+                repository = %reference.repository(),
+                tag = %dep_tag,
+                error = %e,
+                "Could not pull wasm layer during index; dependency metadata unavailable"
+            );
+        }
+
+        // Return the indexed package with its now-populated dependencies.
+        let raw = self
             .store
             .get_known_package(reference.registry(), reference.repository())?
-            .map(KnownPackage::from)
-            .ok_or(ManagerError::IndexRetrievalFailed)?)
+            .ok_or(ManagerError::IndexRetrievalFailed)?;
+        let mut pkg = KnownPackage::from(raw);
+        pkg.dependencies = self
+            .store
+            .get_package_dependencies(reference.registry(), reference.repository())?;
+        Ok(pkg)
     }
 
     /// Get all WIT interfaces with their associated component references.
@@ -822,6 +871,46 @@ impl Manager {
             .into_iter()
             .map(|(wt, s)| (WitPackage::from(wt), s))
             .collect())
+    }
+
+    /// Get declared dependencies for a package identified by its WIT name and
+    /// optional version.
+    ///
+    /// Queries `wit_package_dependency` directly by package name, bypassing
+    /// the OCI registry/repository path. This is the primary entry point for
+    /// the dependency resolver.
+    ///
+    /// Returns an empty list when the package has no recorded dependencies.
+    pub fn get_dependencies_by_name(
+        &self,
+        package_name: &str,
+        version: Option<&str>,
+    ) -> anyhow::Result<Vec<crate::storage::PackageDependencyRef>> {
+        self.store
+            .get_package_dependencies_by_name(package_name, version)
+    }
+
+    /// Resolve the complete transitive dependency graph for a root package and
+    /// version using the PubGrub algorithm over locally-cached metadata.
+    ///
+    /// Returns a map from WIT package name to the single selected version for
+    /// every package in the resolved set (including the root).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::resolver::ResolveError::NoSolution`] when no
+    /// conflict-free version assignment exists.
+    /// Returns [`crate::resolver::ResolveError::Db`] when a database query
+    /// fails.
+    pub fn resolve_dependencies(
+        &self,
+        package: &str,
+        version: crate::resolver::WitVersion,
+    ) -> Result<
+        std::collections::HashMap<String, crate::resolver::WitVersion>,
+        crate::resolver::ResolveError,
+    > {
+        crate::resolver::resolve_from_db(&self.store, package, version)
     }
 
     /// Sync the local package index from a meta-registry over HTTP.
@@ -915,6 +1004,32 @@ impl Manager {
                     pkg.wit_namespace.as_deref(),
                     pkg.wit_name.as_deref(),
                 )?;
+            }
+
+            // r[impl db.wit-package-dependency.populate-on-sync]
+            // Store dependency information from the sync response so the
+            // local database can answer dependency queries without network
+            // access.
+            if !pkg.dependencies.is_empty()
+                && let (Some(ns), Some(name)) = (&pkg.wit_namespace, &pkg.wit_name)
+            {
+                let package_name = format!("{ns}:{name}");
+                // Use the latest stable semver tag as the canonical version;
+                // strip any leading "v" so it matches the WIT version string.
+                // Falls back to None when no stable semver tag is available.
+                let version = pick_latest_stable_tag(&pkg.tags)
+                    .map(|t| t.trim_start_matches('v').to_string());
+                if let Err(e) = self.store.upsert_package_dependencies_from_sync(
+                    &package_name,
+                    version.as_deref(),
+                    &pkg.dependencies,
+                ) {
+                    tracing::warn!(
+                        package = %package_name,
+                        error = %e,
+                        "Failed to store synced dependencies"
+                    );
+                }
             }
         }
         if let Some(etag_val) = etag {

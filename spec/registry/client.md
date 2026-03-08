@@ -16,6 +16,13 @@ r[client.known-package.reference-default-tag]
 `KnownPackage::reference_with_tag()` MUST fall back to `"latest"` when no tags
 are present.
 
+r[client.known-package.dependencies]
+`KnownPackage` MUST represent the declared WIT package dependencies for the
+package's latest indexed version in a `dependencies` field. The field MAY be
+omitted when no dependency information is available; omission MUST be treated
+as equivalent to an empty list. Each entry MUST carry the declared package
+name and an optional version string.
+
 ## Registry Client
 
 The `RegistryClient` fetches packages from the meta-registry `/v1/packages`
