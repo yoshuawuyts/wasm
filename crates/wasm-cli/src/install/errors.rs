@@ -67,10 +67,7 @@ pub(crate) enum InstallError {
              version constraints in the packages you are installing."
         )
     )]
-    DependencyConflict {
-        /// The pubgrub explanation of the conflict.
-        message: String,
-    },
+    DependencyConflict(String),
 }
 
 impl std::fmt::Display for InstallError {
@@ -88,8 +85,8 @@ impl std::fmt::Display for InstallError {
             InstallError::UnknownPackage { input } => {
                 write!(f, "package '{input}' not found in the registry index")
             }
-            InstallError::DependencyConflict { message } => {
-                write!(f, "dependency conflict: {message}")
+            InstallError::DependencyConflict(reason) => {
+                write!(f, "dependency conflict: {reason}")
             }
         }
     }
@@ -161,6 +158,19 @@ mod tests {
         assert!(
             unknown_pkg.help().is_some(),
             "UnknownPackage must have a help message"
+        );
+
+        let dep_conflict = InstallError::DependencyConflict("no solution".to_string());
+        assert_eq!(
+            dep_conflict
+                .code()
+                .expect("DependencyConflict must have a diagnostic code")
+                .to_string(),
+            "wasm::install::dependency_conflict",
+        );
+        assert!(
+            dep_conflict.help().is_some(),
+            "DependencyConflict must have a help message"
         );
     }
 }

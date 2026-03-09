@@ -131,11 +131,10 @@ impl Opts {
                     continue;
                 };
                 match manager.resolve_dependencies(key, version) {
-                    Ok(_) => {}
                     Err(ResolveError::NoSolution(msg)) => {
-                        return Err(InstallError::DependencyConflict { message: msg }.into());
+                        return Err(InstallError::DependencyConflict(msg).into());
                     }
-                    Err(ResolveError::Db(_)) => {} // dep data not yet available; skip
+                    Ok(_) | Err(ResolveError::Db(_)) => {} // dep data not yet available; skip
                 }
             }
         }
