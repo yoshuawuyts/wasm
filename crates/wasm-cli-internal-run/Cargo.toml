@@ -1,7 +1,6 @@
 [package]
 name = "wasm-cli-internal-run"
 description = "Internal WebAssembly component execution for wasm-cli"
-readme = "README.md"
 repository = { workspace = true }
 documentation = { workspace = true }
 version = { workspace = true }
@@ -13,7 +12,6 @@ keywords = { workspace = true }
 
 [dependencies]
 miette = { workspace = true }
-tracing = { workspace = true }
 wasm-manifest = { workspace = true }
 wasmparser = { workspace = true }
 wasmtime = { workspace = true }

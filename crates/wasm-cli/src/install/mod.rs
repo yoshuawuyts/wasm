@@ -163,8 +163,7 @@ impl Opts {
                 .collect::<anyhow::Result<Vec<_>>>()
                 .map_err(crate::util::into_miette)?
         } else {
-            resolve_install_inputs(&self.inputs, &manifest, &manager)
-                .map_err(crate::util::into_miette)?
+            resolve_install_inputs(&self.inputs, &manifest, &manager)?
         };
 
         // Shared progress display for all concurrent installs.
