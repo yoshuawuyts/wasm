@@ -5,7 +5,7 @@
 //!
 //! # Running Snapshot Tests
 //!
-//! Run tests with: `cargo test --package wasm`
+//! Run tests with: `cargo test --package wasm-tui`
 //!
 //! # Updating Snapshots
 //!
@@ -29,15 +29,15 @@ use insta::assert_snapshot;
 use oci_client::manifest::{IMAGE_MANIFEST_MEDIA_TYPE, OciDescriptor, OciImageManifest};
 use ratatui::prelude::*;
 
-use wasm::tui::components::{TabBar, TabItem};
-use wasm::tui::views::packages::PackagesViewState;
-use wasm::tui::views::{
-    KnownPackageDetailView, LocalView, LogView, PackageDetailView, PackagesView, SearchView,
-    SearchViewState, SettingsView, TypesView, TypesViewState,
-};
 use wasm_detector::WasmEntry;
 use wasm_package_manager::oci::ImageEntry;
 use wasm_package_manager::storage::{KnownPackage, StateInfo};
+use wasm_tui::components::{TabBar, TabItem};
+use wasm_tui::views::packages::PackagesViewState;
+use wasm_tui::views::{
+    KnownPackageDetailView, LocalView, LogView, PackageDetailView, PackagesView, SearchView,
+    SearchViewState, SettingsView, TypesView, TypesViewState,
+};
 
 /// Helper function to render a widget to a string buffer.
 fn render_to_string<W: Widget>(widget: W, width: u16, height: u16) -> String {
@@ -543,7 +543,7 @@ fn test_log_view_with_lines_snapshot() {
 #[test]
 fn test_log_view_scrolled_snapshot() {
     let lines: Vec<String> = (1..=20)
-        .map(|i| format!("2024-01-15T10:30:{:02}Z WARN wasm: log line {}", i, i))
+        .map(|i| format!("2024-01-15T10:30:{i:02}Z WARN wasm: log line {i}"))
         .collect();
     let output = render_to_string(LogView::new(&lines, 10), 80, 10);
     assert_snapshot!(output);

@@ -8,6 +8,7 @@ members = [
     "crates/wasm-meta-registry-client",
     "crates/wasm-package-manager",
     "crates/wasm-detector",
+    "crates/wasm-tui",
     "crates/xtask",
 ]
 
@@ -78,6 +79,7 @@ wasm-meta-registry = { path = "crates/wasm-meta-registry", version = "0.3.0" }
 wasm-meta-registry-client = { path = "crates/wasm-meta-registry-client", version = "0.3.0", default-features = false }
 wasm-package-manager = { path = "crates/wasm-package-manager", version = "0.3.0" }
 wasm-detector = { path = "crates/wasm-detector", version = "0.3.0" }
+wasm-tui = { path = "crates/wasm-tui", version = "0.3.0" }
 
 # shared dependencies
 anyhow = "1.0.100"

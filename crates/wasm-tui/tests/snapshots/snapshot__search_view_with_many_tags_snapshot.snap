@@ -1,15 +1,12 @@
 ---
-source: crates/wasm-cli/tests/snapshot.rs
+source: crates/wasm-tui/tests/snapshot.rs
 expression: output
 ---
 ┌ Search ──────────────────────────────────────────────────────────────────────────────────────────┐
-│wasi_                                                                                             │
+│Press / to search...                                                                              │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-                               No packages found matching your search.
-
-
-
-
+Repository                       Registry                  Tags                 Last Seen
+project/component                ghcr.io                   v3.0.0, v2.0.0, +3   2024-03-01
 
 
 

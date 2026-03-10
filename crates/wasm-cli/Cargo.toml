@@ -32,7 +32,6 @@ comfy-table = { workspace = true }
 console = { workspace = true }
 indicatif = { workspace = true }
 miette = { workspace = true, features = ["fancy"] }
-ratatui = { workspace = true }
 serde_json = { workspace = true }
 termcolor = { workspace = true }
 tokio = { workspace = true, features = ["net"] }
@@ -44,6 +43,7 @@ wasm-detector = { workspace = true }
 wasm-manifest = { workspace = true }
 wasm-metadata = { workspace = true }
 wasm-package-manager = { workspace = true, features = ["http-sync"] }
+wasm-tui = { workspace = true }
 wasmparser = { workspace = true }
 wac-parser = { workspace = true }
 wac-graph = { workspace = true }

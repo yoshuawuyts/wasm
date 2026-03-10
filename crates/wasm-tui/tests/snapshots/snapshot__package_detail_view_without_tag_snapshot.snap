@@ -1,15 +1,14 @@
 ---
-source: crates/wasm-cli/tests/snapshot.rs
+source: crates/wasm-tui/tests/snapshot.rs
 expression: output
 ---
-ghcr.io/bytecode-alliance/wasmtime
+docker.io/library/hello-world
 
 ────────────────────────────────────────────────────────────────────────────────
-Registry: ghcr.io
-Repository: bytecode-alliance/wasmtime
-Tag: v1.0.0
-Digest: sha256:abc123def456789
-Size: 5.00 MB
+Registry: docker.io
+Repository: library/hello-world
+Digest: sha256:digest123
+Size: 128.00 KB
 
 Manifest:
   Schema Version: 2
@@ -19,6 +18,7 @@ Manifest:
 
 Layers: 1 layer(s)
   [1] application/wasm (1.00 KB)
+
 
 
 

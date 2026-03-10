@@ -8,7 +8,6 @@ mod local;
 mod registry;
 mod run;
 mod self_;
-mod tui;
 mod util;
 
 use std::io::IsTerminal;
@@ -58,7 +57,7 @@ impl Cli {
             Some(Command::Install(opts)) => opts.run(self.offline).await?,
             Some(Command::Self_(opts)) => opts.run().await.map_err(into_miette)?,
             None if std::io::stdin().is_terminal() => {
-                tui::run(self.offline).await.map_err(into_miette)?;
+                wasm_tui::run(self.offline).await.map_err(into_miette)?;
             }
             None => {
                 // Apply the parsed color choice when printing help

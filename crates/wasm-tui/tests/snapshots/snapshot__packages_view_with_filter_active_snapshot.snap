@@ -1,12 +1,15 @@
 ---
-source: crates/wasm-cli/tests/snapshot.rs
+source: crates/wasm-tui/tests/snapshot.rs
 expression: output
 ---
 ┌ Filter ──────────────────────────────────────────────────────────────────────────────────────────┐
-│wasi                                                                                              │
+│wasi_                                                                                             │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
-Repository                 Registry             Tag             Size         Digest
-bytecode-alliance/wasi-htt ghcr.io              v0.2.0          256.00 KB    wasi123
+                               No packages found matching your filter.
+
+
+
+
 
 
 

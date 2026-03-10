@@ -17,6 +17,7 @@ specs (
                 test_include (
                     crates/wasm-cli/tests/**/*.rs
                     crates/wasm-detector/tests/**/*.rs
+                    crates/wasm-tui/tests/**/*.rs
                     crates/**/src/**/tests.rs
                 )
             }

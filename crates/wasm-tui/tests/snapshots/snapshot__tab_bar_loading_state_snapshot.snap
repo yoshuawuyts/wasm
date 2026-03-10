@@ -1,7 +1,7 @@
 ---
-source: crates/wasm-cli/tests/snapshot.rs
+source: crates/wasm-tui/tests/snapshot.rs
 expression: output
 ---
-┌ Test App - ready ────────────────────────────────────────┐
+┌ Test App - loading... ───────────────────────────────────┐
 │ First [1] │ Second [2] │ Third [3]                       │
 └──────────────────────────────────────────────────────────┘

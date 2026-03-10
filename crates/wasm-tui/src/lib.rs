@@ -1,3 +1,5 @@
+//! Terminal user interface for the WebAssembly developer tools.
+
 #![allow(unreachable_pub)]
 
 mod app;
@@ -15,6 +17,12 @@ use wasm_package_manager::oci::ImageEntry;
 use wasm_package_manager::storage::{KnownPackage, StateInfo};
 use wasm_package_manager::types::WitPackage;
 use wasm_package_manager::{ProgressEvent, Reference};
+
+/// Parse an OCI reference string, stripping the optional `oci://` scheme prefix.
+fn parse_reference(s: &str) -> Result<Reference, String> {
+    let s = s.strip_prefix("oci://").unwrap_or(s);
+    s.parse::<Reference>().map_err(|e| e.to_string())
+}
 
 /// Events sent from the TUI to the Manager
 #[derive(Debug)]
@@ -123,7 +131,7 @@ async fn run_manager(
                 sender.send(ManagerEvent::StateInfo(state_info)).await.ok();
             }
             AppEvent::Pull(reference_str) => {
-                let result = match crate::util::parse_reference(&reference_str) {
+                let result = match parse_reference(&reference_str) {
                     Ok(reference) => {
                         let (progress_tx, mut progress_rx) = mpsc::channel::<ProgressEvent>(64);
                         let sender_clone = sender.clone();
@@ -154,7 +162,7 @@ async fn run_manager(
                 }
             }
             AppEvent::Delete(reference_str) => {
-                let result = match crate::util::parse_reference(&reference_str) {
+                let result = match parse_reference(&reference_str) {
                     Ok(reference) => manager
                         .delete(reference)
                         .await
