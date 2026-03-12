@@ -164,9 +164,9 @@ impl InstallDisplay {
         entry.is_complete = true;
     }
 
-    /// Returns the number of package rows in the display.
-    pub(crate) fn package_count(&self) -> usize {
-        self.entries.len()
+    /// Returns the number of successfully completed package rows.
+    pub(crate) fn completed_count(&self) -> usize {
+        self.entries.iter().filter(|e| e.is_complete).count()
     }
 
     /// Display the final completion summary.
@@ -322,11 +322,16 @@ fn build_prefix(name: &str, version: Option<&str>, name_width: usize, is_complet
 }
 
 /// Build the Braille spinner tick strings for [`ProgressStyle::tick_strings`].
+///
+/// The last element is the "done" tick shown when the spinner finishes.
+/// We use a space since the phase spinner is always cleared via
+/// `finish_and_clear()` — the checkmark is reserved for completed
+/// package rows and the final summary line.
 // r[impl cli.progress-bar.spinner-chars]
 fn spinner_ticks() -> Vec<&'static str> {
     vec![
         "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏", // braille frames
-        "✓", // final (done) tick
+        " ", // done tick (cleared immediately, never visible)
     ]
 }
 
@@ -572,11 +577,14 @@ mod tests {
     #[test]
     fn spinner_tick_chars_are_braille() {
         let ticks = spinner_ticks();
-        // 10 braille chars + 1 final "✓"
+        // 10 braille chars + 1 done tick (space)
         assert_eq!(ticks.len(), 11);
         assert_eq!(ticks[0], "⠋");
         assert_eq!(ticks[9], "⠏");
-        assert_eq!(ticks[10], "✓");
+        assert_eq!(
+            ticks[10], " ",
+            "done tick should be a space, not a checkmark"
+        );
     }
 
     // r[verify cli.progress-bar.flat-rows]

@@ -403,8 +403,8 @@ impl Opts {
         if !offline {
             let elapsed = start_time.elapsed();
             let mut d = display.lock().await;
-            let package_count = d.package_count();
-            d.finish_all(package_count, elapsed);
+            let completed_count = d.completed_count();
+            d.finish_all(completed_count, elapsed);
         }
 
         Ok(())
