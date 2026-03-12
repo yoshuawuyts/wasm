@@ -210,8 +210,9 @@ impl Opts {
 
         // Derive the set of actually-enqueued transitive package names.
         // This must be computed *after* filtering so the fallback path
-        // correctly identifies deps that were planned but dropped (e.g.
-        // already in lockfile, or unresolvable) and re-installs them.
+        // does not treat a dep that was resolved but dropped (e.g. already
+        // in lockfile, or unresolvable via OCI) as "planned".  Unplanned
+        // deps fall through to the sequential `install_transitive_deps`.
         let planned_transitive: HashSet<String> = transitive_installs
             .iter()
             .filter_map(|entry| match entry {
@@ -933,12 +934,14 @@ mod tests {
     }
 
     #[test]
-    fn planned_transitive_excludes_filtered_entries() {
+    fn planned_transitive_only_includes_enqueued_entries() {
         use super::PlannedInstall;
         use std::collections::HashSet;
 
-        // Simulate: two transitive installs were enqueued, one was filtered
-        // out (already in lockfile or unresolvable).
+        // Simulate: the resolver returned two transitive deps (wasi:io and
+        // wasi:cli), but only wasi:io survived filtering (e.g. wasi:cli was
+        // already in the lockfile or unresolvable via OCI).  The planned set
+        // should contain only wasi:io so the fallback path picks up wasi:cli.
         let transitive_installs = vec![PlannedInstall::Transitive {
             reference: "ghcr.io/test/wasi-io:0.2.0"
                 .parse()
@@ -946,6 +949,7 @@ mod tests {
             package_name: "wasi:io".to_string(),
         }];
 
+        // This mirrors the derivation in Opts::run.
         let planned: HashSet<String> = transitive_installs
             .iter()
             .filter_map(|entry| match entry {
@@ -956,11 +960,11 @@ mod tests {
 
         // "wasi:io" was actually enqueued → should be in planned set.
         assert!(planned.contains("wasi:io"));
-        // "wasi:cli" was resolved but filtered out → must NOT be in planned
-        // set, so the fallback picks it up.
+        // "wasi:cli" was resolved but not enqueued → absent from planned,
+        // so the fallback installer handles it.
         assert!(
             !planned.contains("wasi:cli"),
-            "filtered-out deps should not appear in planned set"
+            "only enqueued deps should appear in planned set"
         );
     }
 }
