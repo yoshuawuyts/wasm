@@ -3,6 +3,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 use super::models::Migrations;
+use crate::xdg_config_home;
 
 /// Information about the current state of the package manager.
 ///
@@ -55,10 +56,7 @@ impl StateInfo {
         let data_dir = dirs::data_local_dir()
             .context("No local data dir known for the current OS")?
             .join("wasm");
-        let config_file = dirs::config_dir()
-            .context("No config dir known for the current OS")?
-            .join("wasm")
-            .join("config.toml");
+        let config_file = xdg_config_home().join("wasm").join("config.toml");
         Ok(Self::new_at(
             data_dir,
             config_file,

@@ -15,6 +15,8 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 
+use crate::xdg_config_home;
+
 use crate::credential_helper::CredentialHelper;
 
 /// Default configuration file content with commented examples.
@@ -278,8 +280,7 @@ impl Config {
     /// ```
     #[must_use]
     pub fn config_path_from(config_dir: Option<PathBuf>) -> PathBuf {
-        let base = config_dir
-            .unwrap_or_else(|| dirs::config_dir().unwrap_or_else(|| PathBuf::from(".config")));
+        let base = config_dir.unwrap_or_else(xdg_config_home);
         base.join("wasm").join("config.toml")
     }
 
@@ -336,8 +337,7 @@ impl Config {
     /// ```
     #[must_use]
     pub fn components_path_from(config_dir: Option<PathBuf>) -> PathBuf {
-        let base = config_dir
-            .unwrap_or_else(|| dirs::config_dir().unwrap_or_else(|| PathBuf::from(".config")));
+        let base = config_dir.unwrap_or_else(xdg_config_home);
         base.join("wasm").join("components.toml")
     }
 
