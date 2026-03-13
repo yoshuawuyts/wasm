@@ -1048,12 +1048,13 @@ impl Manager {
             }
 
             // r[impl db.wit-package-dependency.populate-on-sync]
-            // Store dependency information from the sync response so the
-            // local database can answer dependency queries without network
-            // access.
-            if !pkg.dependencies.is_empty()
-                && let (Some(ns), Some(name)) = (&pkg.wit_namespace, &pkg.wit_name)
-            {
+            // Store package and dependency information from the sync response
+            // so the local database can answer dependency and version queries
+            // without network access.  A `wit_package` stub row is created
+            // even for packages with no dependencies — the resolver needs the
+            // row to exist so that `choose_version` can enumerate available
+            // versions.
+            if let (Some(ns), Some(name)) = (&pkg.wit_namespace, &pkg.wit_name) {
                 let package_name = format!("{ns}:{name}");
                 // Use the latest stable semver tag as the canonical version;
                 // strip any leading "v" so it matches the WIT version string.
@@ -1068,7 +1069,7 @@ impl Manager {
                     tracing::warn!(
                         package = %package_name,
                         error = %e,
-                        "Failed to store synced dependencies"
+                        "Failed to store synced package"
                     );
                 }
             }
