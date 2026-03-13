@@ -126,7 +126,18 @@ fn remove_dir_contents(dir: &std::path::Path) {
         }
     };
 
-    for entry in entries.filter_map(Result::ok) {
+    for entry in entries {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(e) => {
+                eprintln!(
+                    "{:>12} failed to read entry in {}: {e}",
+                    console::style("Warning").yellow().bold(),
+                    dir.display()
+                );
+                continue;
+            }
+        };
         let path = entry.path();
         let result = if path.is_dir() {
             std::fs::remove_dir_all(&path)
