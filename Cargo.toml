@@ -4,6 +4,7 @@ resolver = "2"
 members = [
     "crates/wasm-cli",
     "crates/wasm-cli-internal-run",
+    "crates/wasm-frontend",
     "crates/wasm-manifest",
     "crates/wasm-meta-registry",
     "crates/wasm-meta-registry-client",
@@ -143,6 +144,11 @@ toml = "1.0"
 wasmparser = "0.245"
 wit-component = "0.245"
 wit-parser = "0.245"
+
+# frontend dependencies
+html = "0.6"
+wstd = "0.6"
+wstd-axum = "0.6"
 
 # server dependencies
 axum = "0.8.8"
