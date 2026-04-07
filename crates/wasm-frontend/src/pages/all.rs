@@ -42,16 +42,9 @@ fn render_row(pkg: &KnownPackage) -> String {
         _ => "#".to_string(),
     };
 
-    let description = pkg
-        .description
-        .as_deref()
-        .unwrap_or("");
+    let description = pkg.description.as_deref().unwrap_or("");
 
-    let version = pkg
-        .tags
-        .first()
-        .map(String::as_str)
-        .unwrap_or("—");
+    let version = pkg.tags.first().map_or("—", String::as_str);
 
     format!(
         r#"  <a href="{href}" class="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3 hover:border-accent hover:shadow-sm transition-colors">

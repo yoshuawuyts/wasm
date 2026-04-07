@@ -2,6 +2,8 @@
 
 // r[impl frontend.pages.package-detail]
 
+use std::fmt::Write;
+
 use wasm_meta_registry_client::KnownPackage;
 
 use crate::layout;
@@ -22,7 +24,8 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
     let mut body = String::new();
 
     // Breadcrumb + title
-    body.push_str(&format!(
+    let _ = write!(
+        body,
         r#"<nav class="text-sm text-gray-500 mb-4">
   <a href="/" class="hover:text-accent">Home</a>
   <span class="mx-1">/</span>
@@ -32,7 +35,7 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str) -> String {
   <h1 class="text-3xl font-bold font-mono text-accent">{display_name}</h1>
   <p class="text-lg text-gray-600 mt-2">{description}</p>
 </div>"#
-    ));
+    );
 
     // Metadata section
     body.push_str(r#"<div class="grid grid-cols-1 md:grid-cols-3 gap-8">"#);
@@ -80,10 +83,10 @@ fn render_tags(pkg: &KnownPackage, current_version: &str) -> String {
         } else {
             "bg-gray-100 text-gray-700 hover:bg-gray-200"
         };
-        html.push_str(&format!(
-            r#"    <a href="/{display_name}/{tag}" class="px-3 py-1 rounded-full text-sm font-mono {classes}">{tag}</a>
-"#
-        ));
+        let _ = writeln!(
+            html,
+            r#"    <a href="/{display_name}/{tag}" class="px-3 py-1 rounded-full text-sm font-mono {classes}">{tag}</a>"#
+        );
     }
 
     html.push_str("  </div>\n</section>\n");
@@ -108,13 +111,14 @@ fn render_dependencies(pkg: &KnownPackage) -> String {
             .as_deref()
             .map(|v| format!(r#" <span class="text-gray-400">{v}</span>"#))
             .unwrap_or_default();
-        html.push_str(&format!(
+        let _ = write!(
+            html,
             r#"    <li class="font-mono text-sm">
       <span class="text-accent">{}</span>{version_badge}
     </li>
 "#,
             dep.package
-        ));
+        );
     }
 
     html.push_str("  </ul>\n</section>\n");

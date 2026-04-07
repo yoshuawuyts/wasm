@@ -69,8 +69,7 @@ impl ApiClient {
         let query = format!("{namespace}:{name}");
         let packages = self.search_packages(&query).await;
         packages.into_iter().find(|pkg| {
-            pkg.wit_namespace.as_deref() == Some(namespace)
-                && pkg.wit_name.as_deref() == Some(name)
+            pkg.wit_namespace.as_deref() == Some(namespace) && pkg.wit_name.as_deref() == Some(name)
         })
     }
 

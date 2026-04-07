@@ -3,7 +3,7 @@
 /// Render the site navigation bar.
 #[must_use]
 pub(crate) fn render() -> String {
-    format!(
+    String::from(
         r#"<header class="bg-accent text-white">
   <nav class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
     <a href="/" class="text-xl font-bold tracking-tight hover:opacity-90">wasm</a>
@@ -26,6 +26,6 @@ pub(crate) fn render() -> String {
     <a href="/all" class="block hover:opacity-80">All Packages</a>
     <a href="/about" class="block hover:opacity-80">About</a>
   </div>
-</header>"#
+</header>"#,
     )
 }

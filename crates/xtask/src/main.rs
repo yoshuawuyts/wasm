@@ -3,7 +3,12 @@
 //! This binary provides a unified interface for running common development tasks
 //! like testing, linting, and formatting checks.
 
+// xtask is a developer CLI tool — printing status messages to stdout/stderr is
+// the primary way it communicates progress.
+#![allow(clippy::print_stdout, clippy::print_stderr)]
+
 mod readme;
+mod serve;
 mod sql;
 mod test;
 
@@ -33,6 +38,8 @@ enum Xtask {
     },
     /// Run a clean demo: reset state, init, and install ba:sample-wasi-http-rust
     Demo,
+    /// Build and serve the frontend with a local meta-registry
+    Serve,
     /// Database schema and migration management
     Sql {
         #[command(subcommand)]
@@ -97,6 +104,7 @@ fn main() -> Result<()> {
             run_command("cargo", &cargo_args)?;
         }
         Xtask::Demo => run_demo()?,
+        Xtask::Serve => serve::run_serve()?,
         Xtask::Sql { command } => match command {
             SqlCommand::Migrate { name } => sql::migrate(&name)?,
             SqlCommand::Check => sql::check()?,

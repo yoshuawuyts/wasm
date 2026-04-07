@@ -17,14 +17,8 @@ pub(crate) async fn render(client: &ApiClient) -> String {
 
     body.push_str(r#"<h1 class="text-3xl font-bold mb-8">WebAssembly Package Registry</h1>"#);
 
-    body.push_str(&render_section(
-        "Recently Updated Interfaces",
-        &interfaces,
-    ));
-    body.push_str(&render_section(
-        "Recently Updated Components",
-        &components,
-    ));
+    body.push_str(&render_section("Recently Updated Interfaces", &interfaces));
+    body.push_str(&render_section("Recently Updated Components", &components));
 
     if packages.is_empty() {
         body.push_str(
@@ -93,11 +87,7 @@ fn render_card(pkg: &KnownPackage) -> String {
         .as_deref()
         .unwrap_or("No description available");
 
-    let version = pkg
-        .tags
-        .first()
-        .map(String::as_str)
-        .unwrap_or("—");
+    let version = pkg.tags.first().map_or("—", String::as_str);
 
     format!(
         r#"    <a href="{href}" class="block border border-gray-200 rounded-lg p-4 hover:border-accent hover:shadow-sm transition-colors">

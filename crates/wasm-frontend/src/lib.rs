@@ -4,6 +4,10 @@
 //! component targeting `wasi:http`. Uses `wstd-axum` for routing and the
 //! `html` crate for type-safe HTML generation.
 
+// Logging errors to stderr is the appropriate way to surface API failures
+// when running under wasmtime serve.
+#![allow(clippy::print_stderr)]
+
 // r[impl frontend.server.wasi-http]
 
 mod api_client;
@@ -122,10 +126,9 @@ async fn not_found() -> Response {
     let html = pages::not_found::render();
     let mut response = axum::response::Html(html).into_response();
     *response.status_mut() = StatusCode::NOT_FOUND;
-    response.headers_mut().insert(
-        header::CACHE_CONTROL,
-        HeaderValue::from_static("no-cache"),
-    );
+    response
+        .headers_mut()
+        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-cache"));
     response
 }
 
