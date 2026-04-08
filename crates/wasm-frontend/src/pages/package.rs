@@ -26,7 +26,11 @@ pub(crate) enum ActiveTab<'a> {
 
 /// Render the package detail page for a given package and version.
 #[must_use]
-pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> String {
+pub(crate) fn render(
+    pkg: &KnownPackage,
+    version: &str,
+    version_detail: Option<&PackageVersion>,
+) -> String {
     let display_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}:{name}"),
         _ => pkg.repository.clone(),
@@ -71,6 +75,9 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
     // Main content column (varies by tab)
     let mut main_col = Division::builder();
     main_col.class("md:col-span-2 space-y-8");
+    if let Some(detail) = version_detail {
+        main_col.push(render_wit_content(detail));
+    }
     if let Some(deps) = render_dependencies(pkg) {
         main_col.push(deps);
     }
@@ -140,6 +147,100 @@ fn render_breadcrumb(display_name: &str) -> Navigation {
         .span(|s| s.class("mx-1").text("/"))
         .span(|s| s.text(display_name.to_owned()))
         .build()
+}
+
+/// Render the WIT content section for a package version.
+///
+/// For interfaces, displays the full WIT source text.
+/// For components, displays the world imports and exports.
+fn render_wit_content(detail: &PackageVersion) -> Section {
+    let mut section = Section::builder();
+
+    if !detail.worlds.is_empty() {
+        section.push(render_worlds(detail));
+    }
+
+    if let Some(wit_text) = &detail.wit_text {
+        section.heading_2(|h2| {
+            h2.class("text-lg font-semibold mb-3")
+                .text("WIT Definition")
+        });
+        section.push(
+            html::text_content::PreformattedText::builder()
+                .class("bg-surface-muted border border-border rounded-lg p-4 overflow-x-auto text-sm leading-relaxed")
+                .code(|code| code.class("text-fg").text(wit_text.clone()))
+                .build(),
+        );
+    }
+
+    section.build()
+}
+
+/// Render the worlds section showing imports and exports.
+fn render_worlds(detail: &PackageVersion) -> Division {
+    let mut container = Division::builder();
+    container.class("space-y-6");
+
+    for world in &detail.worlds {
+        let mut world_div = Division::builder();
+        world_div.class("space-y-3");
+        world_div.heading_2(|h2| {
+            h2.class("text-lg font-semibold")
+                .text(format!("world {}", world.name))
+        });
+
+        if let Some(desc) = &world.description {
+            world_div.paragraph(|p| p.class("text-fg-secondary text-sm").text(desc.clone()));
+        }
+
+        if !world.imports.is_empty() {
+            world_div.push(render_interface_list("Imports", &world.imports));
+        }
+        if !world.exports.is_empty() {
+            world_div.push(render_interface_list("Exports", &world.exports));
+        }
+        container.push(world_div.build());
+    }
+
+    container.build()
+}
+
+/// Render a list of WIT interface references (imports or exports).
+fn render_interface_list(
+    label: &str,
+    interfaces: &[wasm_meta_registry_client::WitInterfaceRef],
+) -> Division {
+    let mut div = Division::builder();
+    div.heading_3(|h3| {
+        h3.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+            .text(label.to_owned())
+    });
+
+    let mut ul = UnorderedList::builder();
+    ul.class("space-y-1 ml-1");
+    for iface in interfaces {
+        let display = format_interface_ref(iface);
+        ul.list_item(|li| {
+            li.class("text-sm font-mono")
+                .span(|s| s.class("text-accent").text(display))
+        });
+    }
+    div.push(ul.build());
+    div.build()
+}
+
+/// Format a WIT interface reference as a display string.
+fn format_interface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
+    let mut s = iface.package.clone();
+    if let Some(name) = &iface.interface {
+        s.push('/');
+        s.push_str(name);
+    }
+    if let Some(v) = &iface.version {
+        s.push('@');
+        s.push_str(v);
+    }
+    s
 }
 
 /// Render the dependencies section.
