@@ -4,7 +4,7 @@
 
 ## Storage Location
 
-`wasm(1)` follows the [XDG Base Directory specification](https://specifications.freedesktop.org/basedir-spec/latest/) for storing data:
+`wasm(1)` loosely follows the [XDG Base Directory specification](https://specifications.freedesktop.org/basedir-spec/latest/) for storing data:
 
 | XDG Variable       | Purpose                                                | Unix / macOS default | Windows default |
 | ------------------ | ------------------------------------------------------ | -------------------- | --------------- |
