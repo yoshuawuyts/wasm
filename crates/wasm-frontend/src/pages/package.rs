@@ -27,7 +27,11 @@ pub(crate) enum ActiveTab<'a> {
 
 /// Render the package detail page for a given package and version.
 #[must_use]
-pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> String {
+pub(crate) fn render(
+    pkg: &KnownPackage,
+    version: &str,
+    version_detail: Option<&PackageVersion>,
+) -> String {
     let display_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}:{name}"),
         _ => pkg.repository.clone(),
