@@ -10,13 +10,13 @@ pub(crate) fn render() -> String {
         .division(|div| {
             div.class("max-w-5xl mx-auto px-4 py-6 text-center text-sm text-fg-muted")
                 .paragraph(|p| {
-                    p.text("wasm registry — a ")
+                    p.text("wasm registry — ")
                         .anchor(|a| {
-                            a.href("https://bytecodealliance.org")
+                            a.href("https://github.com/yoshuawuyts/wasm-cli")
                                 .class("text-accent hover:underline transition-colors")
-                                .text("Bytecode Alliance")
+                                .text("open-source")
                         })
-                        .text(" project")
+                        .text(" on GitHub")
                 })
         })
         .build()
