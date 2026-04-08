@@ -77,6 +77,7 @@ fn render_hero(total: usize) -> Division {
                     .name("q")
                     .placeholder(placeholder)
                     .aria_label("Search packages")
+                    .autofocus(true)
                     .class("flex-1 px-4 py-2.5 rounded-l-md text-base border border-border bg-surface text-fg placeholder:text-fg-faint focus:border-accent focus:outline-none transition-colors")
             })
             .button(|btn| {
