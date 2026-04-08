@@ -74,53 +74,60 @@ mod tests {
     use super::*;
 
     // ------------------------------------------------------------------
+    // Platform-appropriate absolute path helper for tests.
+    // Unix paths like "/foo/bar" are not absolute on Windows (no drive
+    // letter), so we prefix them with "C:" on Windows.
+    // ------------------------------------------------------------------
+    fn abs(path: &str) -> PathBuf {
+        if cfg!(windows) {
+            PathBuf::from(format!("C:{}", path.replace('/', "\\")))
+        } else {
+            PathBuf::from(path)
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Tests for the pure `resolve_config_home` helper
     // ------------------------------------------------------------------
 
     #[test]
     fn respects_absolute_xdg_config_home() {
+        let xdg = abs("/custom/config");
         let result = resolve_config_home(
-            Some(OsString::from("/custom/config")),
-            Some(PathBuf::from("/home/user")),
+            Some(xdg.clone().into_os_string()),
+            Some(abs("/home/user")),
             None,
         );
-        assert_eq!(result, Some(PathBuf::from("/custom/config")));
+        assert_eq!(result, Some(xdg));
     }
 
     #[test]
     fn ignores_empty_xdg_config_home() {
-        let result = resolve_config_home(
-            Some(OsString::from("")),
-            Some(PathBuf::from("/home/user")),
-            None,
-        );
-        assert_eq!(result, Some(PathBuf::from("/home/user/.config")));
+        let result = resolve_config_home(Some(OsString::from("")), Some(abs("/home/user")), None);
+        assert_eq!(result, Some(abs("/home/user").join(".config")));
     }
 
     #[test]
     fn ignores_relative_xdg_config_home() {
         let result = resolve_config_home(
             Some(OsString::from("relative/path")),
-            Some(PathBuf::from("/home/user")),
+            Some(abs("/home/user")),
             None,
         );
-        assert_eq!(result, Some(PathBuf::from("/home/user/.config")));
+        assert_eq!(result, Some(abs("/home/user").join(".config")));
     }
 
     #[test]
     fn falls_back_to_platform_dir() {
-        let result = resolve_config_home(
-            None,
-            Some(PathBuf::from("/home/user")),
-            Some(PathBuf::from("/appdata/roaming")),
-        );
-        assert_eq!(result, Some(PathBuf::from("/appdata/roaming")));
+        let result =
+            resolve_config_home(None, Some(abs("/home/user")), Some(abs("/appdata/roaming")));
+        assert_eq!(result, Some(abs("/appdata/roaming")));
     }
 
     #[test]
     fn falls_back_to_home_dot_config() {
-        let result = resolve_config_home(None, Some(PathBuf::from("/home/user")), None);
-        assert_eq!(result, Some(PathBuf::from("/home/user/.config")));
+        let result = resolve_config_home(None, Some(abs("/home/user")), None);
+        assert_eq!(result, Some(abs("/home/user").join(".config")));
     }
 
     #[test]
@@ -131,12 +138,13 @@ mod tests {
 
     #[test]
     fn xdg_overrides_platform_dir() {
+        let xdg = abs("/xdg/override");
         let result = resolve_config_home(
-            Some(OsString::from("/xdg/override")),
-            Some(PathBuf::from("/home/user")),
-            Some(PathBuf::from("/appdata/roaming")),
+            Some(xdg.clone().into_os_string()),
+            Some(abs("/home/user")),
+            Some(abs("/appdata/roaming")),
         );
-        assert_eq!(result, Some(PathBuf::from("/xdg/override")));
+        assert_eq!(result, Some(xdg));
     }
 
     // ------------------------------------------------------------------
