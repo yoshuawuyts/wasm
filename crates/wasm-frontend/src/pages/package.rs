@@ -489,11 +489,6 @@ fn render_sidebar(
     let mut card = Division::builder();
     card.class("bg-surface border border-border rounded-lg p-5 space-y-4 text-sm");
 
-    // Version selector dropdown
-    if !pkg.tags.is_empty() {
-        card.push(render_version_select(pkg, current_version, &url_name));
-    }
-
     // Repository: combined registry/repository as a clickable link
     let repo_url = format!("https://{}/{}", pkg.registry, pkg.repository);
     let repo_display = format!("{}/{}", pkg.registry, pkg.repository);
@@ -502,10 +497,8 @@ fn render_sidebar(
     if let Some(kind) = &pkg.kind {
         card.push(sidebar_row("Kind", &kind.to_string()));
     }
-    if let Some(size) = version_detail.and_then(|d| d.size_bytes) {
-        card.push(sidebar_row("Size", &format_size(size)));
-    }
-    card.push(sidebar_row("Published on", &pkg.created_at));
+    card.push(sidebar_row("Created", &pkg.created_at));
+    card.push(sidebar_row("Last updated", &pkg.last_seen_at));
     aside.push(card.build());
 
     aside.build()
@@ -583,30 +576,6 @@ fn sidebar_link_row(label: &str, text: &str, href: &str) -> Division {
             })
         })
         .build()
-}
-
-/// Format a byte count as a human-readable size string.
-fn format_size(bytes: i64) -> String {
-    const KIBIBYTE: u64 = 1024;
-    const MEBIBYTE: u64 = KIBIBYTE * 1024;
-    const GIBIBYTE: u64 = MEBIBYTE * 1024;
-
-    let bytes =
-        u64::try_from(bytes.max(0)).expect("non-negative i64 byte count should fit into u64");
-    if bytes < KIBIBYTE {
-        format!("{bytes} B")
-    } else if bytes < MEBIBYTE {
-        format_size_with_decimal(bytes, KIBIBYTE, "KiB")
-    } else if bytes < GIBIBYTE {
-        format_size_with_decimal(bytes, MEBIBYTE, "MiB")
-    } else {
-        format_size_with_decimal(bytes, GIBIBYTE, "GiB")
-    }
-}
-
-fn format_size_with_decimal(bytes: u64, unit: u64, suffix: &str) -> String {
-    let tenths = (u128::from(bytes) * 10 + u128::from(unit) / 2) / u128::from(unit);
-    format!("{}.{} {suffix}", tenths / 10, tenths % 10)
 }
 
 #[cfg(test)]
