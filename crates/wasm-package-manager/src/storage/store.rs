@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::path::Path;
 
 use super::config::StateInfo;
+use super::known_package::KnownPackageParams;
 use super::models::{Migrations, RawKnownPackage};
 use crate::components::{ComponentTarget, WasmComponent};
 use crate::oci::{
@@ -750,27 +751,11 @@ impl Store {
     }
 
     /// Add or update a known package with optional WIT namespace mapping.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn add_known_package_with_wit(
+    pub(crate) fn add_known_package_with_params(
         &self,
-        registry: &str,
-        repository: &str,
-        tag: Option<&str>,
-        description: Option<&str>,
-        wit_namespace: Option<&str>,
-        wit_name: Option<&str>,
-        kind: Option<&str>,
+        params: &KnownPackageParams<'_>,
     ) -> anyhow::Result<()> {
-        RawKnownPackage::upsert_with_wit(
-            &self.conn,
-            registry,
-            repository,
-            tag,
-            description,
-            wit_namespace,
-            wit_name,
-            kind,
-        )
+        RawKnownPackage::upsert_with_params(&self.conn, params)
     }
 
     /// Get all WIT packages.

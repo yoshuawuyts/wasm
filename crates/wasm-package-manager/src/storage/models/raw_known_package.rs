@@ -3,6 +3,7 @@ use rusqlite::Connection;
 use wasm_meta_registry_types::PackageKind;
 
 use crate::oci::OciRepository;
+use crate::storage::KnownPackageParams;
 
 /// A raw known package that persists in the database even after local deletion.
 /// This is used to track packages the user has seen or searched for.
@@ -75,37 +76,40 @@ impl RawKnownPackage {
         tag: Option<&str>,
         description: Option<&str>,
     ) -> anyhow::Result<()> {
-        Self::upsert_with_wit(
+        Self::upsert_with_params(
             conn,
-            registry,
-            repository,
-            tag,
-            description,
-            None,
-            None,
-            None,
+            &KnownPackageParams {
+                registry,
+                repository,
+                tag,
+                description,
+                wit_namespace: None,
+                wit_name: None,
+                kind: None,
+            },
         )
     }
 
-    /// Inserts or updates a known package with optional WIT namespace mapping.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn upsert_with_wit(
+    /// Inserts or updates a known package with optional WIT namespace mapping
+    /// and package kind.
+    pub(crate) fn upsert_with_params(
         conn: &Connection,
-        registry: &str,
-        repository: &str,
-        tag: Option<&str>,
-        description: Option<&str>,
-        wit_namespace: Option<&str>,
-        wit_name: Option<&str>,
-        kind: Option<&str>,
+        params: &KnownPackageParams<'_>,
     ) -> anyhow::Result<()> {
-        let repo_id =
-            OciRepository::upsert_full(conn, registry, repository, wit_namespace, wit_name, kind)?;
+        let kind_str = params.kind.map(|k| k.to_string());
+        let repo_id = OciRepository::upsert_full(
+            conn,
+            params.registry,
+            params.repository,
+            params.wit_namespace,
+            params.wit_name,
+            kind_str.as_deref(),
+        )?;
 
         // Store description on the most recent manifest that doesn't have one.
         // Uses a subquery instead of LIMIT in UPDATE (SQLITE_ENABLE_UPDATE_DELETE_LIMIT
         // is not enabled in most SQLite builds).
-        if let Some(desc) = description
+        if let Some(desc) = params.description
             && let Err(e) = conn.execute(
                 "UPDATE oci_manifest SET oci_description = ?1
                  WHERE id = (
@@ -124,7 +128,7 @@ impl RawKnownPackage {
         // If a tag was provided and a manifest exists that it could reference,
         // upsert the tag.  During index/sync there may be no manifest yet, so
         // this is best-effort.
-        if let Some(tag) = tag {
+        if let Some(tag) = params.tag {
             // Try to find the most recent manifest for this repo.
             let digest: Option<String> = conn
                 .query_row(
@@ -900,15 +904,17 @@ mod tests {
     fn test_known_package_search_by_wit_name_exact_lookup() {
         let conn = setup_test_db();
         // Insert a package whose repository path does NOT contain "ba/"
-        RawKnownPackage::upsert_with_wit(
+        RawKnownPackage::upsert_with_params(
             &conn,
-            "ghcr.io",
-            "bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust",
-            None,
-            None,
-            Some("ba"),
-            Some("sample-wasi-http-rust"),
-            None,
+            &KnownPackageParams {
+                registry: "ghcr.io",
+                repository: "bytecodealliance/sample-wasi-http-rust/sample-wasi-http-rust",
+                tag: None,
+                description: None,
+                wit_namespace: Some("ba"),
+                wit_name: Some("sample-wasi-http-rust"),
+                kind: None,
+            },
         )
         .unwrap();
 
@@ -925,5 +931,68 @@ mod tests {
         );
         assert_eq!(pkg.wit_namespace.as_deref(), Some("ba"));
         assert_eq!(pkg.wit_name.as_deref(), Some("sample-wasi-http-rust"));
+    }
+
+    // r[verify db.known-packages.kind-round-trip]
+    /// Storing a `PackageKind` via `upsert_with_params` must round-trip
+    /// correctly when reading back via `get_all`.
+    #[test]
+    fn test_known_package_kind_round_trip() {
+        let conn = setup_test_db();
+
+        RawKnownPackage::upsert_with_params(
+            &conn,
+            &KnownPackageParams {
+                registry: "ghcr.io",
+                repository: "example/my-component",
+                tag: None,
+                description: None,
+                wit_namespace: None,
+                wit_name: None,
+                kind: Some(PackageKind::Component),
+            },
+        )
+        .unwrap();
+
+        RawKnownPackage::upsert_with_params(
+            &conn,
+            &KnownPackageParams {
+                registry: "ghcr.io",
+                repository: "example/my-interface",
+                tag: None,
+                description: None,
+                wit_namespace: None,
+                wit_name: None,
+                kind: Some(PackageKind::Interface),
+            },
+        )
+        .unwrap();
+
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
+        assert_eq!(packages.len(), 2);
+
+        let component = packages
+            .iter()
+            .find(|p| p.repository == "example/my-component")
+            .unwrap();
+        assert_eq!(component.kind, Some(PackageKind::Component));
+
+        let interface = packages
+            .iter()
+            .find(|p| p.repository == "example/my-interface")
+            .unwrap();
+        assert_eq!(interface.kind, Some(PackageKind::Interface));
+    }
+
+    // r[verify db.known-packages.kind-none]
+    /// Packages without a `kind` should round-trip as `None`.
+    #[test]
+    fn test_known_package_kind_none_round_trip() {
+        let conn = setup_test_db();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "example/unknown", None, None).unwrap();
+
+        let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
+        assert_eq!(packages.len(), 1);
+        assert_eq!(packages[0].kind, None);
     }
 }
