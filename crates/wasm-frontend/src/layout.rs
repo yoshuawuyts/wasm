@@ -36,7 +36,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
 
     format!(
         r#"<!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="view-transition-name:root">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -114,6 +114,19 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     /* Remove default outline when not keyboard-navigating */
     :focus:not(:focus-visible) {{
       outline: none;
+    }}
+    @view-transition {{
+      navigation: auto;
+    }}
+    ::view-transition-old(root),
+    ::view-transition-new(root) {{
+      animation-duration: 0s;
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+      ::view-transition-old(root),
+      ::view-transition-new(root) {{
+        animation: none;
+      }}
     }}
   </style>
 </head>
