@@ -17,9 +17,9 @@ pub(crate) enum ActiveTab<'a> {
         version_detail: Option<&'a PackageVersion>,
     },
     /// Packages that export/implement this interface.
-    Providers { exporters: &'a [KnownPackage] },
+    Exporters { exporters: &'a [KnownPackage] },
     /// Packages that import/consume this interface.
-    Dependents { importers: &'a [KnownPackage] },
+    Importers { importers: &'a [KnownPackage] },
 }
 
 /// Render the package detail page for a given package and version.
