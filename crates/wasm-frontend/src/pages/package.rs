@@ -129,7 +129,7 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
                  rounded-md px-3 py-2 font-mono text-xs text-fg",
             )
             .code(|code| {
-                code.class("flex-1 select-all overflow-x-auto whitespace-nowrap")
+                code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")
                     .text(command)
             })
             .button(|btn| {
