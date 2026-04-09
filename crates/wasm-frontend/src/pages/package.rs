@@ -1104,6 +1104,7 @@ fn format_date(iso: &str) -> String {
 }
 
 /// Format a byte count as a human-readable size string.
+#[allow(clippy::cast_precision_loss)]
 fn format_size(bytes: i64) -> String {
     const KIB: f64 = 1024.0;
     const MIB: f64 = KIB * 1024.0;
