@@ -30,8 +30,8 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     body.push(render_hero(packages.len()));
 
     // Package sections with generous separation
-    body.push(render_section("Interfaces", &interfaces));
-    body.push(render_section("Components", &components));
+    body.push(render_section(SectionKind::Interfaces, &interfaces));
+    body.push(render_section(SectionKind::Components, &components));
 
     layout::document("Home", &body.build().to_string())
 }
@@ -57,9 +57,9 @@ fn render_error(err: &ApiError) -> String {
 /// Render the hero area with heading, search form, CTA, and quick-install hint.
 fn render_hero(total: usize) -> Division {
     let placeholder = if total > 0 {
-        format!("Search {total} packages\u{2026}")
+        format!("Search {total} components\u{2026}")
     } else {
-        "Search packages\u{2026}".to_owned()
+        "Search components\u{2026}".to_owned()
     };
 
     let mut hero = Division::builder();
@@ -68,17 +68,11 @@ fn render_hero(total: usize) -> Division {
     // Title and hint — grouped tightly
     hero.heading_1(|h1| {
         h1.class("text-3xl font-bold tracking-tight")
-            .text("WebAssembly Package Registry")
+            .text("WebAssembly Component Registry")
     });
     hero.paragraph(|p| {
         p.class("mt-2 text-sm text-fg-muted flex items-center gap-2 flex-wrap")
-            .text("Install a package: ")
-            .code(|code| {
-                code.class(
-                    "font-mono text-fg-secondary bg-surface-muted px-1.5 py-0.5 rounded text-xs copy-hint",
-                )
-                .text("wasm install wasi:http")
-            })
+            .text("Search for programs, libraries, and interfaces across all OCI registries.")
     });
 
     // Search and CTA — grouped below with generous separation from title
@@ -137,19 +131,46 @@ fn split_by_kind(packages: &[KnownPackage]) -> (Vec<&KnownPackage>, Vec<&KnownPa
     (components, interfaces)
 }
 
+/// Kind of package section on the home page.
+enum SectionKind {
+    Interfaces,
+    Components,
+}
+
+impl SectionKind {
+    /// Display label for the section heading.
+    fn label(&self) -> &'static str {
+        match self {
+            Self::Interfaces => "WebAssembly Interface Types",
+            Self::Components => "WebAssembly Components",
+        }
+    }
+
+    /// Icon prefix for the section heading.
+    fn icon(&self) -> &'static str {
+        match self {
+            Self::Interfaces => "⬡",
+            Self::Components => "◈",
+        }
+    }
+
+    /// Subtitle describing the section.
+    fn subtitle(&self) -> &'static str {
+        match self {
+            Self::Interfaces => "Interfaces to connect programs, libraries, and runtimes.",
+            Self::Components => "Ready-to-use programs and libraries.",
+        }
+    }
+}
+
 /// Render a section with a heading, a grid of package rows, and a "view all" link.
-fn render_section(heading: &str, packages: &[&KnownPackage]) -> Section {
+fn render_section(kind: SectionKind, packages: &[&KnownPackage]) -> Section {
     let has_more = packages.len() > HOME_SECTION_LIMIT;
     let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
 
-    let (icon, subtitle) = match heading {
-        "Interfaces" => (
-            "⬡",
-            "WIT interfaces for composing WebAssembly modules",
-        ),
-        "Components" => ("◈", "Ready-to-use WebAssembly components"),
-        _ => ("", ""),
-    };
+    let icon = kind.icon();
+    let heading = kind.label();
+    let subtitle = kind.subtitle();
 
     let mut section = Section::builder();
     section.class("mb-10");
@@ -217,10 +238,7 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
         _ => pkg.repository.clone(),
     };
 
-    let description = pkg
-        .description
-        .as_deref()
-        .unwrap_or("No description");
+    let description = pkg.description.as_deref().unwrap_or("No description");
 
     let version = pkg.tags.first().map_or("—", String::as_str);
 
