@@ -180,7 +180,7 @@ fn render_wit_content_with_doc(
             section.push(render_interface_overview(doc));
         }
         if !doc.interfaces.is_empty() {
-            section.push(render_interface_overview(&doc));
+            section.push(render_interface_overview(doc));
         }
     } else {
         // Fallback: show pre-extracted world summaries + raw WIT text.
