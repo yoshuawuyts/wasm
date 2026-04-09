@@ -15,7 +15,10 @@ keywords = { workspace = true }
 crate-type = ["cdylib"]
 
 [dependencies]
-axum = { version = "0.8", default-features = false, features = ["json", "query"] }
+axum = { version = "0.8", default-features = false, features = [
+    "json",
+    "query",
+] }
 html = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

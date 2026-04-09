@@ -182,8 +182,13 @@ fn render_wit_content_with_doc(
         if !detail.worlds.is_empty() {
             section.push(render_world_summaries(detail));
         }
+        // Only show the raw WIT text if it's genuine WIT (not lossy
+        // debug output that contains patterns like `type foo: "type"`
+        // or `interface-Id { idx: 0 }`).
         if let Some(wit_text) = &detail.wit_text {
-            section.push(render_raw_wit(wit_text));
+            if !is_lossy_wit(wit_text) {
+                section.push(render_raw_wit(wit_text));
+            }
         }
     }
 
@@ -218,11 +223,12 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-3 mt-10");
     container.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2").text("Interfaces")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+            .text("Interfaces")
     });
 
     let mut ul = UnorderedList::builder();
-    ul.class("divide-y divide-border/50");
+    ul.class("space-y-0.5");
     for iface in &doc.interfaces {
         ul.push(render_interface_row(iface));
     }
@@ -236,12 +242,11 @@ fn render_interface_row(iface: &wasm_wit_doc::InterfaceDoc) -> ListItem {
     li.class("py-3 flex gap-6");
 
     li.division(|left| {
-        left.class("shrink-0 w-52")
-            .anchor(|a| {
-                a.href(iface.url.clone())
-                    .class("font-mono text-sm font-semibold text-accent hover:underline")
-                    .text(iface.name.clone())
-            })
+        left.class("shrink-0 w-52").anchor(|a| {
+            a.href(iface.url.clone())
+                .class("font-mono text-sm font-semibold text-accent hover:underline")
+                .text(iface.name.clone())
+        })
     });
 
     // Right: doc excerpt
@@ -261,11 +266,12 @@ fn render_world_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-3");
     container.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2").text("Worlds")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+            .text("Worlds")
     });
 
     let mut ul = UnorderedList::builder();
-    ul.class("divide-y divide-border/50");
+    ul.class("space-y-0.5");
     for world in &doc.worlds {
         ul.push(render_world_row(world));
     }
@@ -279,12 +285,11 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
     li.class("py-3 flex gap-6");
 
     li.division(|left| {
-        left.class("shrink-0 w-52")
-            .anchor(|a| {
-                a.href(world.url.clone())
-                    .class("font-mono text-sm font-semibold text-accent hover:underline")
-                    .text(world.name.clone())
-            })
+        left.class("shrink-0 w-52").anchor(|a| {
+            a.href(world.url.clone())
+                .class("font-mono text-sm font-semibold text-accent hover:underline")
+                .text(world.name.clone())
+        })
     });
 
     // Right: doc excerpt
@@ -329,9 +334,8 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
             });
 
             if let Some(desc) = &world.description {
-                world_div.paragraph(|p| {
-                    p.class("text-fg-secondary text-sm mb-3").text(desc.clone())
-                });
+                world_div
+                    .paragraph(|p| p.class("text-fg-secondary text-sm mb-3").text(desc.clone()));
             }
 
             if !world.imports.is_empty() {
@@ -360,7 +364,7 @@ fn render_iface_ref_list(
     });
 
     let mut ul = UnorderedList::builder();
-    ul.class("divide-y divide-border/50");
+    ul.class("space-y-0.5");
     for iface in interfaces {
         let display = format_iface_ref(iface);
         ul.list_item(|li| {
@@ -390,6 +394,16 @@ fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Strin
 fn first_sentence(text: &str) -> String {
     text.split_once(". ")
         .map_or_else(|| text.to_owned(), |(first, _)| format!("{first}."))
+}
+
+/// Detect whether WIT text is the lossy hand-rolled format rather than
+/// genuine parseable WIT.  The lossy format contains debug patterns like
+/// `type foo: "type"` and `interface-Id { idx: 0 }`.
+fn is_lossy_wit(text: &str) -> bool {
+    text.contains(": \"type\"")
+        || text.contains(": \"record\"")
+        || text.contains(": \"variant\"")
+        || text.contains("interface-Id {")
 }
 
 /// Render the tab bar with links to each tab route.
@@ -638,7 +652,8 @@ fn render_page_header(
                     .text(description.to_owned())
             })
             .division(|d| {
-                d.class("mt-4").push(render_install_command(display_name, current_version))
+                d.class("mt-4")
+                    .push(render_install_command(display_name, current_version))
             })
     });
 
@@ -696,10 +711,7 @@ fn meta_row(label: &str, value: &str) -> Division {
             s.class("text-fg-muted w-20 shrink-0")
                 .text(label.to_owned())
         })
-        .span(|s| {
-            s.class("text-fg truncate")
-                .text(value.to_owned())
-        })
+        .span(|s| s.class("text-fg truncate").text(value.to_owned()))
         .build()
 }
 
@@ -720,11 +732,7 @@ fn meta_link_row(label: &str, text: &str, href: &str) -> Division {
 }
 
 /// Render the inline version selector: `@ <select>` next to the package title.
-fn render_version_inline(
-    pkg: &KnownPackage,
-    current_version: &str,
-    url_name: &str,
-) -> Division {
+fn render_version_inline(pkg: &KnownPackage, current_version: &str, url_name: &str) -> Division {
     let mut select = html::forms::Select::builder();
     select
         .id("version-select")
@@ -746,10 +754,7 @@ fn render_version_inline(
 
     Division::builder()
         .class("flex items-baseline gap-1")
-        .span(|s| {
-            s.class("text-xl text-fg-muted font-bold")
-                .text("@")
-        })
+        .span(|s| s.class("text-xl text-fg-muted font-bold").text("@"))
         .push(select.build())
         .script(|s| s.text(script_body))
         .build()
@@ -786,10 +791,7 @@ fn abbreviate_url(url: &str) -> String {
 /// Format an ISO 8601 timestamp as a short date (YYYY-MM-DD).
 fn format_date(iso: &str) -> String {
     // Take just the date portion of "2026-03-05T23:36:11Z"
-    iso.split('T')
-        .next()
-        .unwrap_or(iso)
-        .to_owned()
+    iso.split('T').next().unwrap_or(iso).to_owned()
 }
 
 #[cfg(test)]
