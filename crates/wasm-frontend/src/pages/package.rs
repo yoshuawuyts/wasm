@@ -400,7 +400,7 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
     li.division(|left| {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(world.url.clone())
-                .class("font-mono text-sm font-semibold text-accent hover:underline")
+                .class("font-mono text-sm font-semibold text-wit-world hover:underline")
                 .text(world.name.clone())
         })
     });
@@ -409,7 +409,7 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
     if let Some(docs) = &world.docs {
         li.division(|right| {
             right
-                .class("text-sm leading-relaxed text-fg-secondary line-clamp-2 min-w-0")
+                .class("text-sm leading-relaxed text-fg-secondary min-w-0")
                 .text(first_sentence(docs))
         });
     }
