@@ -174,96 +174,137 @@ fn render_breadcrumb(
         .build()
 }
 
-/// Render the WIT definition code block for a type.
+/// Render the WIT definition code block for a type, with linked type refs.
 fn render_type_definition(ty: &TypeDoc) -> Division {
-    let wit = escape_html(&format_type_as_wit(ty));
+    let pre_class = "bg-surface-muted border border-border rounded-lg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
+
     Division::builder()
         .class("mb-6")
-        .push(
-            html::text_content::PreformattedText::builder()
-                .class("bg-surface-muted border border-border rounded-lg px-4 py-3 text-sm font-mono text-fg overflow-x-auto")
-                .code(|c| c.text(wit))
-                .build(),
-        )
+        .push(match &ty.kind {
+            TypeKind::Record { fields } => {
+                let mut pre = html::text_content::PreformattedText::builder();
+                pre.class(pre_class);
+                pre.code(|c| {
+                    c.span(|s| s.class("text-fg-muted").text("record "))
+                        .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                        .text(" {\n".to_owned());
+                    for f in fields {
+                        c.text("    ".to_owned())
+                            .text(format!("{}: ", f.name))
+                            .push(render_type_ref(&f.ty))
+                            .text(",\n".to_owned());
+                    }
+                    c.text("}".to_owned())
+                });
+                pre.build()
+            }
+            TypeKind::Variant { cases } => {
+                let mut pre = html::text_content::PreformattedText::builder();
+                pre.class(pre_class);
+                pre.code(|c| {
+                    c.span(|s| s.class("text-fg-muted").text("variant "))
+                        .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                        .text(" {\n".to_owned());
+                    for case in cases {
+                        c.text(format!("    {}", case.name));
+                        if let Some(t) = &case.ty {
+                            c.text("(".to_owned()).push(render_type_ref(t)).text(")".to_owned());
+                        }
+                        c.text(",\n".to_owned());
+                    }
+                    c.text("}".to_owned())
+                });
+                pre.build()
+            }
+            TypeKind::Enum { cases } => {
+                let mut pre = html::text_content::PreformattedText::builder();
+                pre.class(pre_class);
+                pre.code(|c| {
+                    c.span(|s| s.class("text-fg-muted").text("enum "))
+                        .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                        .text(" {\n".to_owned());
+                    for case in cases {
+                        c.text(format!("    {},\n", case.name));
+                    }
+                    c.text("}".to_owned())
+                });
+                pre.build()
+            }
+            TypeKind::Flags { flags } => {
+                let mut pre = html::text_content::PreformattedText::builder();
+                pre.class(pre_class);
+                pre.code(|c| {
+                    c.span(|s| s.class("text-fg-muted").text("flags "))
+                        .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                        .text(" {\n".to_owned());
+                    for f in flags {
+                        c.text(format!("    {},\n", f.name));
+                    }
+                    c.text("}".to_owned())
+                });
+                pre.build()
+            }
+            TypeKind::Resource { .. } => {
+                html::text_content::PreformattedText::builder()
+                    .class(pre_class)
+                    .code(|c| {
+                        c.span(|s| s.class("text-fg-muted").text("resource "))
+                            .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                            .text(";".to_owned())
+                    })
+                    .build()
+            }
+            TypeKind::Alias(type_ref) => {
+                html::text_content::PreformattedText::builder()
+                    .class(pre_class)
+                    .code(|c| {
+                        c.span(|s| s.class("text-fg-muted").text("type "))
+                            .span(|s| s.class("font-semibold").text(ty.name.clone()))
+                            .text(" = ".to_owned())
+                            .push(render_type_ref(type_ref))
+                            .text(";".to_owned())
+                    })
+                    .build()
+            }
+        })
         .build()
 }
 
-/// Render the WIT definition code block for a function.
+/// Render the WIT definition code block for a function, with linked type refs.
 fn render_function_definition(func: &FunctionDoc) -> Division {
-    let sig = escape_html(&format!(
-        "{}: func({}){};",
-        func.name,
-        func.params
-            .iter()
-            .filter(|p| p.name != "self")
-            .map(|p| format!("{}: {}", p.name, format_type_ref_short(&p.ty)))
-            .collect::<Vec<_>>()
-            .join(", "),
-        func.result
-            .as_ref()
-            .map(|r| format!(" -> {}", format_type_ref_short(r)))
-            .unwrap_or_default()
-    ));
+    let pre_class = "bg-surface-muted border border-border rounded-lg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
+
     Division::builder()
         .class("mb-6")
         .push(
             html::text_content::PreformattedText::builder()
-                .class("bg-surface-muted border border-border rounded-lg px-4 py-3 text-sm font-mono text-fg overflow-x-auto")
-                .code(|c| c.text(sig))
+                .class(pre_class)
+                .code(|c| {
+                    c.span(|s| s.class("font-semibold").text(func.name.clone()))
+                        .text(": ".to_owned())
+                        .span(|s| s.class("text-fg-muted").text("func"))
+                        .text("(".to_owned());
+                    let visible_params: Vec<_> = func
+                        .params
+                        .iter()
+                        .filter(|p| p.name != "self")
+                        .collect();
+                    for (i, p) in visible_params.iter().enumerate() {
+                        if i > 0 {
+                            c.text(", ".to_owned());
+                        }
+                        c.text(format!("{}: ", p.name))
+                            .push(render_type_ref(&p.ty));
+                    }
+                    c.text(")".to_owned());
+                    if let Some(ret) = &func.result {
+                        c.text(" -> ".to_owned()).push(render_type_ref(ret));
+                    }
+                    c.text(";".to_owned())
+                })
                 .build(),
         )
         .build()
-}
-
-/// Format a type definition as WIT source text.
-fn format_type_as_wit(ty: &TypeDoc) -> String {
-    use std::fmt::Write;
-
-    match &ty.kind {
-        TypeKind::Record { fields } => {
-            let mut s = format!("record {} {{\n", ty.name);
-            for f in fields {
-                let _ = writeln!(s, "    {}: {},", f.name, format_type_ref_short(&f.ty));
-            }
-            s.push('}');
-            s
-        }
-        TypeKind::Variant { cases } => {
-            let mut s = format!("variant {} {{\n", ty.name);
-            for c in cases {
-                match &c.ty {
-                    Some(t) => {
-                        let _ = writeln!(s, "    {}({}),", c.name, format_type_ref_short(t));
-                    }
-                    None => {
-                        let _ = writeln!(s, "    {},", c.name);
-                    }
-                }
-            }
-            s.push('}');
-            s
-        }
-        TypeKind::Enum { cases } => {
-            let mut s = format!("enum {} {{\n", ty.name);
-            for c in cases {
-                let _ = writeln!(s, "    {},", c.name);
-            }
-            s.push('}');
-            s
-        }
-        TypeKind::Flags { flags } => {
-            let mut s = format!("flags {} {{\n", ty.name);
-            for f in flags {
-                let _ = writeln!(s, "    {},", f.name);
-            }
-            s.push('}');
-            s
-        }
-        TypeKind::Resource { .. } => format!("resource {};", ty.name),
-        TypeKind::Alias(ty_ref) => {
-            format!("type {} = {};", ty.name, format_type_ref_short(ty_ref))
-        }
-    }
 }
 
 /// Render the body for a type based on its kind.
@@ -688,12 +729,4 @@ fn format_type_ref_short(ty: &TypeRef) -> String {
             None => "stream".to_owned(),
         },
     }
-}
-
-/// Escape HTML special characters so angle brackets in WIT type syntax
-/// (e.g. `list<string>`) are not parsed as HTML tags.
-fn escape_html(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
 }
