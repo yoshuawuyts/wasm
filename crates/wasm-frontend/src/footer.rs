@@ -8,7 +8,7 @@ pub(crate) fn render() -> String {
     Footer::builder()
         .class("border-t border-border mt-16")
         .division(|div| {
-            div.class("max-w-5xl mx-auto px-4 py-8 flex flex-col gap-4 text-sm text-fg-muted")
+            div.class("max-w-6xl mx-auto px-4 py-8 flex flex-col gap-4 text-sm text-fg-muted")
                 .division(|nav| {
                     nav.class("flex items-center justify-between")
                         .anchor(|a| {

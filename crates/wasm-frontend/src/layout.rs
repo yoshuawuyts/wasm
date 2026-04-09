@@ -266,7 +266,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
   </style>
 </head>
 <body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed">
-  <main class="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-6 pb-10">
+  <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-10">
     {body_content}
   </main>
   {footer}

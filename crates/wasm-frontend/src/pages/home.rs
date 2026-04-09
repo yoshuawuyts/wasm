@@ -62,7 +62,7 @@ fn render_hero(total: usize) -> Division {
     };
 
     let mut hero = Division::builder();
-    hero.class("pt-8 pb-16 mb-10");
+    hero.class("pt-8 pb-6");
 
     // Title and hint — grouped tightly
     hero.heading_1(|h1| {
@@ -193,7 +193,7 @@ fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage])
     if packages.is_empty() {
         container.paragraph(|p| {
             p.class("py-8 text-sm text-fg-faint")
-                .text("No packages published yet. ")
+                .text("Nothing published yet. ")
                 .anchor(|a| {
                     a.href("/docs")
                         .class("text-accent hover:underline")
@@ -207,7 +207,7 @@ fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage])
     let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
 
     let mut grid = Division::builder();
-    grid.class("grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4");
+    grid.class("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3");
     for (i, pkg) in visible.iter().enumerate() {
         grid.push(render_card(pkg, i));
     }
@@ -218,7 +218,7 @@ fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage])
             p.class("mt-4").anchor(|a| {
                 a.href("/all")
                     .class("text-sm text-accent hover:underline")
-                    .text("View all packages →")
+                    .text("View all \u{2192}")
             })
         });
     }
@@ -234,7 +234,7 @@ fn kind_icon(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static s
 
 /// Render a single package as a card.
 fn render_card(pkg: &KnownPackage, index: usize) -> Division {
-    let delay = format!("animation-delay:{}ms", index * 50);
+    let delay = format!("animation-delay:{}ms", index * 30);
     let display_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}:{name}"),
         _ => pkg.repository.clone(),
@@ -256,7 +256,7 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
             .anchor(|a| {
                 a.href(format!("/{ns}/{name}"))
                     .class(
-                        "flex flex-col h-full border border-border rounded-lg p-4 hover:border-accent/40 hover:bg-surface card-lift",
+                        "flex flex-col h-full border border-border rounded-lg p-3.5 hover:border-accent/40 hover:bg-surface card-lift",
                     )
                     .span(|s| {
                         s.class("flex items-start justify-between gap-2")
@@ -284,7 +284,7 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
         _ => Division::builder()
             .class("card-enter")
             .style(delay)
-            .class("flex flex-col h-full border border-border rounded-lg p-4 card-lift")
+            .class("flex flex-col h-full border border-border rounded-lg p-3.5 card-lift")
             .span(|s| {
                 s.class("flex items-start justify-between gap-2")
                     .span(|name_span| {
