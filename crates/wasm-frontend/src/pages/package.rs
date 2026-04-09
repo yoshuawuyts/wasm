@@ -445,6 +445,77 @@ fn render_raw_wit(wit_text: &str) -> Division {
         .build()
 }
 
+/// Render world summaries from pre-extracted `PackageVersion` data (fallback
+/// when the WIT text cannot be parsed into a rich document).
+fn render_world_summaries(detail: &PackageVersion) -> Division {
+    let mut container = Division::builder();
+    container.class("space-y-6");
+
+    for world in &detail.worlds {
+        container.division(|world_div| {
+            world_div.class("space-y-3");
+            world_div.heading_2(|h2| {
+                h2.class("text-lg font-semibold")
+                    .text(format!("world {}", world.name))
+            });
+
+            if let Some(desc) = &world.description {
+                world_div.paragraph(|p| {
+                    p.class("text-fg-secondary text-sm").text(desc.clone())
+                });
+            }
+
+            if !world.imports.is_empty() {
+                world_div.push(render_iface_ref_list("Imports", &world.imports));
+            }
+            if !world.exports.is_empty() {
+                world_div.push(render_iface_ref_list("Exports", &world.exports));
+            }
+            world_div
+        });
+    }
+
+    container.build()
+}
+
+/// Render a list of WIT interface references (fallback).
+fn render_iface_ref_list(
+    label: &str,
+    interfaces: &[wasm_meta_registry_client::WitInterfaceRef],
+) -> Division {
+    let mut div = Division::builder();
+    div.heading_3(|h3| {
+        h3.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+            .text(label.to_owned())
+    });
+
+    let mut ul = UnorderedList::builder();
+    ul.class("space-y-1 ml-1");
+    for iface in interfaces {
+        let display = format_iface_ref(iface);
+        ul.list_item(|li| {
+            li.class("text-sm font-mono")
+                .span(|s| s.class("text-accent").text(display))
+        });
+    }
+    div.push(ul.build());
+    div.build()
+}
+
+/// Format a WIT interface reference as a display string.
+fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
+    let mut s = iface.package.clone();
+    if let Some(name) = &iface.interface {
+        s.push('/');
+        s.push_str(name);
+    }
+    if let Some(v) = &iface.version {
+        s.push('@');
+        s.push_str(v);
+    }
+    s
+}
+
 /// Format a counts label like "3 types, 2 functions".
 fn item_counts_label(types: usize, funcs: usize) -> String {
     let mut parts = Vec::new();
