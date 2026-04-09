@@ -587,19 +587,20 @@ fn sidebar_link_row(label: &str, text: &str, href: &str) -> Division {
 
 /// Format a byte count as a human-readable size string.
 fn format_size(bytes: i64) -> String {
-    const KIB: u64 = 1024;
-    const MIB: u64 = KIB * 1024;
-    const GIB: u64 = MIB * 1024;
+    const KIBIBYTE: u64 = 1024;
+    const MEBIBYTE: u64 = KIBIBYTE * 1024;
+    const GIBIBYTE: u64 = MEBIBYTE * 1024;
 
-    let bytes = bytes.max(0).cast_unsigned();
-    if bytes < KIB {
+    let bytes =
+        u64::try_from(bytes.max(0)).expect("non-negative i64 byte count should fit into u64");
+    if bytes < KIBIBYTE {
         format!("{bytes} B")
-    } else if bytes < MIB {
-        format_size_with_decimal(bytes, KIB, "KiB")
-    } else if bytes < GIB {
-        format_size_with_decimal(bytes, MIB, "MiB")
+    } else if bytes < MEBIBYTE {
+        format_size_with_decimal(bytes, KIBIBYTE, "KiB")
+    } else if bytes < GIBIBYTE {
+        format_size_with_decimal(bytes, MEBIBYTE, "MiB")
     } else {
-        format_size_with_decimal(bytes, GIB, "GiB")
+        format_size_with_decimal(bytes, GIBIBYTE, "GiB")
     }
 }
 
