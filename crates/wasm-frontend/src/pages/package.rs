@@ -2,7 +2,7 @@
 
 // r[impl frontend.pages.package-detail]
 
-use html::content::{Aside, Navigation, Section};
+use html::content::{Navigation, Section};
 use html::inline_text::Span;
 use html::text_content::{Division, ListItem, UnorderedList};
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -45,18 +45,18 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
     // Breadcrumb
     body.push(render_breadcrumb(&display_name));
 
-    // Title
-    body.division(|div| {
-        div.class("mb-8")
-            .heading_1(|h1| {
-                h1.class("text-3xl font-bold tracking-tight text-accent")
-                    .text(display_name.clone())
-            })
-            .paragraph(|p| {
-                p.class("text-lg text-fg-secondary mt-2")
-                    .text(description.to_owned())
-            })
-    });
+    // Header: title + description on left, metadata on right
+    let version_detail = match tab {
+        ActiveTab::Docs { version_detail } => *version_detail,
+        _ => None,
+    };
+    body.push(render_page_header(
+        pkg,
+        &display_name,
+        description,
+        version,
+        version_detail,
+    ));
 
     // Tab bar + active panel
     let url_base = match (&pkg.wit_namespace, &pkg.wit_name) {
@@ -65,13 +65,9 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
     };
     body.push(render_tab_bar(&url_base, tab));
 
-    // Grid layout: main content + sidebar (shared across all tabs)
-    let mut grid = Division::builder();
-    grid.class("grid grid-cols-1 md:grid-cols-3 gap-12");
-
-    // Main content column (varies by tab)
+    // Main content (full width)
     let mut main_col = Division::builder();
-    main_col.class("md:col-span-2 space-y-8");
+    main_col.class("space-y-8");
     match tab {
         ActiveTab::Docs { version_detail } => {
             if let Some(detail) = version_detail {
@@ -88,16 +84,7 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
             main_col.push(render_dependents_panel(importers, exporters));
         }
     }
-    grid.push(main_col.build());
-
-    // Sidebar
-    let version_detail = match tab {
-        ActiveTab::Docs { version_detail } => *version_detail,
-        _ => None,
-    };
-    grid.push(render_sidebar(pkg, version, &display_name, version_detail));
-
-    body.push(grid.build());
+    body.push(main_col.build());
 
     layout::document(&display_name, &body.build().to_string())
 }
@@ -213,9 +200,9 @@ fn build_dep_urls(
 /// Render the interfaces overview section.
 fn render_interface_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
-    container.class("space-y-4");
+    container.class("space-y-3 mt-10");
     container.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-1").text("Interfaces")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2").text("Interfaces")
     });
 
     let mut ul = UnorderedList::builder();
@@ -270,9 +257,9 @@ fn render_interface_row(iface: &wasm_wit_doc::InterfaceDoc) -> ListItem {
 /// Render the worlds overview section.
 fn render_world_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
-    container.class("space-y-4 mt-8");
+    container.class("space-y-3");
     container.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-1").text("Worlds")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2").text("Worlds")
     });
 
     let mut ul = UnorderedList::builder();
@@ -291,7 +278,7 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
 
     let mut li = ListItem::builder();
     li.class(
-        "border border-border rounded-lg p-4 \
+        "border border-border rounded-lg px-4 py-3 \
          hover:border-accent/50 transition-colors",
     );
 
@@ -672,47 +659,78 @@ fn render_filterable_package_list(id: &str, packages: &[&KnownPackage], visible:
     div.build()
 }
 
-/// Render the sidebar with metadata and version selector.
-fn render_sidebar(
+/// Render the page header: title + description on left, metadata on right.
+fn render_page_header(
     pkg: &KnownPackage,
-    current_version: &str,
     display_name: &str,
+    description: &str,
+    current_version: &str,
     version_detail: Option<&PackageVersion>,
-) -> Aside {
+) -> Division {
     let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}/{name}"),
         _ => pkg.repository.clone(),
     };
 
-    let mut aside = Aside::builder();
-    aside.class("space-y-4");
+    let mut header = Division::builder();
+    header.class("flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6");
 
-    // Install command
-    aside.push(render_install_command(display_name, current_version));
+    // Left: title + description
+    header.division(|left| {
+        left.class("flex-1 min-w-0")
+            .heading_1(|h1| {
+                h1.class("text-3xl font-bold tracking-tight text-accent")
+                    .text(display_name.to_owned())
+            })
+            .paragraph(|p| {
+                p.class("text-fg-secondary mt-1")
+                    .text(description.to_owned())
+            })
+    });
 
-    let mut card = Division::builder();
-    card.class("bg-surface border border-border rounded-lg p-5 space-y-4 text-sm");
+    // Right: install command + metadata
+    header.division(|right| {
+        right.class("shrink-0 md:w-80 space-y-3");
 
-    // Version selector dropdown
-    if !pkg.tags.is_empty() {
-        card.push(render_version_select(pkg, current_version, &url_name));
-    }
+        // Install command
+        right.push(render_install_command(display_name, current_version));
 
-    // Repository: combined registry/repository as a clickable link
-    let repo_url = format!("https://{}/{}", pkg.registry, pkg.repository);
-    let repo_display = format!("{}/{}", pkg.registry, pkg.repository);
-    card.push(sidebar_link_row("Repository", &repo_display, &repo_url));
+        // Metadata: version selector + inline details
+        let mut meta = Division::builder();
+        meta.class("space-y-2");
 
-    if let Some(kind) = &pkg.kind {
-        card.push(sidebar_row("Kind", &kind.to_string()));
-    }
-    if let Some(size) = version_detail.and_then(|d| d.size_bytes) {
-        card.push(sidebar_row("Size", &format_size(size)));
-    }
-    card.push(sidebar_row("Published on", &pkg.created_at));
-    aside.push(card.build());
+        // Version selector (compact inline)
+        if !pkg.tags.is_empty() {
+            meta.push(render_version_select(pkg, current_version, &url_name));
+        }
 
-    aside.build()
+        // Inline metadata row
+        let mut details = Division::builder();
+        details.class("flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fg-muted");
+
+        let repo_url = format!("https://{}/{}", pkg.registry, pkg.repository);
+        let repo_display = format!("{}/{}", pkg.registry, pkg.repository);
+        details.division(|d| {
+            d.anchor(|a| {
+                a.href(repo_url)
+                    .class("hover:text-accent transition-colors")
+                    .text(repo_display)
+            })
+        });
+
+        if let Some(kind) = &pkg.kind {
+            details.division(|d| d.text(kind.to_string()));
+        }
+        if let Some(size) = version_detail.and_then(|d| d.size_bytes) {
+            details.division(|d| d.text(format_size(size)));
+        }
+
+        meta.push(details.build());
+        right.push(meta.build());
+        right
+    });
+
+    header.build()
 }
 
 /// Render the version selector dropdown.
@@ -721,7 +739,7 @@ fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &s
     select
         .id("version-select")
         .name("version")
-        .class("w-full px-3 py-2 rounded-md border border-border bg-surface text-fg text-sm");
+        .class("w-full px-2 py-1.5 rounded-md border border-border bg-surface text-fg text-xs");
 
     for tag in &pkg.tags {
         let is_current = tag == current_version;
@@ -747,42 +765,15 @@ fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &s
     );
 
     Division::builder()
-        .division(|dt| {
-            dt.class("text-fg-muted text-xs uppercase tracking-wide")
+        .class("flex items-center gap-2")
+        .span(|s| {
+            s.class("text-fg-muted text-xs shrink-0")
                 .text(version_label)
         })
         .division(|dd| {
-            dd.class("mt-0.5")
+            dd.class("flex-1")
                 .push(select.build())
                 .script(|s| s.text(script_body))
-        })
-        .build()
-}
-
-/// Render a single sidebar metadata row.
-fn sidebar_row(label: &str, value: &str) -> Division {
-    Division::builder()
-        .division(|dt| {
-            dt.class("text-fg-muted text-xs uppercase tracking-wide")
-                .text(label.to_owned())
-        })
-        .division(|dd| dd.class("text-fg mt-0.5 break-all").text(value.to_owned()))
-        .build()
-}
-
-/// Render a sidebar row where the value is a link.
-fn sidebar_link_row(label: &str, text: &str, href: &str) -> Division {
-    Division::builder()
-        .division(|dt| {
-            dt.class("text-fg-muted text-xs uppercase tracking-wide")
-                .text(label.to_owned())
-        })
-        .division(|dd| {
-            dd.class("mt-0.5 break-all").anchor(|a| {
-                a.href(href.to_owned())
-                    .class("text-accent hover:underline")
-                    .text(text.to_owned())
-            })
         })
         .build()
 }

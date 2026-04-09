@@ -94,7 +94,7 @@ fn render_breadcrumb(display_name: &str, pkg_url: &str, world_name: &str) -> Nav
 fn render_item_section(heading: &str, items: &[WorldItemDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
             .text(heading.to_owned())
     });
 

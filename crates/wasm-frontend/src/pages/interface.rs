@@ -141,7 +141,7 @@ fn render_breadcrumb(display_name: &str, pkg_url: &str, iface_name: &str) -> Nav
 fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3").text(heading.to_owned())
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text(heading.to_owned())
     });
 
     let mut ul = UnorderedList::builder();
@@ -193,7 +193,7 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
 fn render_function_section(functions: &[FunctionDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3").text("Functions")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Functions")
     });
 
     let mut ul = UnorderedList::builder();

@@ -188,7 +188,7 @@ fn render_type_body(kind: &TypeKind) -> Division {
 fn render_field_table(heading: &str, fields: &[wasm_wit_doc::FieldDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
             .text(heading.to_owned())
     });
 
@@ -230,7 +230,7 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
 fn render_variant_table(cases: &[wasm_wit_doc::CaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3").text("Cases")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Cases")
     });
 
     let mut table = Table::builder();
@@ -267,7 +267,7 @@ fn render_variant_table(cases: &[wasm_wit_doc::CaseDoc]) -> Division {
 fn render_enum_list(cases: &[wasm_wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3").text("Cases")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Cases")
     });
     let mut table = Table::builder();
     table.class("w-full text-sm");
@@ -297,7 +297,7 @@ fn render_enum_list(cases: &[wasm_wit_doc::EnumCaseDoc]) -> Division {
 fn render_flags_list(flags: &[wasm_wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-semibold mb-3").text("Flags")
+        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Flags")
     });
     let mut table = Table::builder();
     table.class("w-full text-sm");
@@ -335,7 +335,7 @@ fn render_resource_body(
     if let Some(ctor) = constructor {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-lg font-semibold mb-3")
+                h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
                     .text("Constructor")
             })
             .push(render_function_detail(ctor))
@@ -344,7 +344,7 @@ fn render_resource_body(
     if !methods.is_empty() {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-lg font-semibold mb-3").text("Methods")
+                h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Methods")
             });
             for func in methods {
                 d.push(render_function_detail(func));
@@ -355,7 +355,7 @@ fn render_resource_body(
     if !statics.is_empty() {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-lg font-semibold mb-3")
+                h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
                     .text("Static Functions")
             });
             for func in statics {
@@ -372,7 +372,7 @@ fn render_resource_body(
 fn render_alias(type_ref: &TypeRef) -> Division {
     Division::builder()
         .heading_2(|h2| {
-            h2.class("text-lg font-semibold mb-3").text("Definition")
+            h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3").text("Definition")
         })
         .paragraph(|p| {
             p.class("font-mono text-fg")

@@ -43,9 +43,6 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
     // Navigation card
     aside.push(render_nav_card(ctx, &pkg_url));
 
-    // Metadata card
-    aside.push(render_meta_card(ctx, &pkg_url));
-
     aside.build()
 }
 
@@ -135,42 +132,4 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
     }
 
     card.build()
-}
-
-/// Render the metadata card (install command, version, etc.).
-fn render_meta_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
-    let install_cmd = format!(
-        "wasm install {}@{}",
-        ctx.display_name, ctx.version
-    );
-
-    Division::builder()
-        .class("bg-surface border border-border rounded-lg p-4 space-y-3 text-sm")
-        .division(|d| {
-            d.class("text-fg-muted text-xs uppercase tracking-wide")
-                .text("Install")
-        })
-        .division(|d| {
-            d.class(
-                "flex items-center gap-2 bg-surface-muted border border-border \
-                 rounded-md px-3 py-2 font-mono text-xs text-fg",
-            )
-            .code(|code| {
-                code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")
-                    .text(install_cmd)
-            })
-        })
-        .division(|d| {
-            d.class("text-fg-muted text-xs uppercase tracking-wide")
-                .text("Version")
-        })
-        .division(|d| {
-            d.class("text-fg mt-0.5")
-                .anchor(|a| {
-                    a.href(pkg_url.to_owned())
-                        .class("text-accent hover:underline")
-                        .text(ctx.version.to_owned())
-                })
-        })
-        .build()
 }
