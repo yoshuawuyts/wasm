@@ -188,6 +188,7 @@ mod tests {
         assert!(html.contains("bg-page text-fg"));
         assert!(html.contains("html, body"));
         assert!(html.contains("background-color: var(--color-bg);"));
+        assert!(html.contains("color: var(--color-fg);"));
         assert!(html.contains("prefers-color-scheme: dark"));
     }
 }
