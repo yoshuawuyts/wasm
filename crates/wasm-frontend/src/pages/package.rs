@@ -65,13 +65,30 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
     };
     body.push(render_tab_bar(&url_base, tab));
 
-    // Main content (full width)
+    // Parse WIT doc early so we can show the nav sidebar.
+    let wit_doc = version_detail.and_then(|d| try_parse_wit(d, &url_base));
+
+    // Grid: main content + optional sidebar
+    let mut grid = Division::builder();
+    if wit_doc.is_some() {
+        grid.class("grid grid-cols-1 md:grid-cols-3 gap-12");
+    }
+
+    // Main content column
     let mut main_col = Division::builder();
-    main_col.class("space-y-8");
+    if wit_doc.is_some() {
+        main_col.class("md:col-span-2 space-y-8");
+    } else {
+        main_col.class("space-y-8");
+    }
     match tab {
         ActiveTab::Docs { version_detail } => {
             if let Some(detail) = version_detail {
-                main_col.push(render_wit_content(detail, &url_base));
+                main_col.push(render_wit_content_with_doc(
+                    detail,
+                    &url_base,
+                    wit_doc.as_ref(),
+                ));
             }
         }
         ActiveTab::Dependencies => {
@@ -84,7 +101,20 @@ pub(crate) fn render(pkg: &KnownPackage, version: &str, tab: &ActiveTab<'_>) -> 
             main_col.push(render_dependents_panel(importers, exporters));
         }
     }
-    body.push(main_col.build());
+    grid.push(main_col.build());
+
+    // Sidebar (only when WIT doc is available)
+    if let Some(doc) = &wit_doc {
+        let sidebar_ctx = super::sidebar::SidebarContext {
+            display_name: &display_name,
+            version,
+            doc,
+            active: super::sidebar::SidebarActive::Interface(""),
+        };
+        grid.push(super::sidebar::render_sidebar(&sidebar_ctx));
+    }
+
+    body.push(grid.build());
 
     layout::document(&display_name, &body.build().to_string())
 }
@@ -147,19 +177,22 @@ fn render_breadcrumb(display_name: &str) -> Navigation {
 
 /// Render the WIT content section for a package version.
 ///
-/// When the stored WIT text can be parsed into a rich document model, we
-/// show interfaces and worlds as navigable cards.  Otherwise we fall back
-/// to the world summaries that the registry extracted at index time plus
-/// the raw WIT text block.
-fn render_wit_content(detail: &PackageVersion, url_base: &str) -> Section {
+/// When a pre-parsed `WitDocument` is available, show interfaces and worlds
+/// as navigable cards.  Otherwise fall back to the world summaries that the
+/// registry extracted at index time plus the raw WIT text block.
+fn render_wit_content_with_doc(
+    detail: &PackageVersion,
+    _url_base: &str,
+    doc: Option<&WitDocument>,
+) -> Section {
     let mut section = Section::builder();
 
-    if let Some(doc) = try_parse_wit(detail, url_base) {
+    if let Some(doc) = doc {
         if !doc.worlds.is_empty() {
-            section.push(render_world_overview(&doc));
+            section.push(render_world_overview(doc));
         }
         if !doc.interfaces.is_empty() {
-            section.push(render_interface_overview(&doc));
+            section.push(render_interface_overview(doc));
         }
     } else {
         // Fallback: show pre-extracted world summaries + raw WIT text.
@@ -812,50 +845,6 @@ fn render_version_inline(
 }
 
 /// Render the version selector dropdown.
-fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &str) -> Division {
-    let mut select = html::forms::Select::builder();
-    select
-        .id("version-select")
-        .name("version")
-        .class("w-full px-2 py-1.5 rounded-md border border-border bg-surface text-fg text-xs");
-
-    for tag in &pkg.tags {
-        let is_current = tag == current_version;
-        if is_current {
-            select.option(|opt| opt.value(tag.clone()).text(tag.clone()).selected(true));
-        } else {
-            select.option(|opt| opt.value(tag.clone()).text(tag.clone()));
-        }
-    }
-
-    let script_body = format!(
-        "document.getElementById('version-select').addEventListener('change',function(){{window.location.href='/{url_name}/'+this.value}})"
-    );
-
-    let version_count = pkg.tags.len();
-    let version_label = format!(
-        "{version_count} {}",
-        if version_count == 1 {
-            "version"
-        } else {
-            "versions"
-        }
-    );
-
-    Division::builder()
-        .class("flex items-center gap-2")
-        .span(|s| {
-            s.class("text-fg-muted text-xs shrink-0")
-                .text(version_label)
-        })
-        .division(|dd| {
-            dd.class("flex-1")
-                .push(select.build())
-                .script(|s| s.text(script_body))
-        })
-        .build()
-}
-
 /// Format a byte count as a human-readable size string.
 fn format_size(bytes: i64) -> String {
     const KIB: f64 = 1024.0;
