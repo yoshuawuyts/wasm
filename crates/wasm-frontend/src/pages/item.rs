@@ -169,7 +169,10 @@ fn render_type_definition(ty: &TypeDoc) -> Division {
                 .class(pre_class)
                 .code(|c| {
                     c.span(|s| s.class("text-fg-muted").text("resource "))
-                        .span(|s| s.class("text-wit-resource font-medium").text(ty.name.clone()))
+                        .span(|s| {
+                            s.class("text-wit-resource font-medium")
+                                .text(ty.name.clone())
+                        })
                         .text(";".to_owned())
                 })
                 .build(),
