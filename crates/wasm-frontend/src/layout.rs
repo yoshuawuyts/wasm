@@ -75,6 +75,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
           }},
           fontSize: {{
             sm: ['1rem', {{ lineHeight: '1.5rem' }}],
+            lg: ['1.125rem', {{ lineHeight: '1.625rem' }}],
           }},
         }}
       }}
@@ -160,7 +161,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
     /* Card hover — pop out with scale, shadow, and strong border */
     .card-lift {{
-      transition: transform 0.15s, box-shadow 0.15s;
+      transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
     }}
     .card-lift:hover {{
       transform: scale(1.03);

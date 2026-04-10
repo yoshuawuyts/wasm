@@ -176,8 +176,7 @@ fn render_tabs(
                 .aria_controls_elements(format!("panel-{id}"))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| s.text(label.to_owned()))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| {
-                    s.class("opacity-50")
-                        .text(format!("{count}"))
+                    s.class("opacity-50").text(format!("{count}"))
                 })
         });
     }
@@ -247,20 +246,20 @@ fn render_card(pkg: &KnownPackage) -> Division {
                 a.href(format!("/{ns}/{name}"))
                     .class("flex flex-col h-full bg-page p-5 border-r-2 border-b-2 border-fg card-lift")
                     .span(|s| {
-                        s.class("block text-sm text-fg-muted truncate")
-                            .text(format!("{ns}:"))
+                        s.class("block text-sm text-fg-muted uppercase tracking-wide")
+                            .text(ns.clone())
                     })
                     .span(|s| {
-                        s.class("block font-medium text-accent truncate")
+                        s.class("block text-lg font-normal tracking-display mt-0.5 truncate")
                             .text(name.clone())
                     })
                     .span(|s| {
-                        s.class("block text-sm text-fg-muted mt-2 overflow-hidden")
-                            .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 3em")
+                        s.class("block text-sm text-fg-secondary mt-3 overflow-hidden leading-relaxed")
+                            .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 3rem")
                             .text(description.to_owned())
                     })
                     .span(|s| {
-                        s.class("block text-sm text-fg-faint mt-3 font-mono")
+                        s.class("block text-sm text-fg-muted mt-auto pt-3 font-mono")
                             .text(version.clone())
                     })
             })
@@ -268,16 +267,16 @@ fn render_card(pkg: &KnownPackage) -> Division {
         _ => Division::builder()
             .class("flex flex-col h-full bg-page p-5 border-r-2 border-b-2 border-fg card-lift")
             .span(|s| {
-                s.class("font-medium text-fg truncate")
+                s.class("block text-lg font-normal tracking-display truncate")
                     .text(display_name)
             })
             .span(|s| {
-                s.class("block text-sm text-fg-muted mt-1 overflow-hidden")
-                    .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 3em")
+                s.class("block text-sm text-fg-secondary mt-3 overflow-hidden leading-relaxed")
+                    .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 3rem")
                     .text(description.to_owned())
             })
             .span(|s| {
-                s.class("block text-sm text-fg-faint mt-3 font-mono")
+                s.class("block text-sm text-fg-muted mt-auto pt-3 font-mono")
                     .text(version.clone())
             })
             .build(),

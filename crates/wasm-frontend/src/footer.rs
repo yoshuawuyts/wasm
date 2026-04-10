@@ -6,11 +6,11 @@ use html::content::Footer;
 #[must_use]
 pub(crate) fn render() -> String {
     Footer::builder()
-        .class("mt-16")
+        .class("mt-8")
         .division(|div| {
-            div.class("max-w-6xl mx-auto px-4 py-8 text-sm text-fg-muted")
+            div.class("max-w-6xl mx-auto px-6 sm:px-8 py-4 text-sm text-fg-muted")
                 .paragraph(|p| {
-                    p.text("\u{00a9} 2025 wasm registry")
+                    p.text("Made by Yosh Wuyts")
                 })
         })
         .build()

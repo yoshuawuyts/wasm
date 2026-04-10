@@ -171,7 +171,8 @@ fn render_breadcrumb(
 
 /// Render the WIT definition code block for a type, with linked type refs.
 fn render_type_definition(ty: &TypeDoc) -> Division {
-    let pre_class = "bg-surface-muted border-2 border-fg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
+    let pre_class =
+        "bg-surface-muted border-2 border-fg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
 
     Division::builder()
         .class("mb-6")
@@ -265,7 +266,8 @@ fn render_type_definition(ty: &TypeDoc) -> Division {
 
 /// Render the WIT definition code block for a function, with linked type refs.
 fn render_function_definition(func: &FunctionDoc) -> Division {
-    let pre_class = "bg-surface-muted border-2 border-fg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
+    let pre_class =
+        "bg-surface-muted border-2 border-fg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
 
     Division::builder()
         .class("mb-6")
