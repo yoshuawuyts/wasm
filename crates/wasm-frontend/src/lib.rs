@@ -11,6 +11,7 @@
 
 // r[impl frontend.server.wasi-http]
 
+mod fonts;
 mod footer;
 mod layout;
 mod pages;
@@ -37,6 +38,10 @@ fn app() -> Router {
         .route("/about", get(about))
         .route("/docs", get(docs))
         .route("/health", get(health))
+        .route("/fonts/iosevka-regular.woff2", get(fonts::regular))
+        .route("/fonts/iosevka-medium.woff2", get(fonts::medium))
+        .route("/fonts/iosevka-semibold.woff2", get(fonts::semibold))
+        .route("/fonts/iosevka-bold.woff2", get(fonts::bold))
         .route("/{namespace}/{name}", get(package_redirect))
         .route("/{namespace}/{name}/{version}", get(package_detail))
         .route(

@@ -34,6 +34,8 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
   <meta name="color-scheme" content="light dark">
   <meta name="description" content="Browse and discover WebAssembly components and WIT interfaces published to OCI registries.">
   <title>{escaped_title} — wasm registry</title>
+  <link rel="preload" href="/fonts/iosevka-regular.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/fonts/iosevka-semibold.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {{
@@ -69,13 +71,43 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
             }},
           }},
           fontFamily: {{
-            mono: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
+            sans: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
+            mono: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
           }},
         }}
       }}
     }}
   </script>
   <style>
+    /* Self-hosted Iosevka webfont */
+    @font-face {{
+      font-family: 'Iosevka Web';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('/fonts/iosevka-regular.woff2') format('woff2');
+    }}
+    @font-face {{
+      font-family: 'Iosevka Web';
+      font-style: normal;
+      font-weight: 500;
+      font-display: swap;
+      src: url('/fonts/iosevka-medium.woff2') format('woff2');
+    }}
+    @font-face {{
+      font-family: 'Iosevka Web';
+      font-style: normal;
+      font-weight: 600;
+      font-display: swap;
+      src: url('/fonts/iosevka-semibold.woff2') format('woff2');
+    }}
+    @font-face {{
+      font-family: 'Iosevka Web';
+      font-style: normal;
+      font-weight: 700;
+      font-display: swap;
+      src: url('/fonts/iosevka-bold.woff2') format('woff2');
+    }}
     /* Color system: OKLCH, rooted in Wasm logo purple (hue 280).
        Neutrals use hue 290 for a violet tint. All text tokens
        pass WCAG AA (4.5:1) against bg. */
@@ -313,7 +345,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
   </style>
 </head>
-<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed">
+<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans">
   <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-10">
     {body_content}
   </main>
