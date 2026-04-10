@@ -142,7 +142,7 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
     let mut div = Division::builder();
     div.class("pt-6 border-t border-border/50 first:pt-0 first:border-0");
     div.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
+        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3")
             .text(heading.to_owned())
     });
 
@@ -167,7 +167,7 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(ty.url.clone())
                 .class(format!(
-                    "font-mono text-sm font-semibold hover:underline {color_class}"
+                    "font-mono text-sm font-medium hover:underline {color_class}"
                 ))
                 .text(ty.name.clone())
         })
@@ -190,7 +190,7 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
     let mut div = Division::builder();
     div.class("pt-6 border-t border-border/50 first:pt-0 first:border-0");
     div.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
+        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3")
             .text("Functions")
     });
 
@@ -216,7 +216,7 @@ fn render_function_row(func: &FunctionDoc) -> ListItem {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(func.url.clone())
                 .class(format!(
-                    "font-mono text-sm font-semibold hover:underline {color_class}"
+                    "font-mono text-sm font-medium hover:underline {color_class}"
                 ))
                 .text(func.name.clone())
         })

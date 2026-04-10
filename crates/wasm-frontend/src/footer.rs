@@ -13,7 +13,7 @@ pub(crate) fn render() -> String {
                     nav.class("flex items-center justify-between")
                         .anchor(|a| {
                             a.href("/")
-                                .class("text-lg font-bold tracking-tight text-fg hover:text-accent transition-colors")
+                                .class("text-lg font-medium tracking-display text-fg hover:text-accent transition-colors")
                                 .text("wasm")
                         })
                         .division(|links| {

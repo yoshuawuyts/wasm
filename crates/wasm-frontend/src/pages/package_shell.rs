@@ -88,7 +88,7 @@ pub(crate) fn url_base_for(pkg: &KnownPackage, version: &str) -> String {
 
 /// Render the tab bar with links to each tab route.
 fn render_tab_bar(url_base: &str, active: &ActiveTab<'_>) -> Division {
-    let active_class = "text-accent border-b-2 border-accent font-semibold";
+    let active_class = "text-accent border-b-2 border-accent font-medium";
     let inactive_class = "text-fg-muted hover:text-fg";
     let tab_base = "px-4 py-2 text-sm transition-colors inline-block";
 
@@ -157,7 +157,7 @@ fn render_page_header(
                 title_row
                     .class("flex items-baseline gap-2 flex-wrap")
                     .heading_1(|h1| {
-                        h1.class("text-3xl font-bold tracking-tight text-accent")
+                        h1.class("text-3xl font-normal tracking-display text-accent")
                             .text(display_name.to_owned())
                     })
                     .push(render_version_inline(pkg, current_version, &url_name))
@@ -264,7 +264,7 @@ fn render_version_inline(pkg: &KnownPackage, current_version: &str, url_name: &s
     select
         .id("version-select")
         .name("version")
-        .class("px-1.5 py-0.5 rounded border border-border bg-surface text-fg text-xl font-bold cursor-pointer");
+        .class("px-1.5 py-0.5 rounded border border-border bg-surface text-fg text-xl font-normal cursor-pointer");
 
     for tag in &pkg.tags {
         let is_current = tag == current_version;
@@ -281,7 +281,7 @@ fn render_version_inline(pkg: &KnownPackage, current_version: &str, url_name: &s
 
     Division::builder()
         .class("flex items-baseline gap-1")
-        .span(|s| s.class("text-xl text-fg-muted font-bold").text("@"))
+        .span(|s| s.class("text-xl text-fg-muted font-normal").text("@"))
         .push(select.build())
         .script(|s| s.text(script_body))
         .build()

@@ -74,6 +74,9 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
             sans: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
             mono: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
           }},
+          letterSpacing: {{
+            display: '-0.06em',
+          }},
         }}
       }}
     }}
@@ -180,28 +183,9 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         animation: none;
       }}
     }}
-    /* Card entrance stagger */
-    @keyframes card-in {{
-      from {{ opacity: 0; transform: translateY(4px); }}
-      to   {{ opacity: 1; transform: translateY(0); }}
-    }}
-    .card-enter {{
-      animation: card-in 0.25s cubic-bezier(0.25, 1, 0.5, 1) both;
-    }}
-    @media (prefers-reduced-motion: reduce) {{
-      .card-enter {{ animation: none; }}
-    }}
-    /* Card hover — Linear-style: border + bg shift, no vertical lift */
+    /* Card hover — border change only, no shadows */
     .card-lift {{
-      transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s, color 0.15s;
-    }}
-    .card-lift:hover {{
-      box-shadow: 0 1px 3px oklch(0.20 0.03 290 / 0.06);
-    }}
-    @media (prefers-color-scheme: dark) {{
-      .card-lift:hover {{
-        box-shadow: 0 1px 3px oklch(0 0 0 / 0.2);
-      }}
+      transition: border-color 0.15s, background-color 0.15s;
     }}
     @media (prefers-reduced-motion: reduce) {{
       .card-lift {{ transition: none; }}
@@ -212,19 +196,6 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
     .card-component {{
       border-left: 2px solid var(--color-accent);
-    }}
-    /* Search focus ring — Linear-style */
-    .search-glow:focus {{
-      box-shadow: 0 0 0 3px oklch(0.49 0.257 280 / 0.12);
-    }}
-    @media (prefers-color-scheme: dark) {{
-      .search-glow:focus {{
-        box-shadow: 0 0 0 3px oklch(0.70 0.16 280 / 0.2);
-      }}
-    }}
-    /* Button press */
-    .btn-press:active {{
-      transform: translateY(1px);
     }}
     /* Copy hint */
     .copy-hint {{
@@ -291,35 +262,16 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
       pointer-events: none;
       white-space: nowrap;
       overflow: hidden;
-      transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }}
     .carousel-word {{
       display: inline-block;
       opacity: 0;
-      transform: translateY(-0.6em);
     }}
-    /* Exit: slow start, then accelerate down and away */
     .carousel-word.out {{
       opacity: 0;
-      transform: translateY(0.6em);
-      transition:
-        opacity 0.25s cubic-bezier(0.55, 0, 1, 0.45),
-        transform 0.25s cubic-bezier(0.55, 0, 1, 0.45);
     }}
-    /* Enter: fly in fast from above, overshoot slightly, settle back */
     .carousel-word.in {{
       opacity: 1;
-      transform: translateY(0);
-      transition:
-        opacity 0.3s cubic-bezier(0.22, 1.15, 0.36, 1),
-        transform 0.3s cubic-bezier(0.22, 1.15, 0.36, 1);
-    }}
-    @media (prefers-reduced-motion: reduce) {{
-      .carousel-word,
-      .carousel-word.out,
-      .carousel-word.in {{
-        transition: none;
-      }}
     }}
     /* Tab buttons */
     .tab-btn {{
@@ -345,7 +297,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
     }}
   </style>
 </head>
-<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans">
+<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans antialiased">
   <main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pb-10">
     {body_content}
   </main>

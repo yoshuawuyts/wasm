@@ -25,7 +25,7 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-bold tracking-tight")
+                h1.class("text-3xl font-normal tracking-display")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
             .paragraph(|p| {
@@ -82,7 +82,7 @@ fn render_error(query: &str, err: &ApiError) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-bold tracking-tight")
+                h1.class("text-3xl font-normal tracking-display")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
     });
@@ -91,7 +91,7 @@ fn render_error(query: &str, err: &ApiError) -> String {
 
     body.division(|div| {
         div.class("py-16 text-center")
-            .paragraph(|p| p.class("text-fg font-semibold").text("Unable to search"))
+            .paragraph(|p| p.class("text-fg font-medium").text("Unable to search"))
             .paragraph(|p| p.class("text-sm text-fg-muted mt-2").text(err.to_string()))
     });
 
@@ -116,7 +116,7 @@ fn render_search_form(query: &str) -> Division {
                 })
                 .button(|btn| {
                     btn.type_("submit")
-                        .class("px-4 py-2 rounded bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors")
+                        .class("px-4 py-2 rounded bg-accent text-white text-sm font-normal hover:bg-accent-hover transition-colors")
                         .text("Search")
                 })
         })
@@ -177,7 +177,7 @@ fn row_spans(
     [
         Span::builder()
             .class(format!(
-                "w-48 shrink-0 font-semibold {name_color_class} truncate"
+                "w-48 shrink-0 font-medium {name_color_class} truncate"
             ))
             .text(display_name.to_owned())
             .build(),

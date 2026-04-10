@@ -51,7 +51,7 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
     card.division(|d| {
         d.class("mb-3 pb-3 border-b border-border").anchor(|a| {
             a.href(pkg_url.to_owned())
-                .class("text-accent hover:underline font-semibold text-sm")
+                .class("text-accent hover:underline font-medium text-sm")
                 .text(ctx.display_name.to_owned())
         })
     });

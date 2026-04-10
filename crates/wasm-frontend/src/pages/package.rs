@@ -187,7 +187,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-3 mt-10");
     container.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-2")
             .text("Interfaces")
     });
 
@@ -208,7 +208,7 @@ fn render_interface_row(iface: &crate::wit_doc::InterfaceDoc) -> ListItem {
     li.division(|left| {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(iface.url.clone())
-                .class("font-mono text-sm font-semibold text-wit-iface hover:underline")
+                .class("font-mono text-sm font-medium text-wit-iface hover:underline")
                 .text(iface.name.clone())
         })
     });
@@ -230,7 +230,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-3");
     container.heading_2(|h2| {
-        h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-2")
+        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-2")
             .text("Worlds")
     });
 
@@ -359,7 +359,7 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
     li.division(|left| {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(world.url.clone())
-                .class("font-mono text-sm font-semibold text-wit-world hover:underline")
+                .class("font-mono text-sm font-medium text-wit-world hover:underline")
                 .text(world.name.clone())
         })
     });
@@ -380,7 +380,7 @@ fn render_world_row(world: &wasm_wit_doc::WorldDoc) -> ListItem {
 fn render_raw_wit(wit_text: &str) -> Division {
     Division::builder()
         .heading_2(|h2| {
-            h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
+            h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3")
                 .text("WIT Definition")
         })
         .push(
@@ -401,7 +401,7 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
     for world in &detail.worlds {
         container.division(|world_div| {
             world_div.heading_2(|h2| {
-                h2.class("text-sm font-semibold text-fg-muted uppercase tracking-wide mb-3")
+                h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3")
                     .text(format!("world {}", world.name))
             });
 
@@ -644,7 +644,7 @@ fn render_filterable_package_list(id: &str, packages: &[&KnownPackage], visible:
 
 /// Render the dependents panel with All / Importers / Exporters filter.
 fn render_dependents_panel(importers: &[KnownPackage], exporters: &[KnownPackage]) -> Division {
-    let active_class = "text-accent border-b-2 border-accent font-semibold";
+    let active_class = "text-accent border-b-2 border-accent font-medium";
     let inactive_class = "text-fg-muted hover:text-fg";
     let filter_base = "px-3 py-1.5 text-xs cursor-pointer transition-colors";
 

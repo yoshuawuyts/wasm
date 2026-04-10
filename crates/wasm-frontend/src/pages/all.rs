@@ -24,7 +24,7 @@ fn render_packages(packages: &[KnownPackage], offset: u32, limit: u32) -> String
     body.division(|div| {
         div.class("pt-8 flex items-baseline justify-between pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-bold tracking-tight")
+                h1.class("text-3xl font-normal tracking-display")
                     .text("All Packages")
             })
             .span(|s| {
@@ -69,7 +69,7 @@ fn render_error(err: &ApiError, offset: u32, limit: u32) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b border-border mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-bold tracking-tight")
+                h1.class("text-3xl font-normal tracking-display")
                     .text("All Packages")
             })
     });
@@ -77,7 +77,7 @@ fn render_error(err: &ApiError, offset: u32, limit: u32) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| {
-                p.class("text-fg font-semibold")
+                p.class("text-fg font-medium")
                     .text("Unable to load packages")
             })
             .paragraph(|p| p.class("text-sm text-fg-muted mt-2").text(err.to_string()))
@@ -107,7 +107,7 @@ fn render_row(pkg: &KnownPackage) -> Division {
                         "flex items-baseline gap-3 py-3 hover:bg-surface -mx-2 px-2 rounded transition-colors",
                     )
                     .span(|s| {
-                        s.class("w-48 shrink-0 font-semibold text-accent truncate")
+                        s.class("w-48 shrink-0 font-medium text-accent truncate")
                             .text(display_name)
                     })
                     .span(|s| {
@@ -123,7 +123,7 @@ fn render_row(pkg: &KnownPackage) -> Division {
         _ => Division::builder()
             .class("flex items-baseline gap-3 py-3 -mx-2 px-2 rounded")
             .span(|s| {
-                s.class("w-48 shrink-0 font-semibold text-fg truncate")
+                s.class("w-48 shrink-0 font-medium text-fg truncate")
                     .text(display_name)
             })
             .span(|s| {

@@ -42,7 +42,7 @@ fn render_error(_err: &ApiError) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| {
-                p.class("text-fg font-semibold")
+                p.class("text-fg font-medium")
                     .text("Could not load components")
             })
             .paragraph(|p| {
@@ -58,17 +58,11 @@ fn render_hero(_total: usize) -> Division {
     let mut hero = Division::builder();
     hero.class("pt-8 pb-6");
 
-    // Title and hint — grouped tightly
     hero.heading_1(|h1| {
-        h1.class("text-3xl font-bold tracking-tight")
+        h1.class("text-5xl font-light tracking-display")
             .text("WebAssembly Component Registry")
     });
-    hero.paragraph(|p| {
-        p.class("mt-2 text-sm text-fg-muted flex items-center gap-2 flex-wrap")
-            .text("Search for programs, libraries, and interfaces across all OCI registries.")
-    });
 
-    // Search and CTA — grouped below with generous separation from title
     hero.division(|row| {
         row.class("mt-8 flex flex-col sm:flex-row gap-3 sm:items-center")
             .form(|form| {
@@ -84,7 +78,7 @@ fn render_hero(_total: usize) -> Division {
                                     .id("search-input")
                                     .aria_label("Search components and interfaces")
                                     .autofocus(true)
-                                    .class("w-full px-4 pr-8 py-2.5 rounded-l-md text-base border border-border bg-surface text-fg focus:border-accent focus:outline-none search-glow transition-colors")
+                                    .class("w-full px-4 pr-8 py-2.5 rounded-l-md text-base border border-border bg-surface text-fg focus:border-accent focus:outline-none transition-colors")
                             })
                             // Carousel placeholder overlay
                             .span(|overlay| {
@@ -109,7 +103,7 @@ fn render_hero(_total: usize) -> Division {
                     })
                     .button(|btn| {
                         btn.type_("submit")
-                            .class("px-5 py-2.5 rounded-r-md text-sm font-medium bg-accent text-white hover:bg-accent-hover border border-accent btn-press transition-colors")
+                            .class("px-5 py-2.5 rounded-r-md text-sm font-normal bg-accent text-white hover:bg-accent-hover border border-accent transition-colors")
                             .text("Search")
                     })
             })
@@ -216,8 +210,8 @@ fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage])
 
     let mut grid = Division::builder();
     grid.class("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3");
-    for (i, pkg) in visible.iter().enumerate() {
-        grid.push(render_card(pkg, i));
+    for pkg in visible {
+        grid.push(render_card(pkg));
     }
     container.push(grid.build());
 
@@ -241,8 +235,7 @@ fn kind_icon(kind: Option<wasm_meta_registry_client::PackageKind>) -> &'static s
 }
 
 /// Render a single package as a card.
-fn render_card(pkg: &KnownPackage, index: usize) -> Division {
-    let delay = format!("animation-delay:{}ms", index * 30);
+fn render_card(pkg: &KnownPackage) -> Division {
     let display_name = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}:{name}"),
         _ => pkg.repository.clone(),
@@ -259,8 +252,6 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
 
     match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => Division::builder()
-            .class("card-enter")
-            .style(delay.clone())
             .anchor(|a| {
                 a.href(format!("/{ns}/{name}"))
                     .class(
@@ -270,7 +261,7 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
                         s.class("flex items-start justify-between gap-2")
                             .span(|name_span| {
                                 name_span
-                                    .class("font-semibold truncate")
+                                    .class("font-medium truncate")
                                     .span(|ns_span| {
                                         ns_span
                                             .class("text-fg-muted")
@@ -297,14 +288,12 @@ fn render_card(pkg: &KnownPackage, index: usize) -> Division {
             })
             .build(),
         _ => Division::builder()
-            .class("card-enter")
-            .style(delay)
             .class("flex flex-col h-full border border-border rounded-lg p-3.5 card-lift")
             .span(|s| {
                 s.class("flex items-start justify-between gap-2")
                     .span(|name_span| {
                         name_span
-                            .class("font-semibold text-fg truncate")
+                            .class("font-medium text-fg truncate")
                             .text(display_name)
                     })
                     .span(|badge| {

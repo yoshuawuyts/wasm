@@ -23,7 +23,7 @@ pub(crate) fn render(current_path: &str) -> String {
 
     format!(
         r#"<nav class="w-full max-w-5xl mx-auto px-4 sm:px-6 pt-6 pb-2 flex items-center justify-between" aria-label="Main">
-  <a href="/" class="text-lg font-bold tracking-tight text-fg hover:text-accent transition-colors">wasm</a>
+  <a href="/" class="text-lg font-medium tracking-display text-fg hover:text-accent transition-colors">wasm</a>
   <div class="flex gap-5 text-sm">
     <a href="/all" class="text-fg-muted hover:text-fg transition-colors"{all_aria}>Packages</a>
     <a href="/docs" class="text-fg-muted hover:text-fg transition-colors"{docs_aria}>Docs</a>

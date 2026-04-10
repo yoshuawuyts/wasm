@@ -10,7 +10,7 @@ pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("pt-8 max-w-[65ch]")
         .heading_1(|h1| {
-            h1.class("text-3xl font-bold tracking-tight mb-6")
+            h1.class("text-3xl font-normal tracking-display mb-6")
                 .text("Documentation")
         })
         .paragraph(|p| {
