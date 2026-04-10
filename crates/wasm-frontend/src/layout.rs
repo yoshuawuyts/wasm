@@ -262,16 +262,35 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
       pointer-events: none;
       white-space: nowrap;
       overflow: hidden;
+      transition: opacity 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }}
     .carousel-word {{
       display: inline-block;
       opacity: 0;
+      transform: translateY(-0.6em);
     }}
+    /* Exit: slow start, then accelerate down and away */
     .carousel-word.out {{
       opacity: 0;
+      transform: translateY(0.6em);
+      transition:
+        opacity 0.25s cubic-bezier(0.55, 0, 1, 0.45),
+        transform 0.25s cubic-bezier(0.55, 0, 1, 0.45);
     }}
+    /* Enter: fly in fast from above, overshoot slightly, settle back */
     .carousel-word.in {{
       opacity: 1;
+      transform: translateY(0);
+      transition:
+        opacity 0.3s cubic-bezier(0.22, 1.15, 0.36, 1),
+        transform 0.3s cubic-bezier(0.22, 1.15, 0.36, 1);
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+      .carousel-word,
+      .carousel-word.out,
+      .carousel-word.in {{
+        transition: none;
+      }}
     }}
     /* Tab buttons */
     .tab-btn {{
