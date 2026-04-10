@@ -53,13 +53,13 @@ fn render_error(_err: &ApiError) -> String {
     layout::document("Home", &body.build().to_string())
 }
 
-/// Render the hero area with heading, search form, CTA, and quick-install hint.
+/// Render the hero area with heading, nav, search, and CTA.
 fn render_hero(_total: usize) -> Division {
     let mut hero = Division::builder();
     hero.class("pt-16 pb-12");
 
     hero.division(|row| {
-        row.class("flex items-baseline justify-between")
+        row.class("flex flex-wrap items-start justify-between gap-4")
             .heading_1(|h1| {
                 h1.class("text-5xl font-light tracking-display")
                     .text("WebAssembly Component Registry")
@@ -80,13 +80,14 @@ fn render_hero(_total: usize) -> Division {
     });
 
     hero.division(|row| {
-        row.class("mt-10 flex flex-col sm:flex-row gap-3 sm:items-center")
+        row.class("mt-10 flex flex-col sm:flex-row gap-6 sm:items-center")
             .form(|form| {
                 form.action("/search")
                     .method("get")
                     .class("flex flex-1 max-w-lg search-form")
                     .division(|wrapper| {
-                        wrapper.class("flex-1 relative")
+                        wrapper
+                            .class("flex-1 relative")
                             .input(|input| {
                                 input
                                     .type_("search")
@@ -96,15 +97,12 @@ fn render_hero(_total: usize) -> Division {
                                     .autofocus(true)
                                     .class("w-full px-4 pr-8 py-2.5 text-sm border-2 border-fg bg-page text-fg focus:border-accent focus:outline-none transition-colors")
                             })
-                            // Carousel placeholder overlay
                             .span(|overlay| {
                                 overlay
                                     .id("search-carousel")
                                     .class("search-carousel")
                                     .aria_hidden(true)
-                                    .span(|prefix| {
-                                        prefix.text("Search ".to_owned())
-                                    })
+                                    .span(|prefix| prefix.text("Search ".to_owned()))
                                     .span(|word| {
                                         word.id("carousel-word")
                                             .class("carousel-word")
@@ -114,14 +112,18 @@ fn render_hero(_total: usize) -> Division {
                     })
                     .button(|btn| {
                         btn.type_("submit")
-                            .class("px-5 py-2.5 text-sm font-normal bg-fg text-page border-2 border-fg transition-transform hover:scale-105 hover:shadow-md")
+                            .class("px-5 py-2.5 text-sm font-normal bg-fg text-page border-2 border-fg border-l-0 transition-colors")
                             .text("Search")
                     })
             })
             .anchor(|a| {
                 a.href("/docs")
-                    .class("text-sm text-fg-muted hover:text-accent transition-colors shrink-0")
-                    .text("Publish a component \u{2192}")
+                    .class("group text-sm text-fg-muted hover:text-accent transition-colors shrink-0")
+                    .span(|s| s.text("Publish a component ".to_owned()))
+                    .span(|s| {
+                        s.class("inline-block transition-transform group-hover:translate-x-1")
+                            .text("\u{2192}")
+                    })
             })
     });
 
