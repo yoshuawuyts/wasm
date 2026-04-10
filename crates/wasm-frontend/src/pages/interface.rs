@@ -23,7 +23,10 @@ pub(crate) fn render(
 
     // Docs
     if let Some(docs) = &iface.docs {
-        outer.paragraph(|p| p.class("text-sm text-fg-muted mb-6").text(docs.clone()));
+        outer.paragraph(|p| {
+            p.class("text-fg leading-relaxed mb-6 max-w-[65ch]")
+                .text(docs.clone())
+        });
     }
 
     // Grid: main content

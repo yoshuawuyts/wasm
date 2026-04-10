@@ -20,28 +20,22 @@ pub(crate) fn render(
 
     let mut outer = Division::builder();
 
-    // Header
-    outer.division(|div| {
-        div.class("mb-6").heading_2(|h2| {
-            h2.class("text-2xl font-normal tracking-display font-mono")
-                .span(|s| s.class("text-fg-muted").text(format!("{display_name} / ")))
-                .span(|s| s.class("text-fg-muted").text("world "))
-                .span(|s| s.class("text-accent").text(world.name.clone()))
+    // Docs
+    if let Some(docs) = &world.docs {
+        outer.paragraph(|p| {
+            p.class("text-fg leading-relaxed mb-6 max-w-[65ch]")
+                .text(docs.clone())
         });
-        if let Some(docs) = &world.docs {
-            div.paragraph(|p| p.class("text-lg text-fg-secondary mt-2").text(docs.clone()));
-        }
-        div
-    });
+    }
 
     let mut content = Division::builder();
-    content.class("space-y-8");
+    content.class("space-y-10");
 
     if !world.imports.is_empty() {
-        content.push(render_item_section("Imports", &world.imports));
+        content.push(render_item_section("Imports", &world.imports, true));
     }
     if !world.exports.is_empty() {
-        content.push(render_item_section("Exports", &world.exports));
+        content.push(render_item_section("Exports", &world.exports, false));
     }
 
     outer.push(content.build());
@@ -61,100 +55,58 @@ pub(crate) fn render(
 }
 
 /// Render an imports or exports section, grouped by package namespace.
-fn render_item_section(heading: &str, items: &[WorldItemDoc]) -> Division {
+fn render_item_section(heading: &str, items: &[WorldItemDoc], is_import: bool) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3")
+        h2.class("text-sm font-medium text-fg-muted uppercase tracking-wide mb-3 pb-2 border-b-2 border-fg")
             .text(heading.to_owned())
     });
 
-    // Separate interface items (groupable) from non-interface items.
-    let mut groups: Vec<(&str, Vec<&WorldItemDoc>)> = Vec::new();
-    let mut other_items: Vec<&WorldItemDoc> = Vec::new();
+    let link_color = if is_import {
+        "block font-mono text-wit-import hover:underline text-sm"
+    } else {
+        "block font-mono text-accent hover:underline text-sm"
+    };
 
+    let mut ul = UnorderedList::builder();
+    ul.class("space-y-0.5");
     for item in items {
-        match item {
-            WorldItemDoc::Interface { name, .. } => {
-                let pkg = extract_package_name(name);
-                if let Some(group) = groups.iter_mut().find(|(key, _)| *key == pkg) {
-                    group.1.push(item);
-                } else {
-                    groups.push((pkg, vec![item]));
-                }
-            }
-            _ => other_items.push(item),
-        }
+        ul.push(render_world_item_row(item, link_color));
     }
 
-    // Render grouped interfaces.
-    let mut container = Division::builder();
-    container.class("space-y-4");
-
-    for (pkg_name, group_items) in &groups {
-        container.division(|group_div| {
-            // Only show group heading if there are multiple groups.
-            if groups.len() > 1 {
-                group_div.division(|label| {
-                    label
-                        .class("text-sm font-medium text-fg-muted font-mono mb-1.5")
-                        .text((*pkg_name).to_owned())
-                });
-            }
-            let mut ul = UnorderedList::builder();
-            ul.class("space-y-1");
-            for item in group_items {
-                ul.push(render_world_item_row(item));
-            }
-            group_div.push(ul.build());
-            group_div
-        });
-    }
-
-    // Render non-interface items (functions, types) if any.
-    if !other_items.is_empty() {
-        let mut ul = UnorderedList::builder();
-        ul.class("space-y-1");
-        for item in &other_items {
-            ul.push(render_world_item_row(item));
-        }
-        container.push(ul.build());
-    }
-
-    div.push(container.build());
+    div.push(ul.build());
     div.build()
 }
 
-/// Extract the package name from a qualified interface name.
+/// Strip version suffix from a qualified name.
 ///
-/// `"wasi:cli/environment@0.2.11"` → `"wasi:cli"`
-/// `"wasi:io/streams@0.2.11"` → `"wasi:io"`
-fn extract_package_name(qualified: &str) -> &str {
-    // Strip the version suffix first: "wasi:cli/env@0.2.11" → "wasi:cli/env"
-    let without_version = qualified.split('@').next().unwrap_or(qualified);
-    // Take up to the slash: "wasi:cli/env" → "wasi:cli"
-    without_version.split('/').next().unwrap_or(without_version)
+/// `"wasi:cli/environment@0.2.11"` → `"wasi:cli/environment"`
+fn strip_version(name: &str) -> &str {
+    name.split('@').next().unwrap_or(name)
 }
 
 /// Render a single world item row.
-fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
+fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
     let mut li = ListItem::builder();
-    li.class("px-2 py-1.5 hover:bg-surface-muted transition-colors");
+    li.class("py-2.5 px-2 hover:bg-surface-muted transition-colors");
 
     match item {
         WorldItemDoc::Interface {
             name,
             url: Some(url),
         } => {
+            let display = strip_version(name);
             li.anchor(|a| {
                 a.href(url.clone())
-                    .class("block font-mono text-accent hover:underline text-sm")
-                    .text(name.clone())
+                    .class(link_color.to_owned())
+                    .text(display.to_owned())
             });
         }
         WorldItemDoc::Interface { name, url: None } => {
+            let display = strip_version(name);
             li.span(|s| {
                 s.class("block font-mono text-fg text-sm")
-                    .text(name.clone())
+                    .text(display.to_owned())
             });
         }
         WorldItemDoc::Function(func) => {

@@ -121,9 +121,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     }
 
     // Install command
-    sidebar.division(|d| {
-        d.class("text-sm text-fg-muted mb-1").text("Install")
-    });
+    sidebar.division(|d| d.class("text-sm text-fg-muted mb-1").text("Install"));
     sidebar.push(render_install_command(display_name, version));
 
     // Metadata

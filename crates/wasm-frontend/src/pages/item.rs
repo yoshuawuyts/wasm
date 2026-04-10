@@ -22,19 +22,13 @@ pub(crate) fn render_type(
 
     let mut outer = Division::builder();
 
-    // Header
-    outer.division(|div| {
-        div.class("mb-6").heading_2(|h2| {
-            h2.class("text-2xl font-normal tracking-display font-mono")
-                .span(|s| s.class("text-fg-muted").text(kind_label(&ty.kind)))
-                .text(" ")
-                .span(|s| s.class("text-accent").text(ty.name.clone()))
+    // Docs
+    if let Some(docs) = &ty.docs {
+        outer.paragraph(|p| {
+            p.class("text-fg leading-relaxed mb-6 max-w-[65ch]")
+                .text(docs.clone())
         });
-        if let Some(docs) = &ty.docs {
-            div.paragraph(|p| p.class("text-lg text-fg-secondary mt-2").text(docs.clone()));
-        }
-        div
-    });
+    }
 
     // WIT definition block
     outer.push(render_type_definition(ty));
@@ -78,17 +72,13 @@ pub(crate) fn render_function(
 
     let mut outer = Division::builder();
 
-    outer.division(|div| {
-        div.class("mb-6").heading_2(|h2| {
-            h2.class("text-2xl font-normal tracking-display font-mono")
-                .span(|s| s.class("text-fg-muted").text("function "))
-                .span(|s| s.class("text-accent").text(func.name.clone()))
+    // Docs
+    if let Some(docs) = &func.docs {
+        outer.paragraph(|p| {
+            p.class("text-fg leading-relaxed mb-6 max-w-[65ch]")
+                .text(docs.clone())
         });
-        if let Some(docs) = &func.docs {
-            div.paragraph(|p| p.class("text-lg text-fg-secondary mt-2").text(docs.clone()));
-        }
-        div
-    });
+    }
 
     // WIT definition block
     outer.push(render_function_definition(func));
@@ -615,19 +605,6 @@ fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
         },
     }
     span.build()
-}
-
-/// Get the keyword label for a type kind.
-fn kind_label(kind: &TypeKind) -> String {
-    match kind {
-        TypeKind::Record { .. } => "record",
-        TypeKind::Variant { .. } => "variant",
-        TypeKind::Enum { .. } => "enum",
-        TypeKind::Flags { .. } => "flags",
-        TypeKind::Resource { .. } => "resource",
-        TypeKind::Alias(_) => "type",
-    }
-    .to_owned()
 }
 
 /// Format a `TypeRef` as a short inline string (no links).

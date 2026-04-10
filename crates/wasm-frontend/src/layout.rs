@@ -87,6 +87,7 @@ fn document_inner(title: &str, body_content: &str, nav: &str) -> String {
               func:     'var(--color-wit-func)',
               world:    'var(--color-wit-world)',
               iface:    'var(--color-wit-iface)',
+              import:   'var(--color-wit-import)',
             }},
           }},
           fontFamily: {{
@@ -156,6 +157,7 @@ fn document_inner(title: &str, body_content: &str, nav: &str) -> String {
       --color-wit-func: #1d4ed8;
       --color-wit-world: #9333ea;
       --color-wit-iface: #0369a1;
+      --color-wit-import: #b91c1c;
     }}
     html, body {{
       background-color: var(--color-bg);
