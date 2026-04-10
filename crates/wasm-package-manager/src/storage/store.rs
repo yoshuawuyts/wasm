@@ -408,14 +408,19 @@ impl Store {
 
     /// Attempt to extract WIT package from wasm component bytes.
     /// This is best-effort - if extraction fails, we log a warning and skip.
-    fn try_extract_wit_package(&self, manifest_id: i64, layer_id: Option<i64>, wasm_bytes: &[u8]) {
+    fn try_extract_wit_package(
+        &self,
+        manifest_id: i64,
+        layer_id: Option<i64>,
+        wasm_bytes: &[u8],
+    ) -> bool {
         let Some(metadata) = extract_wit_metadata(wasm_bytes) else {
-            return; // Not a valid wasm component, skip
+            return false; // Not a valid wasm component, skip
         };
 
         // Insert the WIT package (best-effort; skip if no package name)
         let Some(raw_name) = metadata.package_name.as_deref() else {
-            return;
+            return false;
         };
 
         // Split "namespace:name@version" into (package_name, version).
@@ -437,7 +442,7 @@ impl Store {
                     manifest_id,
                     e
                 );
-                return;
+                return false;
             }
         };
 
@@ -501,7 +506,7 @@ impl Store {
                     Ok(id) => id,
                     Err(e) => {
                         tracing::warn!("Failed to insert WasmComponent: {}", e);
-                        return;
+                        return false;
                     }
                 };
 
@@ -523,6 +528,7 @@ impl Store {
 
         // Best-effort resolution of cross-package foreign keys
         self.try_resolve_foreign_keys(wit_package_id, manifest_id);
+        true
     }
 
     /// Best-effort resolution of cross-package foreign keys.
@@ -586,6 +592,77 @@ impl Store {
         )?;
 
         Ok(())
+    }
+
+    /// Re-extract WIT metadata for every package that has a cached OCI layer.
+    ///
+    /// This reads the raw wasm bytes back from the cacache store and, for each
+    /// package, replaces the existing `wit_package` row (cascading to worlds,
+    /// imports, exports, and dependencies) inside a savepoint only after
+    /// extraction succeeds. Derived fields like `wit_text` can then pick up any
+    /// improvements to the extraction logic.
+    ///
+    /// Original OCI data (manifests, layers, blobs) is never modified.
+    pub(crate) async fn reindex_wit_packages(&self) -> anyhow::Result<u64> {
+        // Collect (wit_package.id, oci_manifest_id, layer_digest) tuples.
+        let mut stmt = self.conn.prepare(
+            "SELECT wp.id, wp.oci_manifest_id, ol.digest
+             FROM wit_package wp
+             JOIN oci_layer ol ON ol.id = wp.oci_layer_id",
+        )?;
+        let rows: Vec<(i64, i64, String)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let store_dir = self.state_info.store_dir().to_path_buf();
+        let mut reindexed = 0u64;
+
+        for (wit_id, manifest_id, digest) in &rows {
+            // Read the raw bytes from cacache.
+            let bytes = match cacache::read(&store_dir, digest).await {
+                Ok(b) => b,
+                Err(e) => {
+                    tracing::warn!("reindex: failed to read layer {digest} from cache: {e}");
+                    continue;
+                }
+            };
+
+            if let Err(e) = self.conn.execute_batch("SAVEPOINT reindex_wit_package") {
+                tracing::warn!("reindex: failed to start savepoint for wit_package {wit_id}: {e}");
+                continue;
+            }
+
+            // Delete old rows and re-extract with current logic atomically.
+            let replaced = self
+                .conn
+                .execute("DELETE FROM wit_package WHERE id = ?1", [wit_id])
+                .map_or_else(
+                    |e| {
+                        tracing::warn!("reindex: failed to delete wit_package {wit_id}: {e}");
+                        false
+                    },
+                    |_| self.try_extract_wit_package(*manifest_id, None, &bytes),
+                );
+
+            let savepoint_sql = if replaced {
+                "RELEASE SAVEPOINT reindex_wit_package"
+            } else {
+                "ROLLBACK TO SAVEPOINT reindex_wit_package; RELEASE SAVEPOINT reindex_wit_package"
+            };
+
+            if let Err(e) = self.conn.execute_batch(savepoint_sql) {
+                tracing::warn!(
+                    "reindex: failed to finalize savepoint for wit_package {wit_id}: {e}"
+                );
+                continue;
+            }
+
+            if replaced {
+                reindexed += 1;
+            }
+        }
+
+        Ok(reindexed)
     }
 
     /// Returns all currently stored images and their metadata.

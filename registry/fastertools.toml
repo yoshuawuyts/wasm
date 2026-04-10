@@ -1,0 +1,8 @@
+[namespace]
+name = "fastertools"
+registry = "ghcr.io/fastertools"
+
+# fastertools/ftl-tool-think
+[[component]]
+name = "ftl-tool-think"
+repository = "ftl-tool-think"

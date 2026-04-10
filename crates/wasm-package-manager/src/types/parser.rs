@@ -103,8 +103,10 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
     // Extract dependencies (packages other than the primary one)
     let dependencies = extract_dependencies(resolve, primary_package_id);
 
-    // Generate a WIT text representation from the decoded structure
-    let wit_text = generate_wit_text(&decoded);
+    // Generate a WIT text representation.  For WIT packages we use
+    // `WitPrinter` which produces well-formed, parseable WIT text.  For
+    // components we fall back to a simplified summary.
+    let wit_text = wit_printer_text(&decoded).unwrap_or_else(|| generate_wit_text(&decoded));
 
     Some(WitMetadata {
         package_name,
@@ -247,6 +249,27 @@ fn extract_dependencies(
             version: pkg.name.version.as_ref().map(ToString::to_string),
         })
         .collect()
+}
+
+/// Produce well-formed WIT text via `WitPrinter`.
+///
+/// Returns `Some` only for WIT packages; components have no lossless
+/// textual representation.
+fn wit_printer_text(decoded: &DecodedWasm) -> Option<String> {
+    match decoded {
+        DecodedWasm::WitPackage(resolve, package_id) => {
+            let nested: Vec<_> = resolve
+                .packages
+                .iter()
+                .filter(|(id, _)| *id != *package_id)
+                .map(|(id, _)| id)
+                .collect();
+            let mut printer = WitPrinter::default();
+            printer.print(resolve, *package_id, &nested).ok()?;
+            Some(printer.output.to_string())
+        }
+        DecodedWasm::Component(..) => None,
+    }
 }
 
 /// Generate WIT text representation from decoded component.

@@ -10,17 +10,37 @@ use crate::layout;
 #[must_use]
 pub(crate) fn render() -> String {
     let body = Division::builder()
-        .class("text-center pt-28 pb-20")
-        .heading_1(|h1| h1.class("text-6xl font-bold tracking-tighter text-accent").text("404"))
-        .paragraph(|p| p.class("text-lg text-fg-secondary mt-4").text("Page not found"))
-        .paragraph(|p| {
-            p.class("text-fg-muted mt-2")
-                .text("The page you're looking for doesn't exist or has been moved.")
+        .class("pt-16 pb-20 max-w-lg")
+        .heading_1(|h1| {
+            h1.class("text-4xl font-bold tracking-tight text-accent")
+                .text("Page not found")
         })
-        .anchor(|a| {
-            a.href("/")
-                .class("inline-block mt-8 px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent-hover transition-colors")
-                .text("Go to Home")
+        .paragraph(|p| {
+            p.class("text-fg-secondary mt-3").text(
+                "The package, interface, or item you're looking for \
+                     doesn't exist — or it may have been published under \
+                     a different version.",
+            )
+        })
+        .division(|actions| {
+            actions
+                .class("mt-8 flex flex-wrap gap-3 text-sm")
+                .anchor(|a| {
+                    a.href("/")
+                        .class(
+                            "px-4 py-2 bg-accent text-white rounded-md \
+                             font-medium hover:bg-accent-hover transition-colors",
+                        )
+                        .text("Browse packages")
+                })
+                .anchor(|a| {
+                    a.href("/search")
+                        .class(
+                            "px-4 py-2 border border-border rounded-md \
+                             text-fg hover:border-accent/50 transition-colors",
+                        )
+                        .text("Search")
+                })
         })
         .build();
 

@@ -16,6 +16,7 @@ mod layout;
 mod nav;
 mod pages;
 mod reserved;
+mod wit_doc;
 
 use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode, Uri, header};
@@ -47,6 +48,18 @@ fn app() -> Router {
         .route(
             "/{namespace}/{name}/{version}/dependents",
             get(package_dependents),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/interface/{iface}",
+            get(interface_detail),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/interface/{iface}/{item}",
+            get(item_detail),
+        )
+        .route(
+            "/{namespace}/{name}/{version}/world/{world_name}",
+            get(world_detail),
         )
         .fallback(not_found)
 }
@@ -173,7 +186,7 @@ async fn package_detail(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
         Ok(Some(pkg)) => pkg,
         Ok(None) => return not_found_response(),
         Err(response) => return response,
@@ -195,7 +208,7 @@ async fn package_dependencies(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
         Ok(Some(pkg)) => pkg,
         Ok(None) => return not_found_response(),
         Err(response) => return response,
@@ -210,7 +223,7 @@ async fn package_dependents(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_response(&client, &namespace, &name, &version).await {
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
         Ok(Some(pkg)) => pkg,
         Ok(None) => return not_found_response(),
         Err(response) => return response,
@@ -232,11 +245,121 @@ async fn package_dependents(
     with_cache_control(html, "public, max-age=300")
 }
 
+/// Interface detail page at `/<namespace>/<name>/<version>/interface/<iface>`.
+async fn interface_detail(
+    Path((namespace, name, version, iface)): Path<(String, String, String, String)>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(iface_doc) = doc.interfaces.iter().find(|i| i.name == iface) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+    let html = pages::interface::render(&display_name, &version, iface_doc, &doc);
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Item detail page at `/<namespace>/<name>/<version>/interface/<iface>/<item>`.
+async fn item_detail(
+    Path((namespace, name, version, iface, item_name)): Path<(
+        String,
+        String,
+        String,
+        String,
+        String,
+    )>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(iface_doc) = doc.interfaces.iter().find(|i| i.name == iface) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+
+    // Try types first, then functions.
+    if let Some(ty) = iface_doc.types.iter().find(|t| t.name == item_name) {
+        let html = pages::item::render_type(&display_name, &version, &iface, ty, &doc);
+        return with_cache_control(html, "public, max-age=300");
+    }
+    if let Some(func) = iface_doc.functions.iter().find(|f| f.name == item_name) {
+        let html = pages::item::render_function(&display_name, &version, &iface, func, &doc);
+        return with_cache_control(html, "public, max-age=300");
+    }
+
+    not_found_response()
+}
+
+/// World detail page at `/<namespace>/<name>/<version>/world/<world_name>`.
+async fn world_detail(
+    Path((namespace, name, version, world_name)): Path<(String, String, String, String)>,
+) -> Response {
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(response) => return response,
+    };
+    let Some(doc) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let Some(world_doc) = doc.worlds.iter().find(|w| w.name == world_name) else {
+        return not_found_response();
+    };
+    let display_name = format!("{namespace}:{name}");
+    let html = pages::world::render(&display_name, &version, world_doc, &doc);
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Fetch and parse the WIT document for a package version.
+async fn fetch_wit_doc(
+    client: &RegistryClient,
+    pkg: &KnownPackage,
+    version: &str,
+) -> Option<wit_doc::WitDocument> {
+    let detail = client
+        .fetch_package_version(&pkg.registry, &pkg.repository, version)
+        .await
+        .ok()
+        .flatten()?;
+    let wit_text = detail.wit_text.as_deref()?;
+    let dep_urls: std::collections::HashMap<String, String> = detail
+        .dependencies
+        .iter()
+        .filter_map(|dep| {
+            let v = dep.version.as_deref()?;
+            let url = format!("/{}/{v}", dep.package.replace(':', "/"));
+            Some((dep.package.clone(), url))
+        })
+        .collect();
+    let url_base = format!(
+        "/{}/{}/{}",
+        pkg.wit_namespace.as_deref().unwrap_or("_"),
+        pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
+        version
+    );
+    wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()
+}
+
 /// Fetch a package by WIT namespace/name, validating the version exists.
 ///
-/// Returns `Ok(None)` when the package/version doesn't exist, and `Err(Response)`
-/// when the upstream registry cannot be reached.
-async fn fetch_package_or_response(
+/// Returns `None` (and logs) if the namespace is reserved, the package is
+/// not found, or the version tag doesn't exist. Returns a 502 response if the
+/// upstream API call fails.
+async fn fetch_package_or_404(
     client: &RegistryClient,
     namespace: &str,
     name: &str,
@@ -260,7 +383,7 @@ async fn fetch_package_or_response(
         }
         Err(e) => {
             eprintln!("wasm-frontend: API error looking up {namespace}/{name}@{version}: {e}");
-            Err(error_response(&e.to_string()))
+            Err(error_response(&format!("{e:#}")))
         }
     }
 }

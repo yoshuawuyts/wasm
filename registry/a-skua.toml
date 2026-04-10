@@ -1,0 +1,19 @@
+[namespace]
+name = "a-skua"
+registry = "ghcr.io/a-skua"
+
+# a-skua/wasip122
+[[component]]
+name = "wasip122"
+repository = "wasip122"
+
+# a-skua/koyomi-wasm
+[[interface]]
+name = "koyomi"
+repository = "koyomi"
+
+[[component]]
+name = "koyomi"
+repository = "koyomi"
+
+

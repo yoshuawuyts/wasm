@@ -1,0 +1,16 @@
+[namespace]
+name = "mattilsynet"
+registry = "ghcr.io/mattilsynet"
+
+# Mattilsynet/map-me-gcp
+[[component]]
+name = "map-me-gcp"
+repository = "map-me-gcp"
+
+
+# Mattilsynet/h8s-provider
+[[interface]]
+name = "h8s-provider"
+repository = "h8s-provider"
+
+

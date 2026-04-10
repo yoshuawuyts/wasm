@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use clap::Parser;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 use wasm_package_manager::manager::Manager;
 
 use wasm_meta_registry::server::StateData;
@@ -30,6 +30,12 @@ struct Cli {
     /// HTTP server bind address.
     #[arg(long, default_value = "0.0.0.0:8080")]
     bind: String,
+
+    /// Re-index cached WIT packages during startup.
+    ///
+    /// This can significantly delay readiness on large caches.
+    #[arg(long, default_value_t = false)]
+    reindex_wit_on_startup: bool,
 }
 
 #[tokio::main]
@@ -61,6 +67,20 @@ async fn main() -> anyhow::Result<()> {
 
     // Open the Manager for the HTTP server with its own data directory
     let server_manager = Manager::open_at(&data_dir).await?;
+
+    if cli.reindex_wit_on_startup {
+        // Re-derive WIT metadata from cached OCI layers so that existing
+        // packages pick up any improvements to the extraction logic (e.g.
+        // switching from the lossy hand-rolled formatter to WitPrinter).
+        match server_manager.reindex_wit().await {
+            Ok(n) if n > 0 => info!(count = n, "Re-indexed WIT packages"),
+            Ok(_) => {}
+            Err(e) => warn!(error = %e, "WIT re-index failed (non-fatal)"),
+        }
+    } else {
+        info!("Skipping WIT re-index at startup (use --reindex-wit-on-startup to enable)");
+    }
+
     let state = Arc::new(StateData {
         manager: std::sync::Mutex::new(server_manager),
         engines: config.engines.clone(),

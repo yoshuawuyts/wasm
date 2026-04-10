@@ -1,0 +1,8 @@
+[namespace]
+name = "twitchax"
+registry = "ghcr.io/twitchax"
+
+# twitchax/microralph
+[[component]]
+name = "microralph"
+repository = "microralph"

@@ -5,3 +5,5 @@ registry = "ghcr.io/bytecodealliance"
 [[component]]
 name = "sample-wasi-http-rust"
 repository = "sample-wasi-http-rust/sample-wasi-http-rust"
+
+

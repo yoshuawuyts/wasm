@@ -41,6 +41,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
   <meta name="description" content="Browse and discover WebAssembly components and WIT interfaces published to OCI registries.">
   <title>{escaped_title} — wasm registry</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -67,6 +68,15 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
               muted:     'var(--color-fg-muted)',
               faint:     'var(--color-fg-faint)',
             }},
+            // WIT item kind colors
+            wit: {{
+              struct:   'var(--color-wit-struct)',
+              enum:     'var(--color-wit-enum)',
+              resource: 'var(--color-wit-resource)',
+              func:     'var(--color-wit-func)',
+              world:    'var(--color-wit-world)',
+              iface:    'var(--color-wit-iface)',
+            }},
           }},
           fontFamily: {{
             mono: ['ui-monospace', 'Cascadia Code', 'Source Code Pro', 'Menlo', 'Consolas', 'DejaVu Sans Mono', 'monospace'],
@@ -80,6 +90,7 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
        Neutrals use hue 290 for a violet tint. All text tokens
        pass WCAG AA (4.5:1) against bg. */
     :root {{
+      color-scheme: light dark;
       --color-bg: oklch(1 0 290);
       --color-accent: {ACCENT_COLOR};
       --color-accent-hover: oklch(0.42 0.257 280);
@@ -91,6 +102,17 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
       --color-fg-secondary: oklch(0.40 0.03 290);
       --color-fg-muted: oklch(0.54 0.025 290);
       --color-fg-faint: oklch(0.56 0.02 290);
+      /* WIT item kind colors */
+      --color-wit-struct: oklch(0.45 0.2 260);
+      --color-wit-enum: oklch(0.45 0.14 180);
+      --color-wit-resource: oklch(0.50 0.16 70);
+      --color-wit-func: oklch(0.42 0.2 240);
+      --color-wit-world: oklch(0.48 0.18 330);
+      --color-wit-iface: oklch(0.45 0.16 210);
+    }}
+    html, body {{
+      background-color: var(--color-bg);
+      color: var(--color-fg);
     }}
     @media (prefers-color-scheme: dark) {{
       :root {{
@@ -105,6 +127,13 @@ pub(crate) fn document(title: &str, body_content: &str) -> String {
         --color-fg-secondary: oklch(0.78 0.025 290);
         --color-fg-muted: oklch(0.66 0.03 290);
         --color-fg-faint: oklch(0.62 0.025 290);
+        /* WIT item kind colors (dark) */
+        --color-wit-struct: oklch(0.72 0.15 260);
+        --color-wit-enum: oklch(0.72 0.12 180);
+        --color-wit-resource: oklch(0.75 0.14 70);
+        --color-wit-func: oklch(0.70 0.15 240);
+        --color-wit-world: oklch(0.75 0.14 330);
+        --color-wit-iface: oklch(0.72 0.13 210);
       }}
     }}
     /* Consistent focus ring for keyboard navigation */
@@ -179,7 +208,11 @@ mod tests {
         assert!(html.contains("https://cdn.tailwindcss.com"));
         assert!(html.contains(ACCENT_COLOR));
         assert!(html.contains("<meta name=\"viewport\""));
+        assert!(html.contains("<meta name=\"color-scheme\" content=\"light dark\">"));
         assert!(html.contains("bg-page text-fg"));
+        assert!(html.contains("html, body"));
+        assert!(html.contains("background-color: var(--color-bg);"));
+        assert!(html.contains("color: var(--color-fg);"));
         assert!(html.contains("prefers-color-scheme: dark"));
     }
 }
