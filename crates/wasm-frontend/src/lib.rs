@@ -182,10 +182,8 @@ async fn package_detail(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
     let version_detail = client
         .fetch_package_version(&pkg.registry, &pkg.repository, &version)
@@ -204,11 +202,10 @@ async fn package_dependencies(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
+    let tab = ActiveTab::Dependencies;
     let html = pages::package::render(&pkg, &version, &tab);
     with_cache_control(html, "public, max-age=300")
 }
@@ -218,10 +215,8 @@ async fn package_dependents(
     Path((namespace, name, version)): Path<(String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
     let display_name = format!("{namespace}:{name}");
     let importers = client
@@ -245,10 +240,8 @@ async fn interface_detail(
     Path((namespace, name, version, iface)): Path<(String, String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
     let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
         return not_found_response();
@@ -271,10 +264,8 @@ async fn item_detail(
     )>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
     let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
         return not_found_response();
@@ -303,10 +294,8 @@ async fn world_detail(
     Path((namespace, name, version, world_name)): Path<(String, String, String, String)>,
 ) -> Response {
     let client = RegistryClient::from_env();
-    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
-        Ok(Some(pkg)) => pkg,
-        Ok(None) => return not_found_response(),
-        Err(response) => return response,
+    let Some(pkg) = fetch_package_or_404(&client, &namespace, &name, &version).await else {
+        return not_found_response();
     };
     let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
         return not_found_response();
@@ -324,7 +313,10 @@ async fn fetch_wit_doc(
     client: &RegistryClient,
     pkg: &KnownPackage,
     version: &str,
-) -> Option<wit_doc::WitDocument> {
+) -> Option<(
+    wit_doc::WitDocument,
+    wasm_meta_registry_client::PackageVersion,
+)> {
     let detail = client
         .fetch_package_version(&pkg.registry, &pkg.repository, version)
         .await
@@ -346,14 +338,14 @@ async fn fetch_wit_doc(
         pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
         version
     );
-    wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()
+    let doc = wit_doc::parse_wit_doc(wit_text, &url_base, &dep_urls).ok()?;
+    Some((doc, detail))
 }
 
 /// Fetch a package by WIT namespace/name, validating the version exists.
 ///
 /// Returns `None` (and logs) if the namespace is reserved, the package is
-/// not found, or the version tag doesn't exist. Returns a 502 response if the
-/// upstream API call fails.
+/// not found, or the version tag doesn't exist.
 async fn fetch_package_or_404(
     client: &RegistryClient,
     namespace: &str,
@@ -378,7 +370,7 @@ async fn fetch_package_or_404(
         }
         Err(e) => {
             eprintln!("wasm-frontend: API error looking up {namespace}/{name}@{version}: {e}");
-            Err(error_response(&format!("{e:#}")))
+            None
         }
     }
 }

@@ -165,7 +165,7 @@ fn render_tabs(
                 .aria_controls_elements(format!("panel-{id}"))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| s.text(label.to_owned()))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| {
-                    s.class("ml-1.5 text-xs text-fg-faint")
+                    s.class("ml-1.5 text-sm text-fg-faint")
                         .text(format!("{count}"))
                 })
         });
@@ -273,7 +273,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
                             })
                             .span(|badge| {
                                 badge
-                                    .class("text-xs text-fg-faint shrink-0")
+                                    .class("text-sm text-fg-faint shrink-0")
                                     .text(icon.to_owned())
                             })
                     })
@@ -282,7 +282,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
                             .text(description.to_owned())
                     })
                     .span(|s| {
-                        s.class("block text-xs text-fg-faint mt-3 font-mono")
+                        s.class("block text-sm text-fg-faint mt-3 font-mono")
                             .text(version.clone())
                     })
             })
@@ -298,7 +298,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
                     })
                     .span(|badge| {
                         badge
-                            .class("text-xs text-fg-faint shrink-0")
+                            .class("text-sm text-fg-faint shrink-0")
                             .text(icon.to_owned())
                     })
             })
@@ -307,7 +307,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
                     .text(description.to_owned())
             })
             .span(|s| {
-                s.class("block text-xs text-fg-faint mt-3 font-mono")
+                s.class("block text-sm text-fg-faint mt-3 font-mono")
                     .text(version.clone())
             })
             .build(),

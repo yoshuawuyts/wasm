@@ -37,7 +37,7 @@ pub(crate) fn render() -> String {
                         })
                 })
                 .paragraph(|p| {
-                    p.class("text-fg-faint text-xs")
+                    p.class("text-fg-faint text-sm")
                         .text("wasm registry \u{2014} ")
                         .anchor(|a| {
                             a.href("https://github.com/yoshuawuyts/wasm-cli")

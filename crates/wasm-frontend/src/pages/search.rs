@@ -58,7 +58,7 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
     } else {
         // Table-style header
         body.division(|div| {
-            div.class("hidden sm:flex items-baseline gap-3 px-2 pb-2 text-xs text-fg-faint uppercase tracking-wide")
+            div.class("hidden sm:flex items-baseline gap-3 px-2 pb-2 text-sm text-fg-faint uppercase tracking-wide")
                 .span(|s| s.class("w-48 shrink-0").text("Name"))
                 .span(|s| s.class("w-20 shrink-0").text("Version"))
                 .span(|s| s.text("Description"))

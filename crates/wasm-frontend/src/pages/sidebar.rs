@@ -62,7 +62,7 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
             d.class("mb-3")
                 .division(|label| {
                     label
-                        .class("text-fg-muted text-xs uppercase tracking-wide mb-1.5")
+                        .class("text-fg-muted text-sm uppercase tracking-wide mb-1.5")
                         .text("Worlds")
                 });
             let mut ul = UnorderedList::builder();
@@ -73,9 +73,9 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
                     SidebarActive::World(name) if name == world.name
                 );
                 let style = if is_active {
-                    "block px-2 py-1 rounded text-accent bg-accent/10 font-medium text-xs font-mono truncate"
+                    "block px-2 py-1 rounded text-accent bg-accent/10 font-medium text-sm font-mono truncate"
                 } else {
-                    "block px-2 py-1 rounded text-fg hover:text-accent hover:bg-surface-muted text-xs font-mono truncate transition-colors"
+                    "block px-2 py-1 rounded text-fg hover:text-accent hover:bg-surface-muted text-sm font-mono truncate transition-colors"
                 };
                 ul.list_item(|li| {
                     li.anchor(|a| {
@@ -95,7 +95,7 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
         card.division(|d| {
             d.division(|label| {
                     label
-                        .class("text-fg-muted text-xs uppercase tracking-wide mb-1.5")
+                        .class("text-fg-muted text-sm uppercase tracking-wide mb-1.5")
                         .text("Interfaces")
                 });
             let mut ul = UnorderedList::builder();
@@ -109,9 +109,9 @@ fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
                     SidebarActive::Item(iface_name, _) if iface_name == iface.name
                 );
                 let style = if is_active {
-                    "block px-2 py-1 rounded text-accent bg-accent/10 font-medium text-xs font-mono truncate"
+                    "block px-2 py-1 rounded text-accent bg-accent/10 font-medium text-sm font-mono truncate"
                 } else {
-                    "block px-2 py-1 rounded text-fg hover:text-accent hover:bg-surface-muted text-xs font-mono truncate transition-colors"
+                    "block px-2 py-1 rounded text-fg hover:text-accent hover:bg-surface-muted text-sm font-mono truncate transition-colors"
                 };
                 ul.list_item(|li| {
                     li.anchor(|a| {

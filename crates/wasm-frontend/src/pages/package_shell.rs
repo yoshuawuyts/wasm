@@ -177,7 +177,7 @@ fn render_page_header(
         right.class("shrink-0 md:w-72 space-y-3 text-sm");
 
         let mut meta = Division::builder();
-        meta.class("space-y-2 text-xs leading-relaxed");
+        meta.class("space-y-2 text-sm leading-relaxed");
 
         if let Some(source) = annotations.and_then(|a| a.source.as_deref()) {
             meta.push(meta_link_row("Repository", &abbreviate_url(source), source));
@@ -241,7 +241,7 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
         .division(|div| {
             div.class(
                 "flex items-center gap-2 bg-surface-muted border border-border \
-                 rounded-md px-3 py-2 font-mono text-xs text-fg",
+                 rounded-md px-3 py-2 font-mono text-sm text-fg",
             )
             .code(|code| {
                 code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")

@@ -4,6 +4,7 @@ use crate::wit_doc::{FunctionDoc, HandleKind, TypeDoc, TypeKind, TypeRef, WitDoc
 use html::content::Navigation;
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
+use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
 use super::package_shell::{self, ActiveTab};
 use super::sidebar::{SidebarActive, SidebarContext, render_sidebar};
@@ -34,9 +35,9 @@ pub(crate) fn render_type(
     ));
 
     // Header
-    body.division(|div| {
-        div.class("mb-6").heading_1(|h1| {
-            h1.class("text-3xl font-bold tracking-tight font-mono")
+    outer.division(|div| {
+        div.class("mb-6").heading_2(|h2| {
+            h2.class("text-2xl font-normal tracking-display font-mono")
                 .span(|s| s.class("text-fg-muted").text(kind_label(&ty.kind)))
                 .text(" ")
                 .span(|s| s.class("text-accent").text(ty.name.clone()))
@@ -98,9 +99,9 @@ pub(crate) fn render_function(
         &func.name,
     ));
 
-    body.division(|div| {
-        div.class("mb-6").heading_1(|h1| {
-            h1.class("text-3xl font-bold tracking-tight font-mono")
+    outer.division(|div| {
+        div.class("mb-6").heading_2(|h2| {
+            h2.class("text-2xl font-normal tracking-display font-mono")
                 .span(|s| s.class("text-fg-muted").text("function "))
                 .span(|s| s.class("text-accent").text(func.name.clone()))
         });

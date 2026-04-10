@@ -3,6 +3,7 @@
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::content::Navigation;
 use html::text_content::{Division, ListItem, UnorderedList};
+use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
 use super::package_shell::{self, ActiveTab};
 use super::sidebar::{SidebarActive, SidebarContext, render_sidebar};
@@ -27,9 +28,9 @@ pub(crate) fn render(
     outer.push(render_breadcrumb(&display_name, &pkg_url, &iface.name));
 
     // Header
-    body.division(|div| {
-        div.class("mb-6").heading_1(|h1| {
-            h1.class("text-3xl font-bold tracking-tight font-mono")
+    outer.division(|div| {
+        div.class("mb-6").heading_2(|h2| {
+            h2.class("text-2xl font-normal tracking-display font-mono")
                 .span(|s| s.class("text-fg-muted").text(format!("{display_name} / ")))
                 .span(|s| s.class("text-accent").text(iface.name.clone()))
         });
