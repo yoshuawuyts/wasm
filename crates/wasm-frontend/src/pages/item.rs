@@ -54,10 +54,22 @@ pub(crate) fn render_type(
         importers: &[],
         exporters: &[],
     };
-    let extra = vec![crate::nav::Crumb {
-        label: iface_name.to_owned(),
-        href: None,
-    }];
+    let pkg_url = package_shell::url_base_for(pkg, version);
+    let pkg_label = pkg.wit_name.as_deref().unwrap_or(&display_name);
+    let iface_url = format!(
+        "/{}/{version}/interface/{iface_name}",
+        display_name.replace(':', "/")
+    );
+    let extra = vec![
+        crate::nav::Crumb {
+            label: pkg_label.to_owned(),
+            href: Some(pkg_url),
+        },
+        crate::nav::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(iface_url),
+        },
+    ];
     package_shell::render_page_with_crumbs(&ctx, &title, outer.build(), extra)
 }
 
@@ -83,15 +95,16 @@ pub(crate) fn render_function(
             .span(|s| s.class("text-wit-func").text(func.name.clone()))
     });
 
+    // WIT definition block
+    outer.push(render_function_definition(func));
+
+    // Description after code
     if let Some(docs) = &func.docs {
         outer.paragraph(|p| {
             p.class("text-fg leading-relaxed mb-8 max-w-[65ch]")
                 .text(docs.clone())
         });
     }
-
-    // WIT definition block
-    outer.push(render_function_definition(func));
 
     // Function detail content
     outer.push(render_function_detail(func));
@@ -103,10 +116,22 @@ pub(crate) fn render_function(
         importers: &[],
         exporters: &[],
     };
-    let extra = vec![crate::nav::Crumb {
-        label: iface_name.to_owned(),
-        href: None,
-    }];
+    let pkg_url = package_shell::url_base_for(pkg, version);
+    let pkg_label = pkg.wit_name.as_deref().unwrap_or(&display_name);
+    let iface_url = format!(
+        "/{}/{version}/interface/{iface_name}",
+        display_name.replace(':', "/")
+    );
+    let extra = vec![
+        crate::nav::Crumb {
+            label: pkg_label.to_owned(),
+            href: Some(pkg_url),
+        },
+        crate::nav::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(iface_url),
+        },
+    ];
     package_shell::render_page_with_crumbs(&ctx, &title, outer.build(), extra)
 }
 

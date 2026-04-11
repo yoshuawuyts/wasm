@@ -28,14 +28,15 @@ pub(crate) fn render(
 
     // Package heading
     let kind_label = match pkg.kind {
-        Some(wasm_meta_registry_client::PackageKind::Interface) => "interface",
+        Some(wasm_meta_registry_client::PackageKind::Interface) => "types",
         Some(wasm_meta_registry_client::PackageKind::Component) => "component",
         _ => "package",
     };
+    let pkg_name = pkg.wit_name.as_deref().unwrap_or(&display_name);
     main_col.heading_2(|h2| {
         h2.class("text-2xl font-light tracking-display mb-4")
             .span(|s| s.class("text-fg-muted").text(format!("{kind_label} ")))
-            .span(|s| s.class("text-accent").text(display_name.clone()))
+            .span(|s| s.class("text-accent").text(pkg_name.to_owned()))
     });
 
     if let Some(desc) = pkg.description.as_deref() {

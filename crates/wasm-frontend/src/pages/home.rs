@@ -155,7 +155,7 @@ fn render_tabs(
 
     let tabs: &[(&str, &str, &[&KnownPackage])] = &[
         ("all", "All", &all_refs),
-        ("interfaces", "Interfaces", interfaces),
+        ("interfaces", "Types", interfaces),
         ("components", "Components", components),
     ];
 

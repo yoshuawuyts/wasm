@@ -62,11 +62,7 @@ fn render_packages(
         body.push(grid.build());
     }
 
-    let crumbs = [crate::nav::Crumb {
-        label: namespace.to_owned(),
-        href: None,
-    }];
-    layout::document_with_breadcrumbs(namespace, &body.build().to_string(), &crumbs)
+    layout::document_with_nav(namespace, &body.build().to_string())
 }
 
 /// Render a single package card.

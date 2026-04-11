@@ -67,22 +67,12 @@ fn render_page_inner(
 
     body.push(grid.build());
 
-    // Breadcrumbs
+    // Breadcrumbs — only namespace (package name is in the page heading)
     let ns_crumb = pkg.wit_namespace.as_ref().map(|ns| crate::nav::Crumb {
         label: ns.clone(),
         href: Some(format!("/{ns}")),
     });
-    let pkg_label = pkg.wit_name.as_deref().unwrap_or(&display_name);
-    let url_base = url_base_for(pkg, ctx.version);
-    let pkg_crumb = crate::nav::Crumb {
-        label: pkg_label.to_owned(),
-        href: Some(url_base),
-    };
-    let crumbs: Vec<crate::nav::Crumb> = ns_crumb
-        .into_iter()
-        .chain(std::iter::once(pkg_crumb))
-        .chain(extra_crumbs)
-        .collect();
+    let crumbs: Vec<crate::nav::Crumb> = ns_crumb.into_iter().chain(extra_crumbs).collect();
 
     layout::document_with_breadcrumbs(title, &body.build().to_string(), &crumbs)
 }
@@ -125,7 +115,11 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         meta.push(meta_row("License", license));
     }
     if let Some(kind) = &pkg.kind {
-        meta.push(meta_row("Kind", &kind.to_string()));
+        let kind_display = match kind {
+            wasm_meta_registry_client::PackageKind::Interface => "types",
+            wasm_meta_registry_client::PackageKind::Component => "component",
+        };
+        meta.push(meta_row("Kind", kind_display));
     }
     if let Some(size) = version_detail.and_then(|d| d.size_bytes) {
         meta.push(meta_row("Size", &format_size(size)));

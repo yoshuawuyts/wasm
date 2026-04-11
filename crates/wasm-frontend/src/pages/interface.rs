@@ -100,7 +100,13 @@ pub(crate) fn render(
         importers: &[],
         exporters: &[],
     };
-    package_shell::render_page(&ctx, &title, outer.build())
+    let pkg_url = package_shell::url_base_for(pkg, version);
+    let pkg_label = pkg.wit_name.as_deref().unwrap_or(&display_name);
+    let extra = vec![crate::nav::Crumb {
+        label: pkg_label.to_owned(),
+        href: Some(pkg_url),
+    }];
+    package_shell::render_page_with_crumbs(&ctx, &title, outer.build(), extra)
 }
 
 /// Render a section of types grouped by kind.
