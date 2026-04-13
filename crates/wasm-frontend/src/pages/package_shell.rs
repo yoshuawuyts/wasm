@@ -115,7 +115,7 @@ fn render_page_inner(
     }})();
     </script>
   </aside>
-  <div>
+  <div class="max-w-3xl">
     {content}
   </div>
 </div>"#
