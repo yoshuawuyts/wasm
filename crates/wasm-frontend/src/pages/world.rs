@@ -29,15 +29,13 @@ pub(crate) fn render(
     let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
 
     let header = format!(
-        r#"<div class="flex gap-6 max-w-3xl mb-6">
-  <div class="shrink-0 w-52">
-    <h2 class="text-3xl font-light tracking-display flex items-baseline gap-2 group">
-      <span class="text-wit-world">{world_name}</span>
-      <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-    </h2>
-    <span class="text-sm text-fg-muted mt-2 block">World</span>
-  </div>
-  <div class="min-w-0 pt-1">{docs_md}</div>
+        r#"<div class="max-w-3xl mb-6">
+  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
+    <span class="text-wit-world">{world_name}</span>
+    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
+  </h2>
+  <span class="text-sm text-fg-muted mt-1 block">World</span>
+  <div class="mt-4">{docs_md}</div>
 </div>
 <script>
 (function(){{
@@ -81,14 +79,14 @@ pub(crate) fn render(
 fn render_item_section(heading: &str, items: &[WorldItemDoc], is_import: bool) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
             .text(heading.to_owned())
     });
 
     let link_color = if is_import {
-        "block font-mono text-wit-import hover:underline text-sm"
+        "block font-mono text-wit-import hover:underline text-base"
     } else {
-        "block font-mono text-accent hover:underline text-sm"
+        "block font-mono text-accent hover:underline text-base"
     };
 
     let mut ul = UnorderedList::builder();
@@ -128,29 +126,29 @@ fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
         WorldItemDoc::Interface { name, url: None } => {
             let display = strip_version(name);
             li.span(|s| {
-                s.class("block font-mono text-fg text-sm")
+                s.class("block font-mono text-fg text-base")
                     .text(display.to_owned())
             });
         }
         WorldItemDoc::Function(func) => {
             let sig = format_function_signature(func);
-            li.code(|c| c.class("block font-mono text-sm text-accent").text(sig));
+            li.code(|c| c.class("block font-mono text-base text-accent").text(sig));
             if let Some(docs) = &func.docs {
                 li.paragraph(|p| {
-                    p.class("text-sm text-fg-secondary mt-1")
+                    p.class("text-base text-fg-secondary mt-1")
                         .text(crate::markdown::render_inline(&first_sentence(docs)))
                 });
             }
         }
         WorldItemDoc::Type(ty) => {
             li.span(|s| {
-                s.class("block font-mono text-sm")
+                s.class("block font-mono text-base")
                     .span(|s2| s2.class("text-fg-muted").text("type "))
                     .span(|s2| s2.class("text-accent").text(ty.name.clone()))
             });
             if let Some(docs) = &ty.docs {
                 li.paragraph(|p| {
-                    p.class("text-sm text-fg-secondary mt-1")
+                    p.class("text-base text-fg-secondary mt-1")
                         .text(crate::markdown::render_inline(&first_sentence(docs)))
                 });
             }

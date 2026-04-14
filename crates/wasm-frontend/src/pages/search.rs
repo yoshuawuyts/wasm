@@ -25,7 +25,7 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-2 border-fg mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-light tracking-display")
+                h1.class("text-3xl font-light tracking-display font-display")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
             .paragraph(|p| {
@@ -82,7 +82,7 @@ fn render_error(query: &str, err: &ApiError) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-2 border-fg mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-light tracking-display")
+                h1.class("text-3xl font-light tracking-display font-display")
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
     });

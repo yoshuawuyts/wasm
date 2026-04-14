@@ -31,15 +31,13 @@ pub(crate) fn render(
     let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
 
     let header_row = format!(
-        r#"<div class="flex gap-6 max-w-3xl mb-6">
-  <div class="shrink-0 w-52">
-    <h2 class="text-3xl font-light tracking-display flex items-baseline gap-2 group">
-      <span class="text-wit-iface">{iface_name}</span>
-      <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-    </h2>
-    <span class="text-sm text-fg-muted mt-2 block">Interface</span>
-  </div>
-  <div class="min-w-0 pt-1">{docs_md}</div>
+        r#"<div class="max-w-3xl mb-6">
+  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
+    <span class="text-wit-iface">{iface_name}</span>
+    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
+  </h2>
+  <span class="text-sm text-fg-muted mt-1 block">Interface</span>
+  <div class="mt-4">{docs_md}</div>
 </div>
 <script>
 (function(){{
@@ -130,7 +128,7 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
     let mut div = Division::builder();
     div.class("pt-6 first:pt-0");
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
             .text(heading.to_owned())
     });
 
@@ -154,7 +152,7 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(ty.url.clone())
                 .class(format!(
-                    "font-mono text-sm font-medium hover:underline {color_class}"
+                    "font-mono text-base font-medium hover:underline {color_class}"
                 ))
                 .text(ty.name.clone())
         })
@@ -164,7 +162,7 @@ fn render_type_row(ty: &TypeDoc) -> ListItem {
     if let Some(docs) = &ty.docs {
         li.division(|right| {
             right
-                .class("text-sm leading-snug text-fg-secondary line-clamp-2 min-w-0")
+                .class("text-base leading-snug text-fg-secondary line-clamp-2 min-w-0")
                 .text(crate::markdown::render_inline(&first_sentence(docs)))
         });
     }
@@ -177,7 +175,7 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
     let mut div = Division::builder();
     div.class("pt-6 first:pt-0");
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
             .text("Functions")
     });
 
@@ -202,7 +200,7 @@ fn render_function_row(func: &FunctionDoc) -> ListItem {
         left.class("shrink-0 w-52").anchor(|a| {
             a.href(func.url.clone())
                 .class(format!(
-                    "font-mono text-sm font-medium hover:underline {color_class}"
+                    "font-mono text-base font-medium hover:underline {color_class}"
                 ))
                 .text(func.name.clone())
         })
@@ -212,7 +210,7 @@ fn render_function_row(func: &FunctionDoc) -> ListItem {
     if let Some(docs) = &func.docs {
         li.division(|right| {
             right
-                .class("text-sm leading-snug text-fg-secondary line-clamp-2 min-w-0")
+                .class("text-base leading-snug text-fg-secondary line-clamp-2 min-w-0")
                 .text(crate::markdown::render_inline(&first_sentence(docs)))
         });
     }

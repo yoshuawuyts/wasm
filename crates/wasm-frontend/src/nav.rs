@@ -39,8 +39,8 @@ pub(crate) fn render(crumbs: &[Crumb]) -> String {
 
     format!(
         r#"<nav class="w-full max-w-6xl mx-auto px-6 sm:px-8 pt-6 pb-4 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2" aria-label="Main">
-  <div class="flex flex-wrap items-baseline text-2xl font-light tracking-display">
-    <a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-medium text-fg hover:text-accent transition-colors shrink-0 inline-block text-left" style="cursor:pointer;min-width:10ch">(๑╹ᆺ╹)</a>{breadcrumb_html}
+  <div class="flex flex-wrap items-baseline text-2xl font-light tracking-display font-display">
+    <a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-mono font-medium text-fg hover:text-accent transition-colors shrink-0 inline-block text-left" style="cursor:pointer;min-width:10ch">(๑╹ᆺ╹)</a>{breadcrumb_html}
   </div>
   <div class="flex items-center gap-5 shrink-0">
     <a href="/docs" class="text-sm text-fg-muted hover:text-fg transition-colors">Docs</a>

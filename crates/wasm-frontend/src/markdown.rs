@@ -20,7 +20,7 @@ pub(crate) fn render(input: &str) -> String {
 }
 
 /// Standard CSS class for rendered doc comment blocks.
-pub(crate) const DOC_CLASS: &str = "text-sm text-fg-muted leading-relaxed prose-doc";
+pub(crate) const DOC_CLASS: &str = "text-base text-fg-muted leading-relaxed prose-doc";
 
 /// Render markdown and wrap in a styled `<div>`.
 ///

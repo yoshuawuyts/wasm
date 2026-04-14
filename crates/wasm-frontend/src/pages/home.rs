@@ -25,6 +25,7 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     let (components, interfaces) = split_by_kind(packages);
 
     let mut body = Division::builder();
+    body.class("font-mono");
 
     // Hero area
     body.push(render_hero(packages.len()));
@@ -61,7 +62,7 @@ fn render_hero(_total: usize) -> Division {
     hero.division(|row| {
         row.class("flex flex-wrap items-start justify-between gap-4")
             .heading_1(|h1| {
-                h1.class("text-5xl font-light tracking-display")
+                h1.class("text-5xl font-light tracking-display font-display")
                     .text("WebAssembly Component Registry")
             })
             .division(|nav| {
@@ -259,7 +260,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
                             })
                     })
                     .span(|s| {
-                        s.class("block text-2xl font-light tracking-display leading-tight truncate")
+                        s.class("block text-2xl font-light tracking-display font-display leading-tight truncate")
                             .text(name.clone())
                     })
                     .span(|s| {
@@ -274,7 +275,7 @@ fn render_card(pkg: &KnownPackage) -> Division {
             .span(|s| {
                 s.class("flex justify-between items-start")
                     .span(|left| {
-                        left.class("text-2xl font-light tracking-display leading-tight truncate")
+                        left.class("text-2xl font-light tracking-display font-display leading-tight truncate")
                             .text(display_name)
                     })
                     .span(|right| {

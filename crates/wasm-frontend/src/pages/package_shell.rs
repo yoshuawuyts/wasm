@@ -126,9 +126,9 @@ fn render_page_inner(
   }}
 </style>
 <div class="page-grid pt-3 xl:pt-6">
-  <aside class="space-y-5 sidebar-scroll" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
+  <aside class="space-y-5 sidebar-scroll font-mono" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
     <div class="space-y-5 flex-1">
-    <div class="flex justify-center mb-4"><a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-medium text-fg hover:text-accent transition-colors" style="cursor:pointer;display:inline-block;width:12ch;text-align:left">(๑╹ᆺ╹)</a></div>
+    <div class="flex justify-center mb-4"><a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-mono font-medium text-fg hover:text-accent transition-colors" style="cursor:pointer;display:inline-block;width:12ch;text-align:left">(๑╹ᆺ╹)</a></div>
     {sidebar_meta}
     </div>
     <p class="text-sm text-fg-faint pb-6">Made by <a href="https://yosh.is" class="hover:text-fg transition-colors">Yosh Wuyts</a><br>Intended to be donated to the <a href="https://bytecodealliance.org" class="hover:text-fg transition-colors">Bytecode Alliance</a></p>
@@ -142,7 +142,7 @@ fn render_page_inner(
     </form>
   </div>
   <div style="grid-area:main;min-width:0" class="pr-4">
-    <div class="flex flex-wrap items-baseline text-lg font-light tracking-display mb-2">
+    <div class="flex flex-wrap items-baseline text-lg font-light tracking-display font-display font-display mb-2">
       {pkg_name_html}{breadcrumb_html}{trailing_slash}
     </div>
     {content}
@@ -475,7 +475,7 @@ fn meta_row(label: &str, value: &str) -> Division {
             s.class("text-fg-muted block text-sm")
                 .text(label.to_owned())
         })
-        .span(|s| s.class("text-fg text-sm").text(value.to_owned()))
+        .span(|s| s.class("text-fg text-sm font-mono").text(value.to_owned()))
         .build()
 }
 
@@ -489,7 +489,7 @@ fn meta_link_row(label: &str, text: &str, href: &str) -> Division {
         })
         .anchor(|a| {
             a.href(href.to_owned())
-                .class("text-accent hover:underline break-all")
+                .class("text-accent hover:underline break-all font-mono text-sm")
                 .text(text.to_owned())
         })
         .build()

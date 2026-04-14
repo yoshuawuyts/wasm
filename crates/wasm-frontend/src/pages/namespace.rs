@@ -32,7 +32,7 @@ fn render_packages(
     body.division(|div| {
         div.class("pt-8 pb-8")
             .heading_1(|h1| {
-                h1.class("text-3xl font-light tracking-display")
+                h1.class("text-3xl font-light tracking-display font-display")
                     .text(namespace.to_owned())
             })
             .paragraph(|p| {
@@ -83,7 +83,7 @@ fn render_card(pkg: &wasm_meta_registry_client::KnownPackage) -> Division {
                     .span(|s| {
                         s.class("flex justify-between items-start")
                             .span(|left| {
-                                left.class("text-2xl font-light tracking-display leading-tight truncate")
+                                left.class("text-2xl font-light tracking-display font-display leading-tight truncate")
                                     .text(name.clone())
                             })
                             .span(|right| {
@@ -104,7 +104,7 @@ fn render_card(pkg: &wasm_meta_registry_client::KnownPackage) -> Division {
             .span(|s| {
                 s.class("flex justify-between items-start")
                     .span(|left| {
-                        left.class("text-2xl font-light tracking-display leading-tight truncate")
+                        left.class("text-2xl font-light tracking-display font-display leading-tight truncate")
                             .text(pkg.repository.clone())
                     })
                     .span(|right| {

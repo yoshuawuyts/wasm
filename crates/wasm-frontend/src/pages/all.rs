@@ -24,7 +24,7 @@ fn render_packages(packages: &[KnownPackage], offset: u32, limit: u32) -> String
     body.division(|div| {
         div.class("pt-8 flex items-baseline justify-between pb-6 border-b-2 border-fg mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-light tracking-display")
+                h1.class("text-3xl font-light tracking-display font-display")
                     .text("All Packages")
             })
             .span(|s| {
@@ -69,7 +69,7 @@ fn render_error(err: &ApiError, offset: u32, limit: u32) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-2 border-fg mb-6")
             .heading_1(|h1| {
-                h1.class("text-3xl font-light tracking-display")
+                h1.class("text-3xl font-light tracking-display font-display")
                     .text("All Packages")
             })
     });

@@ -38,15 +38,13 @@ pub(crate) fn render_type(
 
     // Header row: name on left, docs on right
     let header = format!(
-        r#"<div class="flex gap-6 max-w-3xl mb-6">
-  <div class="shrink-0 w-52">
-    <h2 class="text-3xl font-light tracking-display flex items-baseline gap-2 group">
-      <span class="{kind_color}">{name}</span>
-      <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-    </h2>
-    <span class="text-sm text-fg-muted mt-2 block">{kind_label}</span>
-  </div>
-  <div class="min-w-0 pt-1">
+        r#"<div class="max-w-3xl mb-6">
+  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
+    <span class="{kind_color}">{name}</span>
+    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
+  </h2>
+  <span class="text-sm text-fg-muted mt-1 block">{kind_label}</span>
+  <div class="mt-4">
     {code_block}
     {docs_html}
   </div>
@@ -120,15 +118,13 @@ pub(crate) fn render_function(
 
     // Header row: name on left, docs on right
     let header = format!(
-        r#"<div class="flex gap-6 max-w-3xl mb-6">
-  <div class="shrink-0 w-52">
-    <h2 class="text-3xl font-light tracking-display flex items-baseline gap-2 group">
-      <span class="text-wit-func">{name}</span>
-      <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-    </h2>
-    <span class="text-sm text-fg-muted mt-2 block">Function</span>
-  </div>
-  <div class="min-w-0 pt-1">
+        r#"<div class="max-w-3xl mb-6">
+  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
+    <span class="text-wit-func">{name}</span>
+    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
+  </h2>
+  <span class="text-sm text-fg-muted mt-1 block">Function</span>
+  <div class="mt-4">
     {code_block}
     {docs_html}
   </div>
@@ -235,7 +231,7 @@ fn render_function_signature(func: &FunctionDoc) -> Division {
         .class("mb-2 bg-surface px-3 py-2")
         .push(
             html::text_content::PreformattedText::builder()
-                .class("text-sm font-mono text-fg overflow-x-auto")
+                .class("text-base font-mono text-fg overflow-x-auto")
                 .code(|c| {
                     wit_render::render_func_in_code(c, func, "");
                     c
@@ -265,7 +261,7 @@ fn render_type_body(kind: &TypeKind) -> Division {
 fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3")
+        h2.class("text-lg font-medium text-fg-muted mb-3")
             .text(heading.to_owned())
     });
 
@@ -311,7 +307,7 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
 fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3")
+        h2.class("text-lg font-medium text-fg-muted mb-3")
             .text("Cases")
     });
 
@@ -355,7 +351,7 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
 fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3")
+        h2.class("text-lg font-medium text-fg-muted mb-3")
             .text("Cases")
     });
     let mut table = Table::builder();
@@ -388,7 +384,7 @@ fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
 fn render_flags_list(flags: &[crate::wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-base font-medium text-fg-muted mb-3")
+        h2.class("text-lg font-medium text-fg-muted mb-3")
             .text("Flags")
     });
     let mut table = Table::builder();
@@ -429,7 +425,7 @@ fn render_resource_body(
     if let Some(ctor) = constructor {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-base font-medium text-fg-muted mb-3")
+                h2.class("text-lg font-medium text-fg-muted mb-3")
                     .text("Constructor")
             })
             .push(render_function_signature(ctor));
@@ -445,7 +441,7 @@ fn render_resource_body(
     if !methods.is_empty() {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-base font-medium text-fg-muted mb-3")
+                h2.class("text-lg font-medium text-fg-muted mb-3")
                     .text("Methods")
             });
             for func in methods {
@@ -467,7 +463,7 @@ fn render_resource_body(
     if !statics.is_empty() {
         div.division(|d| {
             d.heading_2(|h2| {
-                h2.class("text-base font-medium text-fg-muted mb-3")
+                h2.class("text-lg font-medium text-fg-muted mb-3")
                     .text("Static Functions")
             });
             for func in statics {
@@ -494,7 +490,7 @@ fn render_resource_body(
 fn render_alias(type_ref: &TypeRef) -> Division {
     Division::builder()
         .heading_2(|h2| {
-            h2.class("text-base font-medium text-fg-muted mb-3")
+            h2.class("text-lg font-medium text-fg-muted mb-3")
                 .text("Definition")
         })
         .paragraph(|p| {

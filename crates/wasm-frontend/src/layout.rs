@@ -59,6 +59,9 @@ fn document_inner(
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Browse and discover WebAssembly components and WIT interfaces published to OCI registries.">
   <title>{escaped_title} — wasm registry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="preload" href="/fonts/iosevka-regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="/fonts/iosevka-semibold.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -97,8 +100,9 @@ fn document_inner(
             }},
           }},
           fontFamily: {{
-            sans: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
+            sans: ['"Source Serif 4"', 'Georgia', 'serif'],
             mono: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
+            display: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', 'monospace'],
           }},
           letterSpacing: {{
             display: '-0.06em',
@@ -363,7 +367,7 @@ fn document_inner(
     }}
   </style>
 </head>
-<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans antialiased">
+<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans">
   {nav}
   <main class="{main_class}">
     {body_content}

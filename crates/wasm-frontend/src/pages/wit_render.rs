@@ -117,7 +117,7 @@ pub(crate) fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
 
 /// CSS class for the standard WIT code block container.
 pub(crate) const CODE_BLOCK_CLASS: &str =
-    "border-2 border-fg px-4 py-3 text-sm font-mono text-fg overflow-x-auto";
+    "border-2 border-fg px-4 py-3 text-base font-mono text-fg overflow-x-auto";
 
 /// Render a type definition inline inside a `<code>` block.
 pub(crate) fn render_type_in_code(
