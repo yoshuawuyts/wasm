@@ -317,10 +317,11 @@ fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Strin
 
 /// Extract the first sentence from a doc comment for summary display.
 fn first_sentence(text: &str) -> String {
-    text.split_once(". ")
-        .map_or_else(|| text.to_owned(), |(first, _)| format!("{first}."))
+    text.split_once("\n\n").map_or_else(
+        || text.trim().to_owned(),
+        |(first, _)| first.trim().to_owned(),
+    )
 }
-
 /// Detect whether WIT text is the lossy hand-rolled format rather than
 /// genuine parseable WIT.  The lossy format contains debug patterns like
 /// `type foo: "type"` and `interface-Id { idx: 0 }`.

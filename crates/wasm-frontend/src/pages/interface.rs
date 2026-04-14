@@ -237,10 +237,11 @@ fn kind_color_class(kind: &TypeKind) -> &'static str {
 
 /// Extract the first sentence from a doc comment.
 fn first_sentence(text: &str) -> String {
-    text.split_once(". ")
-        .map_or_else(|| text.to_owned(), |(first, _)| format!("{first}."))
+    text.split_once("\n\n").map_or_else(
+        || text.trim().to_owned(),
+        |(first, _)| first.trim().to_owned(),
+    )
 }
-
 /// Render the full interface definition as a WIT code block.
 #[allow(dead_code)]
 fn render_interface_definition(iface: &InterfaceDoc) -> Division {

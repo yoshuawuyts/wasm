@@ -219,6 +219,8 @@ fn format_type_ref_short(ty: &crate::wit_doc::TypeRef) -> String {
 
 /// Extract the first sentence from a doc comment.
 fn first_sentence(text: &str) -> String {
-    text.split_once(". ")
-        .map_or_else(|| text.to_owned(), |(first, _)| format!("{first}."))
+    text.split_once("\n\n").map_or_else(
+        || text.trim().to_owned(),
+        |(first, _)| first.trim().to_owned(),
+    )
 }

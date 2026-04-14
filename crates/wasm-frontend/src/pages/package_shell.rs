@@ -137,7 +137,7 @@ fn render_page_inner(
     <a href="/docs" class="text-sm text-fg-muted hover:text-fg transition-colors">Docs</a>
     <a href="/downloads" class="text-sm text-fg-muted hover:text-fg transition-colors">Downloads</a>
     <form action="/search" method="get" class="relative flex">
-      <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-48 px-3 pr-12 py-1.5 text-sm border-2 border-fg bg-page text-fg-muted focus:text-fg focus:outline-none" id="search-input">
+      <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-48 px-3 pr-12 py-1.5 text-sm border-2 border-fg bg-page text-fg focus:outline-none" id="search-input">
       <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-mono pointer-events-none opacity-30" aria-hidden="true">[ / ]</span>
     </form>
   </div>
@@ -152,7 +152,7 @@ fn render_page_inner(
       <a href="/docs" class="text-sm text-fg-muted hover:text-fg transition-colors">Docs</a>
       <a href="/downloads" class="text-sm text-fg-muted hover:text-fg transition-colors">Downloads</a>
       <form action="/search" method="get" class="relative flex">
-        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-36 px-3 pr-10 py-1.5 text-sm border-2 border-fg bg-page text-fg-muted focus:text-fg focus:outline-none" id="search-input-lg">
+        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-36 px-3 pr-10 py-1.5 text-sm border-2 border-fg bg-page text-fg focus:outline-none" id="search-input-lg">
         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-mono pointer-events-none opacity-30" aria-hidden="true">[ / ]</span>
       </form>
     </div>
@@ -220,41 +220,39 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     let annotations = version_detail.and_then(|d| d.annotations.as_ref());
 
     let mut sidebar = Division::builder();
-    sidebar.class("space-y-4 text-sm");
+    sidebar
+        .class("space-y-4")
+        .style("font-size:0.75rem;line-height:1.125rem");
 
-    // Version selector
-    if !pkg.tags.is_empty() {
-        let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
-            (Some(ns), Some(name)) => format!("{ns}/{name}"),
-            _ => pkg.repository.clone(),
-        };
-        sidebar.push(render_version_select(pkg, version, &url_name));
-    }
-
-    // Install command
-    let install_cmd = render_install_command(display_name, version);
-    sidebar.push(install_cmd);
-
-    // Metadata
+    // Metadata (including version selector)
     sidebar.division(|wrapper| {
-        wrapper.class("").division(|label| {
-            label
-                .class("text-sm font-medium text-fg-muted mb-1")
-                .text("Metadata")
-        });
+        wrapper.class("");
         let mut meta = Division::builder();
         meta.class("space-y-3 border-2 border-fg p-3");
 
+        // Version selector inside metadata
+        if !pkg.tags.is_empty() {
+            let url_name = match (&pkg.wit_namespace, &pkg.wit_name) {
+                (Some(ns), Some(name)) => format!("{ns}/{name}"),
+                _ => pkg.repository.clone(),
+            };
+            meta.push(render_version_select(pkg, version, &url_name));
+        }
+
         {
             let registry_url = format!("https://{}/{}", pkg.registry, pkg.repository);
-            let registry_display = format!("{}/{}", pkg.registry, pkg.repository);
+            let registry_display = friendly_registry_name(&pkg.registry);
             meta.push(meta_link_row("Registry", &registry_display, &registry_url));
         }
         if let Some(source) = annotations.and_then(|a| a.source.as_deref()) {
-            meta.push(meta_link_row("Repository", &abbreviate_url(source), source));
+            meta.push(meta_link_row(
+                "Repository",
+                &friendly_repo_name(source),
+                source,
+            ));
         } else {
             let repo_url = format!("https://{}/{}", pkg.registry, pkg.repository);
-            let repo_display = format!("{}/{}", pkg.registry, pkg.repository);
+            let repo_display = friendly_repo_name(&repo_url);
             meta.push(meta_link_row("Repository", &repo_display, &repo_url));
         }
         if let Some(license) = annotations.and_then(|a| a.licenses.as_deref()) {
@@ -277,6 +275,19 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         }
         wrapper.push(meta.build());
         wrapper
+    });
+
+    // Install command (after metadata)
+    let install_cmd = render_install_command(display_name, version);
+    sidebar.division(|wrapper| {
+        wrapper
+            .class("")
+            .division(|label| {
+                label
+                    .class("text-sm font-medium text-fg-muted mb-1")
+                    .text("Install")
+            })
+            .push(install_cmd)
     });
 
     // Dependencies
@@ -405,24 +416,22 @@ fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &s
     );
 
     Division::builder()
-        .division(|d| {
-            d.class("flex items-center gap-2 border-2 border-fg px-3 py-2")
-                .span(|s| s.class("text-sm text-fg-muted shrink-0").text("Version"))
-                .push({
-                    let mut s = html::forms::Select::builder();
-                    s.id("version-select")
-                        .name("version")
-                        .class("flex-1 bg-transparent text-fg text-sm cursor-pointer border-0 outline-none");
-                    for tag in &pkg.tags {
-                        let is_current = tag == current_version;
-                        if is_current {
-                            s.option(|opt| opt.value(tag.clone()).text(tag.clone()).selected(true));
-                        } else {
-                            s.option(|opt| opt.value(tag.clone()).text(tag.clone()));
-                        }
-                    }
-                    s.build()
-                })
+        .class("flex items-center justify-between gap-3")
+        .span(|s| s.class("text-fg-muted text-sm").text("Version"))
+        .push({
+            let mut s = html::forms::Select::builder();
+            s.id("version-select").name("version").class(
+                "bg-transparent text-fg text-sm cursor-pointer border-0 outline-none text-right",
+            );
+            for tag in &pkg.tags {
+                let is_current = tag == current_version;
+                if is_current {
+                    s.option(|opt| opt.value(tag.clone()).text(tag.clone()).selected(true));
+                } else {
+                    s.option(|opt| opt.value(tag.clone()).text(tag.clone()));
+                }
+            }
+            s.build()
         })
         .script(|s| s.text(script_body))
         .build()
@@ -470,26 +479,29 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
 /// Render a label: value metadata row.
 fn meta_row(label: &str, value: &str) -> Division {
     Division::builder()
-        .class("")
+        .class("flex items-baseline justify-between gap-3")
         .span(|s| {
-            s.class("text-fg-muted block text-sm")
+            s.class("text-fg-muted text-sm shrink-0")
                 .text(label.to_owned())
         })
-        .span(|s| s.class("text-fg text-sm font-mono").text(value.to_owned()))
+        .span(|s| {
+            s.class("text-fg text-sm font-mono text-right")
+                .text(value.to_owned())
+        })
         .build()
 }
 
 /// Render a label: linked-value metadata row.
 fn meta_link_row(label: &str, text: &str, href: &str) -> Division {
     Division::builder()
-        .class("")
+        .class("flex items-baseline justify-between gap-3")
         .span(|s| {
-            s.class("text-fg-muted block text-sm")
+            s.class("text-fg-muted text-sm shrink-0")
                 .text(label.to_owned())
         })
         .anchor(|a| {
             a.href(href.to_owned())
-                .class("text-accent hover:underline break-all font-mono text-sm")
+                .class("text-accent hover:underline font-mono text-sm text-right truncate")
                 .text(text.to_owned())
         })
         .build()
@@ -521,6 +533,34 @@ fn abbreviate_url(url: &str) -> String {
         .unwrap_or(url)
         .trim_end_matches('/')
         .to_owned()
+}
+
+/// Return a friendly display name for a known OCI registry, or the full host/path.
+fn friendly_registry_name(registry: &str) -> String {
+    match registry {
+        "ghcr.io" => "GitHub Packages".to_owned(),
+        "registry-1.docker.io" | "docker.io" => "Docker Hub".to_owned(),
+        "mcr.microsoft.com" => "Microsoft MCR".to_owned(),
+        _ => registry.to_owned(),
+    }
+}
+
+/// Return a friendly display name for a known repository host, or the abbreviated URL.
+fn friendly_repo_name(url: &str) -> String {
+    let stripped = url
+        .strip_prefix("https://")
+        .or_else(|| url.strip_prefix("http://"))
+        .unwrap_or(url);
+
+    if stripped.starts_with("github.com/") {
+        "GitHub".to_owned()
+    } else if stripped.starts_with("gitlab.com/") {
+        "GitLab".to_owned()
+    } else if stripped.starts_with("codeberg.org/") {
+        "Codeberg".to_owned()
+    } else {
+        abbreviate_url(url)
+    }
 }
 
 /// Format an ISO 8601 timestamp as a short date (YYYY-MM-DD).
