@@ -183,7 +183,7 @@ impl RegistryClient {
         namespace: &str,
         name: &str,
     ) -> Result<Option<KnownPackage>, ApiError> {
-        let packages = self.search_packages(name).await?;
+        let packages = self.search_packages(&format!("{namespace}/{name}")).await?;
         Ok(packages.into_iter().find(|pkg| {
             pkg.wit_namespace.as_deref() == Some(namespace) && pkg.wit_name.as_deref() == Some(name)
         }))
