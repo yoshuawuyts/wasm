@@ -290,43 +290,15 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
             .push(install_cmd)
     });
 
-    // Dependencies
-    if !pkg.dependencies.is_empty() {
-        sidebar.division(|wrapper| {
-            wrapper.class("").heading_3(|h3| {
-                h3.class("text-sm font-medium text-fg-muted mb-1")
-                    .text("Dependencies")
-            });
-            wrapper.division(|div| {
-                div.class("border-2 border-fg p-3");
-                let mut ul = html::text_content::UnorderedList::builder();
-                ul.class("space-y-1");
-                for dep in &pkg.dependencies {
-                    ul.list_item(|li| {
-                        li.class("font-mono text-sm");
-                        match dep.package.split_once(':') {
-                            Some((ns, name)) => {
-                                li.anchor(|a| {
-                                    a.href(format!("/{ns}/{name}"))
-                                        .class("text-accent hover:underline")
-                                        .text(dep.package.clone())
-                                });
-                            }
-                            None => {
-                                li.span(|s| s.class("text-fg").text(dep.package.clone()));
-                            }
-                        }
-                        if let Some(v) = &dep.version {
-                            li.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
-                        }
-                        li
-                    });
-                }
-                div.push(ul.build());
-                div
-            });
-            wrapper
-        });
+    // Imports & Exports (from version detail worlds)
+    if let Some(detail) = ctx.version_detail {
+        let (imports, exports) = collect_imports_exports(detail, pkg);
+        if !imports.is_empty() {
+            sidebar.push(build_iface_sidebar_section("Imports", &imports));
+        }
+        if !exports.is_empty() {
+            sidebar.push(build_iface_sidebar_section("Exports", &exports));
+        }
     }
 
     // Dependents
@@ -384,6 +356,90 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     }
 
     sidebar.build()
+}
+
+/// Collect deduplicated import and export package refs from all worlds.
+fn collect_imports_exports(
+    detail: &PackageVersion,
+    pkg: &KnownPackage,
+) -> (Vec<String>, Vec<String>) {
+    let display_name = display_name_for(pkg);
+    let mut imports = std::collections::BTreeSet::new();
+    let mut exports = std::collections::BTreeSet::new();
+
+    for world in &detail.worlds {
+        for iface in &world.imports {
+            if iface.package != display_name {
+                let label = format_iface_label(iface);
+                imports.insert(label);
+            }
+        }
+        for iface in &world.exports {
+            if iface.package != display_name {
+                let label = format_iface_label(iface);
+                exports.insert(label);
+            }
+        }
+    }
+
+    (imports.into_iter().collect(), exports.into_iter().collect())
+}
+
+/// Format an interface ref as "package@version" (grouped by package, no sub-interface).
+fn format_iface_label(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
+    let mut s = iface.package.clone();
+    if let Some(v) = &iface.version {
+        s.push('@');
+        s.push_str(v);
+    }
+    s
+}
+
+/// Build a sidebar section listing interface refs (imports or exports).
+fn build_iface_sidebar_section(heading: &str, items: &[String]) -> Division {
+    let heading = heading.to_string();
+    let mut wrapper = Division::builder();
+    wrapper.class("").heading_3(|h3| {
+        h3.class("text-sm font-medium text-fg-muted mb-1")
+            .text(heading)
+    });
+    wrapper.division(|div| {
+        div.class("border-2 border-fg p-3");
+        let mut ul = html::text_content::UnorderedList::builder();
+        ul.class("space-y-1");
+        for label in items {
+            ul.list_item(|li| {
+                li.class("font-mono text-sm");
+                let (pkg_part, version) = match label.split_once('@') {
+                    Some((p, v)) => (p, Some(v)),
+                    None => (label.as_str(), None),
+                };
+                match pkg_part.split_once(':') {
+                    Some((ns, name)) => {
+                        li.anchor(|a| {
+                            a.href(format!("/{ns}/{name}"))
+                                .class("text-accent hover:underline");
+                            a.span(|s| s.text(pkg_part.to_string()));
+                            if let Some(v) = version {
+                                a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            }
+                            a
+                        });
+                    }
+                    None => {
+                        li.span(|s| s.class("text-fg").text(pkg_part.to_string()));
+                        if let Some(v) = version {
+                            li.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                        }
+                    }
+                }
+                li
+            });
+        }
+        div.push(ul.build());
+        div
+    });
+    wrapper.build()
 }
 
 /// Compute the display name from package WIT metadata.
