@@ -1470,6 +1470,13 @@ impl Store {
                     size_bytes: None,
                     languages: vec![],
                     children: vec![],
+                    source: None,
+                    homepage: None,
+                    licenses: None,
+                    authors: None,
+                    revision: None,
+                    component_version: None,
+                    bill_of_materials: vec![],
                 });
 
             summary.targets = target_refs;
@@ -1855,7 +1862,7 @@ fn extract_component_metadata(
 fn payload_to_summary(
     payload: &wasm_metadata::Payload,
 ) -> wasm_meta_registry_types::ComponentSummary {
-    use wasm_meta_registry_types::{ComponentSummary, ProducerEntry};
+    use wasm_meta_registry_types::{BomEntry, ComponentSummary, ProducerEntry};
 
     let meta = payload.metadata();
 
@@ -1887,11 +1894,27 @@ fn payload_to_summary(
         .map(|e| e.name.clone())
         .collect();
 
+    #[allow(clippy::cast_sign_loss)]
     let size_bytes = {
         let r = &meta.range;
         let size = r.end.saturating_sub(r.start);
         if size > 0 { Some(size as u64) } else { None }
     };
+
+    let bill_of_materials: Vec<BomEntry> = meta
+        .dependencies
+        .as_ref()
+        .map(|deps| {
+            deps.version_info()
+                .packages
+                .iter()
+                .map(|p| BomEntry {
+                    name: p.name.clone(),
+                    version: p.version.to_string(),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     ComponentSummary {
         name: meta.name.clone(),
@@ -1902,6 +1925,13 @@ fn payload_to_summary(
         size_bytes,
         languages,
         children,
+        source: meta.source.as_ref().map(|s| s.to_string()),
+        homepage: meta.homepage.as_ref().map(|h| h.to_string()),
+        licenses: meta.licenses.as_ref().map(|l| l.to_string()),
+        authors: meta.authors.as_ref().map(|a| a.to_string()),
+        revision: meta.revision.as_ref().map(|r| r.to_string()),
+        component_version: meta.version.as_ref().map(|v| v.to_string()),
+        bill_of_materials,
     }
 }
 

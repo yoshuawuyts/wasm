@@ -64,12 +64,13 @@ pub(crate) fn render(
     );
 
     let wit_content = if let Some(detail) = version_detail {
-        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref()).to_string()
+        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref(), &display_name).to_string()
     } else {
         String::new()
     };
 
-    let body_html = format!("{header}<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">{wit_content}</div>");
+    let body_html =
+        format!("{header}<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">{wit_content}</div>");
 
     let shell_ctx = package_shell::SidebarContext {
         pkg,
@@ -90,6 +91,7 @@ fn render_wit_content_with_doc(
     detail: &PackageVersion,
     _url_base: &str,
     doc: Option<&WitDocument>,
+    pkg_name: &str,
 ) -> Section {
     let mut section = Section::builder();
     section.class("space-y-10");
@@ -119,7 +121,7 @@ fn render_wit_content_with_doc(
     // Component metadata (toolchain, children).
     for comp in &detail.components {
         if !comp.producers.is_empty() || !comp.children.is_empty() {
-            section.push(render_component_metadata(comp));
+            section.push(render_component_metadata(comp, pkg_name));
         }
     }
 
@@ -336,7 +338,10 @@ fn build_iface_href(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Optio
 }
 
 /// Render component metadata: summary table + toolchain details.
-fn render_component_metadata(comp: &wasm_meta_registry_client::ComponentSummary) -> Division {
+fn render_component_metadata(
+    comp: &wasm_meta_registry_client::ComponentSummary,
+    _pkg_name: &str,
+) -> Division {
     use html::tables::Table;
 
     let mut div = Division::builder();
@@ -359,8 +364,9 @@ fn render_component_metadata(comp: &wasm_meta_registry_client::ComponentSummary)
                 .table_header(|th| th.class("py-2 font-medium").text("Languages"))
         });
         let all_items = std::iter::once(comp).chain(comp.children.iter());
-        for item in all_items {
-            table.push(build_summary_row(item));
+        for (i, item) in all_items.enumerate() {
+            let fallback = if i == 0 { Some("<root>") } else { None };
+            table.push(build_summary_row(item, fallback));
         }
         div.push(table.build());
     }
@@ -370,13 +376,128 @@ fn render_component_metadata(comp: &wasm_meta_registry_client::ComponentSummary)
         div.push(render_producers(&comp.producers));
     }
 
+    // Metadata links/info
+    let has_meta = comp.source.is_some()
+        || comp.homepage.is_some()
+        || comp.licenses.is_some()
+        || comp.authors.is_some()
+        || comp.revision.is_some()
+        || comp.component_version.is_some();
+    if has_meta {
+        div.push(render_component_info(comp));
+    }
+
+    // Rust crate dependencies (cargo-auditable)
+    if !comp.bill_of_materials.is_empty() {
+        div.push(render_bom(&comp.bill_of_materials));
+    }
+
+    div.build()
+}
+
+/// Render component metadata fields (source, homepage, etc.) as a definition list.
+fn render_component_info(comp: &wasm_meta_registry_client::ComponentSummary) -> Division {
+    let mut div = Division::builder();
+    div.heading_2(|h2| {
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            .text("Metadata")
+    });
+
+    let mut dl = html::text_content::DescriptionList::builder();
+    dl.class("grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm");
+
+    let mut add_row = |label: &str, value: &str, is_link: bool| {
+        let label = label.to_owned();
+        let value = value.to_owned();
+        dl.description_term(|dt| dt.class("text-fg-muted font-medium").text(label));
+        if is_link {
+            let v = value.clone();
+            dl.description_details(|dd| {
+                dd.anchor(|a| {
+                    a.href(v)
+                        .class("font-mono text-accent hover:underline break-all")
+                        .text(value)
+                })
+            });
+        } else {
+            dl.description_details(|dd| dd.class("font-mono text-fg break-all").text(value));
+        }
+    };
+
+    if let Some(v) = &comp.component_version {
+        add_row("Version", v, false);
+    }
+    if let Some(a) = &comp.authors {
+        add_row("Authors", a, false);
+    }
+    if let Some(l) = &comp.licenses {
+        add_row("License", l, false);
+    }
+    if let Some(s) = &comp.source {
+        add_row("Source", s, true);
+    }
+    if let Some(h) = &comp.homepage {
+        add_row("Homepage", h, true);
+    }
+    if let Some(r) = &comp.revision {
+        add_row("Revision", r, false);
+    }
+
+    div.push(dl.build());
+    div.build()
+}
+
+/// Render Rust crate dependencies (from cargo-auditable metadata).
+fn render_bom(deps: &[wasm_meta_registry_client::BomEntry]) -> Division {
+    use html::tables::Table;
+
+    let mut div = Division::builder();
+    div.heading_2(|h2| {
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            .text(format!("Bill of Materials ({})", deps.len()))
+    });
+
+    let mut table = Table::builder();
+    table.class("w-full text-sm");
+    table.table_row(|tr| {
+        tr.class("border-b-2 border-fg text-left text-fg-muted")
+            .table_header(|th| th.class("py-2 pr-4 font-medium").text("Crate"))
+            .table_header(|th| th.class("py-2 font-medium").text("Version"))
+    });
+    for dep in deps {
+        let name = dep.name.clone();
+        let version = dep.version.clone();
+        let href = format!("https://crates.io/crates/{name}");
+        table.push(
+            html::tables::TableRow::builder()
+                .class("border-b border-border-light")
+                .table_cell(|td| {
+                    td.class("py-1.5 pr-4").anchor(|a| {
+                        a.href(href)
+                            .class("font-mono text-accent hover:underline")
+                            .text(name)
+                    })
+                })
+                .table_cell(|td| td.class("py-1.5 font-mono text-fg").text(version))
+                .build(),
+        );
+    }
+    div.push(table.build());
     div.build()
 }
 
 /// Build a table row for a component/module in the summary table.
-fn build_summary_row(comp: &wasm_meta_registry_client::ComponentSummary) -> html::tables::TableRow {
+fn build_summary_row(
+    comp: &wasm_meta_registry_client::ComponentSummary,
+    name_fallback: Option<&str>,
+) -> html::tables::TableRow {
     let kind = comp.kind.as_deref().unwrap_or("unknown").to_owned();
-    let name = comp.name.as_deref().unwrap_or("<unnamed>").to_owned();
+    let name = comp
+        .name
+        .as_deref()
+        .or(name_fallback)
+        .unwrap_or("<unnamed>")
+        .to_owned();
     let size = comp
         .size_bytes
         .map_or_else(|| "\u{2014}".to_owned(), format_size);

@@ -410,6 +410,13 @@ pub struct WitInterfaceRef {
 ///     size_bytes: None,
 ///     languages: vec![],
 ///     children: vec![],
+///     source: None,
+///     homepage: None,
+///     licenses: None,
+///     authors: None,
+///     revision: None,
+///     component_version: None,
+///     bill_of_materials: vec![],
 /// };
 ///
 /// assert_eq!(component.name.as_deref(), Some("my-handler"));
@@ -440,6 +447,36 @@ pub struct ComponentSummary {
     /// Nested child components or modules.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<ComponentSummary>,
+    /// Source code URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    /// Homepage URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub homepage: Option<String>,
+    /// SPDX license expression.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub licenses: Option<String>,
+    /// Authors string.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authors: Option<String>,
+    /// Source control revision.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    /// Software version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_version: Option<String>,
+    /// Source-level dependencies (bill of materials).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bill_of_materials: Vec<BomEntry>,
+}
+
+/// A source-level dependency from the component's bill of materials.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct BomEntry {
+    /// Dependency name.
+    pub name: String,
+    /// Dependency version.
+    pub version: String,
 }
 
 /// A single producer toolchain entry (e.g. `language = "Rust" [1.82.0]`).

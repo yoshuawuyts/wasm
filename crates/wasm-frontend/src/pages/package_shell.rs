@@ -267,11 +267,37 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         if let Some(docs_url) = annotations.and_then(|a| a.documentation.as_deref()) {
             meta.push(meta_link_row("Docs", &abbreviate_url(docs_url), docs_url));
         }
-        let source = annotations.and_then(|a| a.source.as_deref());
-        if let Some(url) = annotations.and_then(|a| a.url.as_deref())
-            && source != Some(url)
+        // Authors: try OCI annotation first, then component metadata.
+        let authors = annotations.and_then(|a| a.authors.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.authors.as_deref()))
+        });
+        if let Some(authors) = authors {
+            meta.push(meta_row("Authors", authors));
+        }
+        // Homepage: try OCI annotation, then component metadata.
+        let oci_source = annotations.and_then(|a| a.source.as_deref());
+        let homepage = annotations.and_then(|a| a.url.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.homepage.as_deref()))
+        });
+        if let Some(url) = homepage
+            && oci_source != Some(url)
         {
             meta.push(meta_link_row("Homepage", &abbreviate_url(url), url));
+        }
+        // Source: try component metadata if OCI annotation is absent.
+        if oci_source.is_none()
+            && let Some(src) =
+                version_detail.and_then(|d| d.components.first().and_then(|c| c.source.as_deref()))
+        {
+            meta.push(meta_link_row("Source", &abbreviate_url(src), src));
+        }
+        // Revision: try OCI annotation, then component metadata.
+        let revision = annotations.and_then(|a| a.revision.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.revision.as_deref()))
+        });
+        if let Some(rev) = revision {
+            let display = if rev.len() > 12 { &rev[..12] } else { rev };
+            meta.push(meta_row("Revision", display));
         }
         wrapper.push(meta.build());
         wrapper
