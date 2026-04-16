@@ -10,7 +10,7 @@ use wit_parser::{
 
 use super::types::{
     CaseDoc, EnumCaseDoc, FieldDoc, FlagDoc, FunctionDoc, HandleKind, InterfaceDoc, ParamDoc,
-    Stability, TypeDoc, TypeKind, TypeRef, WitDocument, WorldDoc, WorldItemDoc,
+    Stability, TypeDoc, TypeKind, TypeRef, WitDocument, WitTypeKind, WorldDoc, WorldItemDoc,
 };
 
 /// Internal state used during conversion.
@@ -357,6 +357,7 @@ impl Converter<'_> {
             return TypeRef::Named {
                 name: name.clone(),
                 url: Some(url.clone()),
+                type_kind: Some(type_def_kind(type_def)),
             };
         }
 
@@ -382,13 +383,13 @@ impl Converter<'_> {
                         return TypeRef::Named {
                             name: name.clone(),
                             url: Some(url),
+                            type_kind: Some(type_def_kind(type_def)),
                         };
                     }
-                    // External type without URL mapping — render name without
-                    // link.
                     return TypeRef::Named {
                         name: name.clone(),
                         url: None,
+                        type_kind: Some(type_def_kind(type_def)),
                     };
                 }
             }
@@ -397,6 +398,7 @@ impl Converter<'_> {
             return TypeRef::Named {
                 name: name.clone(),
                 url: None,
+                type_kind: Some(type_def_kind(type_def)),
             };
         }
 
@@ -596,6 +598,29 @@ impl Converter<'_> {
                 .unwrap_or_else(|| format!("interface-{id:?}"));
             (name, None)
         }
+    }
+}
+
+/// Get the WIT kind for a type definition.
+fn type_def_kind(type_def: &wit_parser::TypeDef) -> WitTypeKind {
+    match &type_def.kind {
+        TypeDefKind::Record(_) => WitTypeKind::Record,
+        TypeDefKind::Variant(_) => WitTypeKind::Variant,
+        TypeDefKind::Enum(_) => WitTypeKind::Enum,
+        TypeDefKind::Flags(_) => WitTypeKind::Flags,
+        TypeDefKind::Resource | TypeDefKind::Handle(Handle::Own(_) | Handle::Borrow(_)) => {
+            WitTypeKind::Resource
+        }
+        TypeDefKind::Type(_)
+        | TypeDefKind::List(_)
+        | TypeDefKind::Option(_)
+        | TypeDefKind::Result(_)
+        | TypeDefKind::Tuple(_)
+        | TypeDefKind::Future(_)
+        | TypeDefKind::Stream(_)
+        | TypeDefKind::Map(_, _)
+        | TypeDefKind::FixedLengthList(_, _)
+        | TypeDefKind::Unknown => WitTypeKind::Alias,
     }
 }
 

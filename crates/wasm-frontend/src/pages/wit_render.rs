@@ -16,14 +16,19 @@ pub(crate) fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
         TypeRef::Named {
             name,
             url: Some(url),
+            type_kind,
         } => {
-            span.anchor(|a| {
-                a.href(url.clone())
-                    .class("text-accent hover:underline")
-                    .text(name.clone())
-            });
+            let color = match type_kind {
+                Some(crate::wit_doc::WitTypeKind::Resource) => "text-wit-resource hover:underline",
+                Some(crate::wit_doc::WitTypeKind::Record) => "text-wit-struct hover:underline",
+                Some(crate::wit_doc::WitTypeKind::Enum) => "text-wit-enum hover:underline",
+                _ => "text-accent hover:underline",
+            };
+            span.anchor(|a| a.href(url.clone()).class(color).text(name.clone()));
         }
-        TypeRef::Named { name, url: None } => {
+        TypeRef::Named {
+            name, url: None, ..
+        } => {
             span.text(name.clone());
         }
         TypeRef::List { ty } => {

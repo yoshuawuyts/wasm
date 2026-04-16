@@ -113,6 +113,9 @@ pub(crate) enum TypeRef {
         /// Pre-resolved URL to the type's detail page, if available.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         url: Option<String>,
+        /// The WIT kind of the referenced type.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        type_kind: Option<WitTypeKind>,
     },
     /// `list<T>`.
     List {
@@ -288,6 +291,24 @@ pub(crate) enum WorldItemDoc {
     Function(FunctionDoc),
     /// A type export.
     Type(TypeDoc),
+}
+
+/// The kind of a WIT type definition.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum WitTypeKind {
+    /// A record (struct) type.
+    Record,
+    /// A variant (tagged union) type.
+    Variant,
+    /// An enum type.
+    Enum,
+    /// A flags (bit flags) type.
+    Flags,
+    /// A resource type.
+    Resource,
+    /// A type alias.
+    Alias,
 }
 
 /// API stability metadata.
