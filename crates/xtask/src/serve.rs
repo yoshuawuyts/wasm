@@ -21,7 +21,7 @@ use notify::{RecursiveMode, Watcher};
 use crate::workspace_root;
 
 /// Run the full frontend development stack.
-pub(crate) fn run_serve() -> Result<()> {
+pub(crate) fn run_serve(reindex: bool) -> Result<()> {
     let root = workspace_root()?;
 
     let wasm_path = root
@@ -40,7 +40,7 @@ pub(crate) fn run_serve() -> Result<()> {
     build_frontend(&root)?;
 
     // Start servers.
-    let mut registry_child = start_registry(&registry_dir)?;
+    let mut registry_child = start_registry(&registry_dir, reindex)?;
     let mut wasmtime_child = start_wasmtime(&wasm_path)?;
 
     // Install a Ctrl-C handler that flags shutdown.
@@ -154,18 +154,22 @@ fn build_frontend(root: &std::path::Path) -> Result<()> {
 }
 
 /// Start the meta-registry server.
-fn start_registry(registry_dir: &str) -> Result<Child> {
+fn start_registry(registry_dir: &str, reindex: bool) -> Result<Child> {
     eprintln!(":: Starting meta-registry on 127.0.0.1:8081…");
+    let mut args = vec![
+        "run",
+        "--package",
+        "wasm-meta-registry",
+        "--",
+        registry_dir,
+        "--bind",
+        "127.0.0.1:8081",
+    ];
+    if reindex {
+        args.push("--reindex-wit-on-startup");
+    }
     Command::new("cargo")
-        .args([
-            "run",
-            "--package",
-            "wasm-meta-registry",
-            "--",
-            registry_dir,
-            "--bind",
-            "127.0.0.1:8081",
-        ])
+        .args(&args)
         .spawn()
         .context("failed to start wasm-meta-registry")
 }

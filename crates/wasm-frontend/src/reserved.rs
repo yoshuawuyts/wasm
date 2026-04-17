@@ -19,12 +19,15 @@ const RESERVED_NAMESPACES: &[&str] = &[
     "login",
     "logout",
     "new",
+    "primitives",
     "register",
     "search",
     "settings",
     "signup",
     "static",
     "fonts",
+    "wasm",
+    "wit",
 ];
 
 /// Returns `true` if the given string is a reserved namespace.

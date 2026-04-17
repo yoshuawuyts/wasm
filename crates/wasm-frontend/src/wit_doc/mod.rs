@@ -30,11 +30,21 @@ pub(crate) fn parse_wit_doc<S: BuildHasher>(
     url_base: &str,
     dep_urls: &HashMap<String, String, S>,
 ) -> anyhow::Result<WitDocument> {
+    parse_wit_doc_with_type_docs(wit_text, url_base, dep_urls, &HashMap::new())
+}
+
+/// Parse WIT text with cross-package type documentation.
+pub(crate) fn parse_wit_doc_with_type_docs<S: BuildHasher>(
+    wit_text: &str,
+    url_base: &str,
+    dep_urls: &HashMap<String, String, S>,
+    type_docs: &HashMap<String, String>,
+) -> anyhow::Result<WitDocument> {
     let standard: HashMap<String, String> = dep_urls
         .iter()
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
-    convert::convert(wit_text, url_base, &standard)
+    convert::convert(wit_text, url_base, &standard, type_docs)
 }
 
 #[cfg(test)]
@@ -264,7 +274,7 @@ interface api {
         assert_eq!(get_item.name, "get-item");
 
         match &get_item.result {
-            Some(TypeRef::Named { name, url }) => {
+            Some(TypeRef::Named { name, url, .. }) => {
                 assert_eq!(name, "item");
                 assert!(url.is_some(), "should have a URL for same-package type");
                 let url_str = url.as_ref().unwrap();
@@ -304,7 +314,7 @@ world proxy {
         assert!(!world.exports.is_empty());
 
         match &world.imports[0] {
-            WorldItemDoc::Interface { name, url } => {
+            WorldItemDoc::Interface { name, url, .. } => {
                 assert!(name.contains("handler"));
                 assert!(url.is_some());
             }
@@ -335,7 +345,7 @@ interface draw {
         let draw_at = &draw.functions[0];
 
         match &draw_at.params[0].ty {
-            TypeRef::Named { name, url } => {
+            TypeRef::Named { name, url, .. } => {
                 assert_eq!(name, "point");
                 assert!(url.is_some(), "should have a URL for the used type");
             }

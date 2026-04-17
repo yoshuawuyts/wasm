@@ -264,7 +264,9 @@ pub struct PackageDetail {
 ///     components: vec![],
 ///     dependencies: vec![],
 ///     referrers: vec![],
+///     layers: vec![],
 ///     wit_text: None,
+///     type_docs: std::collections::HashMap::new(),
 /// };
 ///
 /// assert_eq!(version.digest, "sha256:abcdef1234");
@@ -300,9 +302,43 @@ pub struct PackageVersion {
     /// Referrers (signatures, SBOMs, attestations) for this version.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub referrers: Vec<ReferrerSummary>,
+    /// OCI layers in this manifest.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub layers: Vec<LayerInfo>,
     /// The WIT source text, if available.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit_text: Option<String>,
+    /// Cross-package type documentation, keyed by fully qualified type name
+    /// (e.g. `"wasi:io/poll/pollable"` → `"A \"pollable\" handle..."`).
+    #[serde(default, skip_serializing_if = "std::collections::HashMap::is_empty")]
+    pub type_docs: std::collections::HashMap<String, String>,
+}
+
+/// Metadata for a single OCI layer.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_meta_registry_types::LayerInfo;
+///
+/// let layer = LayerInfo {
+///     digest: "sha256:abc123".into(),
+///     media_type: Some("application/wasm".into()),
+///     size_bytes: Some(1024),
+/// };
+///
+/// assert_eq!(layer.media_type.as_deref(), Some("application/wasm"));
+/// ```
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct LayerInfo {
+    /// Content-addressable digest (e.g. `"sha256:fedcba…"`).
+    pub digest: String,
+    /// MIME type (e.g. `"application/wasm"`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
+    /// Size of this layer in bytes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<i64>,
 }
 
 /// A WIT world with its declared imports and exports.
@@ -347,6 +383,7 @@ pub struct WitWorldSummary {
 ///     package: "wasi:io".into(),
 ///     interface: Some("streams".into()),
 ///     version: Some("0.2.2".into()),
+///     docs: None,
 /// };
 ///
 /// assert_eq!(iface.package, "wasi:io");
@@ -362,6 +399,9 @@ pub struct WitInterfaceRef {
     /// Declared version (e.g. `"0.2.2"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// First sentence of the interface's documentation, if available.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub docs: Option<String>,
 }
 
 /// Summary of a compiled Wasm component found in an OCI manifest.
@@ -375,6 +415,20 @@ pub struct WitInterfaceRef {
 ///     name: Some("my-handler".into()),
 ///     description: None,
 ///     targets: vec![],
+///     producers: vec![],
+///     kind: Some("component".into()),
+///     size_bytes: None,
+///     languages: vec![],
+///     children: vec![],
+///     source: None,
+///     homepage: None,
+///     licenses: None,
+///     authors: None,
+///     revision: None,
+///     component_version: None,
+///     bill_of_materials: vec![],
+///     imports: vec![],
+///     exports: vec![],
 /// };
 ///
 /// assert_eq!(component.name.as_deref(), Some("my-handler"));
@@ -390,6 +444,85 @@ pub struct ComponentSummary {
     /// WIT worlds this component targets.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub targets: Vec<ComponentTargetRef>,
+    /// Producer toolchain entries (e.g. language, SDK, processed-by).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub producers: Vec<ProducerEntry>,
+    /// Whether this is a "component" or "module".
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub kind: Option<String>,
+    /// Total size in bytes.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub size_bytes: Option<u64>,
+    /// Languages used (extracted from producers).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub languages: Vec<String>,
+    /// Nested child components or modules.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub children: Vec<ComponentSummary>,
+    /// Source code URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    /// Homepage URL.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub homepage: Option<String>,
+    /// SPDX license expression.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub licenses: Option<String>,
+    /// Authors string.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub authors: Option<String>,
+    /// Source control revision.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub revision: Option<String>,
+    /// Software version.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub component_version: Option<String>,
+    /// Source-level dependencies (bill of materials).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub bill_of_materials: Vec<BomEntry>,
+    /// WIT imports (interfaces this component/module depends on).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub imports: Vec<WitInterfaceRef>,
+    /// WIT exports (interfaces this component/module provides).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub exports: Vec<WitInterfaceRef>,
+}
+
+/// A source-level dependency from the component's bill of materials.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct BomEntry {
+    /// Dependency name.
+    pub name: String,
+    /// Dependency version.
+    pub version: String,
+    /// Source kind (e.g. "crates.io", "git", "local", "registry").
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+}
+
+/// A single producer toolchain entry (e.g. `language = "Rust" [1.82.0]`).
+///
+/// # Example
+///
+/// ```rust
+/// use wasm_meta_registry_types::ProducerEntry;
+///
+/// let entry = ProducerEntry {
+///     field: "language".into(),
+///     name: "Rust".into(),
+///     version: "1.82.0".into(),
+/// };
+///
+/// assert_eq!(entry.field, "language");
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ProducerEntry {
+    /// Producer field name (e.g. `"language"`, `"processed-by"`, `"sdk"`).
+    pub field: String,
+    /// Tool or language name (e.g. `"Rust"`, `"wit-component"`).
+    pub name: String,
+    /// Version string (empty if unknown).
+    pub version: String,
 }
 
 /// Reference to a WIT world that a component targets.
@@ -666,11 +799,13 @@ mod tests {
                     package: "wasi:io".into(),
                     interface: Some("streams".into()),
                     version: Some("0.2.2".into()),
+                    docs: None,
                 }],
                 exports: vec![WitInterfaceRef {
                     package: "wasi:http".into(),
                     interface: Some("handler".into()),
                     version: Some("0.3.0".into()),
+                    docs: None,
                 }],
             }],
             components: vec![ComponentSummary {
@@ -681,6 +816,20 @@ mod tests {
                     world: "proxy".into(),
                     version: Some("0.3.0".into()),
                 }],
+                producers: vec![],
+                kind: None,
+                size_bytes: None,
+                languages: vec![],
+                children: vec![],
+                source: None,
+                homepage: None,
+                licenses: None,
+                authors: None,
+                revision: None,
+                component_version: None,
+                bill_of_materials: vec![],
+                imports: vec![],
+                exports: vec![],
             }],
             dependencies: vec![PackageDependencyRef {
                 package: "wasi:io".into(),
@@ -691,6 +840,8 @@ mod tests {
                 digest: "sha256:fedcba".into(),
             }],
             wit_text: Some("package wasi:http@0.3.0;".into()),
+            layers: vec![],
+            type_docs: std::collections::HashMap::new(),
         };
 
         let json = serde_json::to_string_pretty(&version).unwrap();

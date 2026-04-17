@@ -37,5 +37,3 @@ repository = "wasm-pkg/fermyon/hello-world"
 [[component]]
 name = "wasmio-demo"
 repository = "wasm-pkg/wasmio/demo"
-
-

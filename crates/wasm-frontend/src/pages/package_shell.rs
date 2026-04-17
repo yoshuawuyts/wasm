@@ -267,11 +267,37 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
         if let Some(docs_url) = annotations.and_then(|a| a.documentation.as_deref()) {
             meta.push(meta_link_row("Docs", &abbreviate_url(docs_url), docs_url));
         }
-        let source = annotations.and_then(|a| a.source.as_deref());
-        if let Some(url) = annotations.and_then(|a| a.url.as_deref())
-            && source != Some(url)
+        // Authors: try OCI annotation first, then component metadata.
+        let authors = annotations.and_then(|a| a.authors.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.authors.as_deref()))
+        });
+        if let Some(authors) = authors {
+            meta.push(meta_row("Authors", authors));
+        }
+        // Homepage: try OCI annotation, then component metadata.
+        let oci_source = annotations.and_then(|a| a.source.as_deref());
+        let homepage = annotations.and_then(|a| a.url.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.homepage.as_deref()))
+        });
+        if let Some(url) = homepage
+            && oci_source != Some(url)
         {
             meta.push(meta_link_row("Homepage", &abbreviate_url(url), url));
+        }
+        // Source: try component metadata if OCI annotation is absent.
+        if oci_source.is_none()
+            && let Some(src) =
+                version_detail.and_then(|d| d.components.first().and_then(|c| c.source.as_deref()))
+        {
+            meta.push(meta_link_row("Source", &abbreviate_url(src), src));
+        }
+        // Revision: try OCI annotation, then component metadata.
+        let revision = annotations.and_then(|a| a.revision.as_deref()).or_else(|| {
+            version_detail.and_then(|d| d.components.first().and_then(|c| c.revision.as_deref()))
+        });
+        if let Some(rev) = revision {
+            let display = if rev.len() > 12 { &rev[..12] } else { rev };
+            meta.push(meta_row("Revision", display));
         }
         wrapper.push(meta.build());
         wrapper
@@ -289,6 +315,17 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
             })
             .push(install_cmd)
     });
+
+    // Imports & Exports (from version detail worlds)
+    if let Some(detail) = ctx.version_detail {
+        let (imports, exports) = collect_imports_exports(detail, pkg, ctx.version);
+        if !imports.is_empty() {
+            sidebar.push(build_iface_sidebar_section("Imports", &imports));
+        }
+        if !exports.is_empty() {
+            sidebar.push(build_iface_sidebar_section("Exports", &exports));
+        }
+    }
 
     // Dependencies
     if !pkg.dependencies.is_empty() {
@@ -386,6 +423,201 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     sidebar.build()
 }
 
+/// A sidebar interface entry.
+struct SidebarIfaceItem {
+    /// Display text (e.g. "incoming-handler" or "wasi:io").
+    label: String,
+    /// URL to link to.
+    href: String,
+    /// Version suffix, if any (e.g. "0.2.11").
+    version: Option<String>,
+    /// Worlds this interface belongs to (name, href), for internal items.
+    worlds: Vec<(String, String)>,
+    /// Whether this is an internal interface (sorts first).
+    is_internal: bool,
+}
+
+/// Collect deduplicated import and export refs from all worlds.
+///
+/// Internal interfaces (belonging to the same package) show just the
+/// interface name and the world they belong to (e.g. `incoming-handler (proxy)`).
+/// External packages are grouped by package name with version.
+fn collect_imports_exports(
+    detail: &PackageVersion,
+    pkg: &KnownPackage,
+    version: &str,
+) -> (Vec<SidebarIfaceItem>, Vec<SidebarIfaceItem>) {
+    let display_name = display_name_for(pkg);
+    let url_base = url_base_for(pkg, version);
+    let mut imports: Vec<SidebarIfaceItem> = Vec::new();
+    let mut exports: Vec<SidebarIfaceItem> = Vec::new();
+    let mut import_idx: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut export_idx: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    for world in &detail.worlds {
+        let world_entry = if world.name == "root" {
+            None
+        } else {
+            Some((
+                world.name.clone(),
+                format!("{url_base}/world/{}", world.name),
+            ))
+        };
+        for iface in &world.imports {
+            if iface.package == display_name {
+                let iface_name = iface.interface.as_deref().unwrap_or(&iface.package);
+                let key = iface_name.to_string();
+                if let Some(&idx) = import_idx.get(&key) {
+                    if let Some(item) = imports.get_mut(idx)
+                        && let Some(we) = &world_entry
+                    {
+                        item.worlds.push(we.clone());
+                    }
+                } else {
+                    import_idx.insert(key, imports.len());
+                    imports.push(SidebarIfaceItem {
+                        label: iface_name.to_string(),
+                        href: format!("{url_base}/interface/{iface_name}"),
+                        version: None,
+                        worlds: world_entry.clone().into_iter().collect(),
+                        is_internal: true,
+                    });
+                }
+            } else {
+                let key = format_iface_label(iface);
+                if let std::collections::hash_map::Entry::Vacant(e) = import_idx.entry(key) {
+                    let (ns, name) = iface
+                        .package
+                        .split_once(':')
+                        .unwrap_or(("", &iface.package));
+                    let href = match &iface.version {
+                        Some(v) => format!("/{ns}/{name}/{v}"),
+                        None => format!("/{ns}/{name}"),
+                    };
+                    e.insert(imports.len());
+                    imports.push(SidebarIfaceItem {
+                        label: iface.package.clone(),
+                        href,
+                        version: iface.version.clone(),
+                        worlds: vec![],
+                        is_internal: false,
+                    });
+                }
+            }
+        }
+        for iface in &world.exports {
+            if iface.package == display_name {
+                let iface_name = iface.interface.as_deref().unwrap_or(&iface.package);
+                let key = iface_name.to_string();
+                if let Some(&idx) = export_idx.get(&key) {
+                    if let Some(item) = exports.get_mut(idx)
+                        && let Some(we) = &world_entry
+                    {
+                        item.worlds.push(we.clone());
+                    }
+                } else {
+                    export_idx.insert(key, exports.len());
+                    exports.push(SidebarIfaceItem {
+                        label: iface_name.to_string(),
+                        href: format!("{url_base}/interface/{iface_name}"),
+                        version: None,
+                        worlds: world_entry.clone().into_iter().collect(),
+                        is_internal: true,
+                    });
+                }
+            } else {
+                let key = format_iface_label(iface);
+                if let std::collections::hash_map::Entry::Vacant(e) = export_idx.entry(key) {
+                    let (ns, name) = iface
+                        .package
+                        .split_once(':')
+                        .unwrap_or(("", &iface.package));
+                    let href = match &iface.version {
+                        Some(v) => format!("/{ns}/{name}/{v}"),
+                        None => format!("/{ns}/{name}"),
+                    };
+                    e.insert(exports.len());
+                    exports.push(SidebarIfaceItem {
+                        label: iface.package.clone(),
+                        href,
+                        version: iface.version.clone(),
+                        worlds: vec![],
+                        is_internal: false,
+                    });
+                }
+            }
+        }
+    }
+
+    (imports, exports)
+}
+
+/// Format an interface ref as "package@version" (grouped by package, no sub-interface).
+fn format_iface_label(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
+    let mut s = iface.package.clone();
+    if let Some(v) = &iface.version {
+        s.push('@');
+        s.push_str(v);
+    }
+    s
+}
+
+/// Build a sidebar section listing interface refs (imports or exports).
+///
+/// Internal items (with a world annotation) are sorted first.
+fn build_iface_sidebar_section(heading: &str, items: &[SidebarIfaceItem]) -> Division {
+    let heading = heading.to_string();
+
+    // Sort: internal items first, then external.
+    let mut sorted: Vec<&SidebarIfaceItem> = items.iter().collect();
+    sorted.sort_by_key(|item| !item.is_internal);
+
+    let mut wrapper = Division::builder();
+    wrapper.class("").heading_3(|h3| {
+        h3.class("text-sm font-medium text-fg-muted mb-1")
+            .text(heading)
+    });
+    wrapper.division(|div| {
+        div.class("border-2 border-fg p-3");
+        let mut ul = html::text_content::UnorderedList::builder();
+        ul.class("space-y-1");
+        for item in &sorted {
+            ul.list_item(|li| {
+                li.class("font-mono text-sm");
+                li.anchor(|a| {
+                    a.href(item.href.clone())
+                        .class("text-accent hover:underline");
+                    a.span(|s| s.text(item.label.clone()));
+                    if let Some(v) = &item.version {
+                        a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                    }
+                    a
+                });
+                if !item.worlds.is_empty() {
+                    for (i, (w, w_href)) in item.worlds.iter().enumerate() {
+                        let prefix = if i == 0 { " " } else { ", " };
+                        li.anchor(|a| {
+                            a.href(w_href.clone())
+                                .class("text-fg-faint hover:underline ml-1");
+                            if i == 0 {
+                                a.text(format!("({w}"));
+                            } else {
+                                a.text(format!("{prefix}{w}"));
+                            }
+                            a
+                        });
+                    }
+                    li.span(|s| s.class("text-fg-faint").text(")"));
+                }
+                li
+            });
+        }
+        div.push(ul.build());
+        div
+    });
+    wrapper.build()
+}
+
 /// Compute the display name from package WIT metadata.
 pub(crate) fn display_name_for(pkg: &KnownPackage) -> String {
     match (&pkg.wit_namespace, &pkg.wit_name) {
@@ -400,6 +632,152 @@ pub(crate) fn url_base_for(pkg: &KnownPackage, version: &str) -> String {
         (Some(ns), Some(name)) => format!("/{ns}/{name}/{version}"),
         _ => format!("/{}/{version}", pkg.repository),
     }
+}
+
+/// The kind of a world import/export item.
+#[derive(Debug, Clone, Copy, Default)]
+#[allow(dead_code)]
+pub(crate) enum WorldItemKind {
+    /// An interface.
+    #[default]
+    Interface,
+    /// A function.
+    Function,
+    /// A resource.
+    Resource,
+}
+
+/// A single item in an imports or exports list.
+pub(crate) struct ImportExportEntry {
+    /// Display text (e.g. "wasi:cli/environment").
+    pub label: String,
+    /// Optional link URL.
+    pub url: Option<String>,
+    /// Optional doc excerpt for the interface.
+    pub docs: Option<String>,
+    /// The kind of item (determines color).
+    pub item_kind: WorldItemKind,
+}
+
+/// Convert a `WitInterfaceRef` to an `ImportExportEntry`.
+pub(crate) fn iface_ref_to_entry(
+    iface: &wasm_meta_registry_client::WitInterfaceRef,
+) -> ImportExportEntry {
+    let mut display = iface.package.clone();
+    if let Some(name) = &iface.interface {
+        display.push('/');
+        display.push_str(name);
+    }
+    if let Some(v) = &iface.version {
+        display.push('@');
+        display.push_str(v);
+    }
+    ImportExportEntry {
+        label: display,
+        url: build_iface_href(iface),
+        docs: iface.docs.clone(),
+        item_kind: WorldItemKind::Interface,
+    }
+}
+
+/// Build a URL for a WIT interface reference.
+fn build_iface_href(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Option<String> {
+    let (ns, name) = iface.package.split_once(':')?;
+    match (&iface.interface, &iface.version) {
+        (Some(iface_name), Some(v)) => Some(format!("/{ns}/{name}/{v}/interface/{iface_name}")),
+        (None, Some(v)) => Some(format!("/{ns}/{name}/{v}")),
+        (Some(iface_name), None) => Some(format!("/{ns}/{name}/interface/{iface_name}")),
+        (None, None) => Some(format!("/{ns}/{name}")),
+    }
+}
+
+/// Render a section heading + list of import/export entries.
+///
+/// Shared between the world detail page and the component fallback page.
+/// Item colors are determined by [`WorldItemKind`].
+pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportEntry]) -> Division {
+    let mut div = Division::builder();
+    div.heading_2(|h2| {
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            .text(heading.to_owned())
+    });
+
+    // Count names (without version) to detect duplicates that need disambiguation.
+    let mut name_counts = std::collections::HashMap::new();
+    for item in items {
+        let name = item.label.split_once('@').map_or(&*item.label, |(n, _)| n);
+        *name_counts.entry(name.to_owned()).or_insert(0u32) += 1;
+    }
+
+    let mut ul = html::text_content::UnorderedList::builder();
+    for item in items {
+        let link_class = match item.item_kind {
+            WorldItemKind::Interface => "text-wit-iface",
+            WorldItemKind::Function => "text-wit-func",
+            WorldItemKind::Resource => "text-wit-resource",
+        };
+        ul.list_item(|li| {
+            li.class("py-1 flex gap-4");
+            let (name_part, ver_part) = match item.label.split_once('@') {
+                Some((n, v)) => (n.to_owned(), Some(v.to_owned())),
+                None => (item.label.clone(), None),
+            };
+            // Only show version when needed to disambiguate duplicates.
+            let show_version =
+                ver_part.is_some() && name_counts.get(&name_part).copied().unwrap_or(0) > 1;
+            li.division(|left| {
+                left.class("shrink-0 w-80");
+                // Split "wasi:cli/stdin" into prefix "wasi:cli/" (muted) + "stdin" (colored).
+                let (prefix, highlight) = match name_part.rfind('/') {
+                    Some(pos) => (
+                        Some(name_part[..=pos].to_owned()),
+                        name_part[pos + 1..].to_owned(),
+                    ),
+                    None => (None, name_part.clone()),
+                };
+                match &item.url {
+                    Some(url) => {
+                        left.anchor(|a| {
+                            a.href(url.clone())
+                                .class("block font-mono hover:underline text-base");
+                            if let Some(pfx) = &prefix {
+                                a.span(|s| s.class("text-fg-muted").text(pfx.clone()));
+                            }
+                            a.span(|s| s.class(link_class).text(highlight.clone()));
+                            if show_version && let Some(v) = &ver_part {
+                                a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            }
+                            a
+                        });
+                    }
+                    None => {
+                        left.span(|s| {
+                            s.class("block font-mono text-base");
+                            if let Some(pfx) = &prefix {
+                                s.span(|ps| ps.class("text-fg-muted").text(pfx.clone()));
+                            }
+                            s.span(|hs| hs.class("text-fg").text(highlight.clone()));
+                            if show_version && let Some(v) = &ver_part {
+                                s.span(|vs| vs.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            }
+                            s
+                        });
+                    }
+                }
+                left
+            });
+            if let Some(docs) = &item.docs {
+                li.division(|right| {
+                    right
+                        .class("text-base leading-relaxed text-fg-secondary min-w-0")
+                        .text(crate::markdown::render_inline(docs))
+                });
+            }
+            li
+        });
+    }
+    div.push(ul.build());
+    div.build()
 }
 
 /// Render the version selector dropdown.

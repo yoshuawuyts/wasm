@@ -10,7 +10,7 @@ use wit_parser::{
 
 use super::types::{
     CaseDoc, EnumCaseDoc, FieldDoc, FlagDoc, FunctionDoc, HandleKind, InterfaceDoc, ParamDoc,
-    Stability, TypeDoc, TypeKind, TypeRef, WitDocument, WorldDoc, WorldItemDoc,
+    Stability, TypeDoc, TypeKind, TypeRef, WitDocument, WitTypeKind, WorldDoc, WorldItemDoc,
 };
 
 /// Internal state used during conversion.
@@ -23,6 +23,8 @@ struct Converter<'a> {
     /// Maps `TypeId` → `(url, name)` for all named types in the primary
     /// package, built during the interface pass.
     type_urls: HashMap<TypeId, (String, String)>,
+    /// Cross-package type docs from the API (e.g. `"wasi:io/poll/pollable"` → docs).
+    type_docs: &'a HashMap<String, String>,
 }
 
 /// Parse WIT text into a [`WitDocument`].
@@ -42,6 +44,7 @@ pub(crate) fn convert(
     wit_text: &str,
     url_base: &str,
     dep_urls: &HashMap<String, String>,
+    type_docs: &HashMap<String, String>,
 ) -> anyhow::Result<WitDocument> {
     let mut resolve = Resolve::default();
     let package_id = resolve.push_str(Path::new("input.wit"), wit_text)?;
@@ -61,6 +64,7 @@ pub(crate) fn convert(
         dep_urls,
         own_interfaces: package.interfaces.values().copied().collect(),
         type_urls: HashMap::new(),
+        type_docs,
     };
 
     // First pass: register all type URLs so cross-refs within this package
@@ -180,7 +184,13 @@ impl Converter<'_> {
 
         let url = format!("{}/interface/{iface_name}/{name}", self.url_base);
         let stability = convert_stability(&type_def.stability);
-        let docs = type_def.docs.contents.clone();
+        let docs = type_def
+            .docs
+            .contents
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .map(String::from)
+            .or_else(|| self.resolve_alias_docs(type_id));
 
         let kind = match &type_def.kind {
             TypeDefKind::Record(record) => TypeKind::Record {
@@ -271,6 +281,58 @@ impl Converter<'_> {
         }
     }
 
+    /// Follow an alias chain to find docs from the target type.
+    ///
+    /// If a type is a `Type(ty)` alias without its own docs, walk the
+    /// chain until we find a type that has docs or isn't an alias.
+    fn resolve_alias_docs(&self, type_id: TypeId) -> Option<String> {
+        let type_def = self.resolve.types.get(type_id)?;
+        match &type_def.kind {
+            TypeDefKind::Type(WitType::Id(target_id)) => {
+                let target = self.resolve.types.get(*target_id)?;
+                target
+                    .docs
+                    .contents
+                    .as_deref()
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .or_else(|| self.resolve_alias_docs(*target_id))
+                    .or_else(|| self.lookup_cross_package_type_docs(*target_id))
+            }
+            TypeDefKind::Handle(Handle::Own(target_id) | Handle::Borrow(target_id)) => {
+                let target = self.resolve.types.get(*target_id)?;
+                target
+                    .docs
+                    .contents
+                    .as_deref()
+                    .filter(|s| !s.is_empty())
+                    .map(String::from)
+                    .or_else(|| self.lookup_cross_package_type_docs(*target_id))
+            }
+            _ => None,
+        }
+    }
+
+    /// Look up cross-package type docs by building the fully qualified name
+    /// from the type's owner interface and package.
+    fn lookup_cross_package_type_docs(&self, type_id: TypeId) -> Option<String> {
+        let type_def = self.resolve.types.get(type_id)?;
+        let type_name = type_def.name.as_deref()?;
+        if let TypeOwner::Interface(iface_id) = type_def.owner {
+            let iface = self.resolve.interfaces.get(iface_id)?;
+            let iface_name = iface.name.as_deref()?;
+            let pkg_id = iface.package?;
+            let pkg = self.resolve.packages.get(pkg_id)?;
+            let key = format!(
+                "{}:{}/{iface_name}/{type_name}",
+                pkg.name.namespace, pkg.name.name
+            );
+            self.type_docs.get(&key).cloned()
+        } else {
+            None
+        }
+    }
+
     /// Convert a `wit_parser::Type` to a `TypeRef`.
     fn convert_type(&self, ty: WitType) -> TypeRef {
         match ty {
@@ -330,6 +392,7 @@ impl Converter<'_> {
             return TypeRef::Named {
                 name: name.clone(),
                 url: Some(url.clone()),
+                type_kind: Some(type_def_kind(type_def, self.resolve)),
             };
         }
 
@@ -355,13 +418,13 @@ impl Converter<'_> {
                         return TypeRef::Named {
                             name: name.clone(),
                             url: Some(url),
+                            type_kind: Some(type_def_kind(type_def, self.resolve)),
                         };
                     }
-                    // External type without URL mapping — render name without
-                    // link.
                     return TypeRef::Named {
                         name: name.clone(),
                         url: None,
+                        type_kind: Some(type_def_kind(type_def, self.resolve)),
                     };
                 }
             }
@@ -370,6 +433,7 @@ impl Converter<'_> {
             return TypeRef::Named {
                 name: name.clone(),
                 url: None,
+                type_kind: Some(type_def_kind(type_def, self.resolve)),
             };
         }
 
@@ -484,9 +548,14 @@ impl Converter<'_> {
                     .get(*id)
                     .expect("interface id should be valid");
                 let (display_name, url) = self.resolve_interface_ref(*id, iface);
+                let docs = iface.docs.contents.as_deref().map(|d| {
+                    d.split_once("\n\n")
+                        .map_or_else(|| d.trim().to_owned(), |(first, _)| first.trim().to_owned())
+                });
                 WorldItemDoc::Interface {
                     name: display_name,
                     url,
+                    docs,
                 }
             }
             WorldItem::Function(func) => {
@@ -564,6 +633,39 @@ impl Converter<'_> {
                 .unwrap_or_else(|| format!("interface-{id:?}"));
             (name, None)
         }
+    }
+}
+
+/// Get the WIT kind for a type definition, following aliases to the real kind.
+fn type_def_kind(type_def: &wit_parser::TypeDef, resolve: &Resolve) -> WitTypeKind {
+    type_def_kind_inner(type_def, resolve, 0)
+}
+
+fn type_def_kind_inner(
+    type_def: &wit_parser::TypeDef,
+    resolve: &Resolve,
+    depth: u32,
+) -> WitTypeKind {
+    if depth > 10 {
+        return WitTypeKind::Alias;
+    }
+    match &type_def.kind {
+        TypeDefKind::Record(_) => WitTypeKind::Record,
+        TypeDefKind::Variant(_) => WitTypeKind::Variant,
+        TypeDefKind::Enum(_) => WitTypeKind::Enum,
+        TypeDefKind::Flags(_) => WitTypeKind::Flags,
+        TypeDefKind::Resource | TypeDefKind::Handle(Handle::Own(_) | Handle::Borrow(_)) => {
+            WitTypeKind::Resource
+        }
+        // Follow aliases to find the real kind.
+        TypeDefKind::Type(WitType::Id(target_id)) => {
+            if let Some(target) = resolve.types.get(*target_id) {
+                type_def_kind_inner(target, resolve, depth + 1)
+            } else {
+                WitTypeKind::Alias
+            }
+        }
+        _ => WitTypeKind::Alias,
     }
 }
 

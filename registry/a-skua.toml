@@ -15,5 +15,3 @@ repository = "koyomi"
 [[component]]
 name = "koyomi"
 repository = "koyomi"
-
-

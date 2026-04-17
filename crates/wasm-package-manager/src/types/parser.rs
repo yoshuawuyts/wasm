@@ -100,8 +100,8 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
     // Extract world metadata
     let worlds = extract_worlds(&decoded);
 
-    // Extract dependencies (packages other than the primary one)
-    let dependencies = extract_dependencies(resolve, primary_package_id);
+    // Extract direct dependencies from world imports/exports
+    let dependencies = extract_dependencies(resolve, &worlds, primary_package_id);
 
     // Generate a WIT text representation.  For WIT packages we use
     // `WitPrinter` which produces well-formed, parseable WIT text.  For
@@ -235,20 +235,49 @@ fn extract_world_items<'a>(
         .collect()
 }
 
-/// Extract dependency packages (all packages other than the primary one).
+/// Extract direct dependency packages from world imports and exports.
+///
+/// Only packages that are directly referenced by an import or export in one of
+/// the primary package's worlds are considered dependencies. Transitive
+/// dependencies (packages pulled in by those direct deps) are excluded.
 fn extract_dependencies(
     resolve: &wit_parser::Resolve,
+    worlds: &[WorldMetadata],
     primary_package_id: Option<wit_parser::PackageId>,
 ) -> Vec<DependencyItem> {
-    resolve
-        .packages
-        .iter()
-        .filter(|(id, _)| Some(id) != primary_package_id.as_ref())
-        .map(|(_, pkg)| DependencyItem {
-            package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
-            version: pkg.name.version.as_ref().map(ToString::to_string),
-        })
-        .collect()
+    let mut seen = std::collections::BTreeSet::new();
+    let mut deps = Vec::new();
+
+    for world in worlds {
+        for item in world.imports.iter().chain(world.exports.iter()) {
+            // Skip items that belong to the primary package itself.
+            if let Some(pid) = primary_package_id {
+                let primary = resolve
+                    .packages
+                    .get(pid)
+                    .expect("Package ID should be valid");
+                let primary_name = format!("{}:{}", primary.name.namespace, primary.name.name);
+                if item.package == primary_name {
+                    continue;
+                }
+            }
+
+            // Skip unnamed/inline items (no colon means not a package ref).
+            if !item.package.contains(':') {
+                continue;
+            }
+
+            let key = (item.package.clone(), item.version.clone());
+            if seen.insert(key) {
+                deps.push(DependencyItem {
+                    package: item.package.clone(),
+                    version: item.version.clone(),
+                });
+            }
+        }
+    }
+
+    deps
 }
 
 /// Produce well-formed WIT text via `WitPrinter`.
@@ -818,19 +847,25 @@ mod tests {
         };
         let primary_id = resolve.packages.alloc(primary);
 
-        let dep = Package {
-            name: PackageName {
-                namespace: "wasi".to_string(),
-                name: "io".to_string(),
-                version: None,
-            },
-            docs: Default::default(),
-            interfaces: Default::default(),
-            worlds: Default::default(),
-        };
-        let _dep_id = resolve.packages.alloc(dep);
+        // A world that imports wasi:io and my:app (the primary package)
+        let worlds = vec![WorldMetadata {
+            name: "test".to_string(),
+            imports: vec![
+                ImportExportItem {
+                    package: "wasi:io".to_string(),
+                    interface: Some("streams".to_string()),
+                    version: None,
+                },
+                ImportExportItem {
+                    package: "my:app".to_string(),
+                    interface: Some("types".to_string()),
+                    version: None,
+                },
+            ],
+            exports: vec![],
+        }];
 
-        let deps = extract_dependencies(&resolve, Some(primary_id));
+        let deps = extract_dependencies(&resolve, &worlds, Some(primary_id));
 
         assert_eq!(deps.len(), 1);
         assert_eq!(deps[0].package, "wasi:io");

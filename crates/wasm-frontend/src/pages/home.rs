@@ -20,20 +20,62 @@ pub(crate) async fn render(client: &RegistryClient) -> String {
     }
 }
 
+/// Packages pinned to the top of the home page, in display order.
+const PINNED_PACKAGES: &[(&str, &str)] = &[
+    ("ba", "sample-wasi-http-rust"),
+    ("wasi", "http"),
+    ("wasi", "cli"),
+    ("wasi", "io"),
+    ("wasi", "clocks"),
+    ("wasi", "logging"),
+];
+
 /// Render the home page with a list of packages.
 fn render_packages(packages: &[KnownPackage]) -> String {
-    let (components, interfaces) = split_by_kind(packages);
+    let ordered = pin_and_sort(packages);
+    let (components, interfaces) = split_by_kind(&ordered);
 
     let mut body = Division::builder();
     body.class("font-mono");
 
     // Hero area
-    body.push(render_hero(packages.len()));
+    body.push(render_hero(ordered.len()));
 
     // Tabbed package listing
-    body.push(render_tabs(packages, &interfaces, &components));
+    body.push(render_tabs(&ordered, &interfaces, &components));
 
     layout::document("Home", &body.build().to_string())
+}
+
+/// Re-order packages so pinned entries appear first (in `PINNED_PACKAGES`
+/// order), followed by the remaining packages sorted most-recently-published
+/// first.
+fn pin_and_sort(packages: &[KnownPackage]) -> Vec<KnownPackage> {
+    let mut pinned: Vec<KnownPackage> = Vec::with_capacity(PINNED_PACKAGES.len());
+    let mut rest: Vec<KnownPackage> = Vec::new();
+
+    // Collect pinned packages in their declared order.
+    for &(ns, name) in PINNED_PACKAGES {
+        if let Some(pkg) = packages
+            .iter()
+            .find(|p| p.wit_namespace.as_deref() == Some(ns) && p.wit_name.as_deref() == Some(name))
+        {
+            pinned.push(pkg.clone());
+        }
+    }
+
+    // Collect everything else, preserving the existing most-recent-first order.
+    for pkg in packages {
+        let is_pinned = PINNED_PACKAGES.iter().any(|&(ns, name)| {
+            pkg.wit_namespace.as_deref() == Some(ns) && pkg.wit_name.as_deref() == Some(name)
+        });
+        if !is_pinned {
+            rest.push(pkg.clone());
+        }
+    }
+
+    pinned.extend(rest);
+    pinned
 }
 
 /// Render the home page with an API error message.
@@ -329,5 +371,41 @@ mod tests {
         assert_eq!(interfaces[0].kind, Some(PackageKind::Interface));
         assert_eq!(components[0].kind, Some(PackageKind::Component));
         assert_eq!(components[1].kind, None);
+    }
+
+    fn named_package(ns: &str, name: &str) -> KnownPackage {
+        KnownPackage {
+            wit_namespace: Some(ns.to_string()),
+            wit_name: Some(name.to_string()),
+            ..package(Some(wasm_meta_registry_client::PackageKind::Interface))
+        }
+    }
+
+    #[test]
+    fn pin_and_sort_puts_pinned_first() {
+        let packages = vec![
+            named_package("other", "pkg"),
+            named_package("wasi", "cli"),
+            named_package("wasi", "http"),
+        ];
+
+        let sorted = pin_and_sort(&packages);
+        assert_eq!(sorted[0].wit_name.as_deref(), Some("http"));
+        assert_eq!(sorted[1].wit_name.as_deref(), Some("cli"));
+        assert_eq!(sorted[2].wit_name.as_deref(), Some("pkg"));
+    }
+
+    #[test]
+    fn pin_and_sort_handles_missing_pinned() {
+        let packages = vec![
+            named_package("other", "a"),
+            named_package("wasi", "http"),
+            named_package("other", "b"),
+        ];
+
+        let sorted = pin_and_sort(&packages);
+        assert_eq!(sorted[0].wit_name.as_deref(), Some("http"));
+        assert_eq!(sorted[1].wit_name.as_deref(), Some("a"));
+        assert_eq!(sorted[2].wit_name.as_deref(), Some("b"));
     }
 }

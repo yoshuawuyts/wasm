@@ -64,12 +64,13 @@ pub(crate) fn render(
     );
 
     let wit_content = if let Some(detail) = version_detail {
-        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref()).to_string()
+        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref(), pkg, version).to_string()
     } else {
         String::new()
     };
 
-    let body_html = format!("{header}<div class=\"space-y-10 max-w-3xl pt-4\">{wit_content}</div>");
+    let body_html =
+        format!("{header}<div class=\"space-y-10 max-w-4xl pt-4 pb-12\">{wit_content}</div>");
 
     let shell_ctx = package_shell::SidebarContext {
         pkg,
@@ -90,6 +91,8 @@ fn render_wit_content_with_doc(
     detail: &PackageVersion,
     _url_base: &str,
     doc: Option<&WitDocument>,
+    pkg: &KnownPackage,
+    version: &str,
 ) -> Section {
     let mut section = Section::builder();
     section.class("space-y-10");
@@ -102,10 +105,26 @@ fn render_wit_content_with_doc(
             section.push(render_interface_overview(doc));
         }
     } else {
-        // Fallback: show pre-extracted world summaries + raw WIT text.
-        if !detail.worlds.is_empty() {
+        // Fallback: prefer component-level imports/exports (from wasm-metadata,
+        // which include docs) over world summaries (from DB, no docs).
+        let has_component_imports = detail
+            .components
+            .iter()
+            .any(|c| !c.imports.is_empty() || !c.exports.is_empty());
+
+        if has_component_imports {
+            for comp in &detail.components {
+                if !comp.imports.is_empty() {
+                    section.push(render_iface_ref_list("Imports", &comp.imports));
+                }
+                if !comp.exports.is_empty() {
+                    section.push(render_iface_ref_list("Exports", &comp.exports));
+                }
+            }
+        } else if !detail.worlds.is_empty() {
             section.push(render_world_summaries(detail));
         }
+
         // Only show the raw WIT text if it's genuine WIT (not lossy
         // debug output that contains patterns like `type foo: "type"`
         // or `interface-Id { idx: 0 }`).
@@ -116,7 +135,87 @@ fn render_wit_content_with_doc(
         }
     }
 
+    // Component children: list modules and nested components as navigable sections.
+    for comp in &detail.components {
+        let url_base = package_shell::url_base_for(pkg, version);
+
+        // Modules section
+        let modules: Vec<&wasm_meta_registry_client::ComponentSummary> = comp
+            .children
+            .iter()
+            .filter(|ch| ch.kind.as_deref() == Some("module"))
+            .collect();
+        if !modules.is_empty() {
+            section.push(render_children_overview(
+                "Modules", &modules, &url_base, "module",
+            ));
+        }
+
+        // Nested components section
+        let components: Vec<&wasm_meta_registry_client::ComponentSummary> = comp
+            .children
+            .iter()
+            .filter(|ch| ch.kind.as_deref() == Some("component"))
+            .collect();
+        if !components.is_empty() {
+            section.push(render_children_overview(
+                "Components",
+                &components,
+                &url_base,
+                "component",
+            ));
+        }
+
+        // Root toolchain
+        if !comp.producers.is_empty() {
+            section.push(render_producers(&comp.producers));
+        }
+    }
+
     section.build()
+}
+
+/// Render a section listing child modules or components as navigable links.
+fn render_children_overview(
+    heading: &str,
+    children: &[&wasm_meta_registry_client::ComponentSummary],
+    url_base: &str,
+    kind: &str,
+) -> Division {
+    let mut div = Division::builder();
+    div.heading_2(|h2| {
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            .text(heading.to_owned())
+    });
+
+    let mut ul = UnorderedList::builder();
+    for (i, child) in children.iter().enumerate() {
+        let fallback = format!("{kind}[{i}]");
+        let name = child.name.as_deref().unwrap_or(&fallback);
+        let href = if kind == "module" {
+            format!("{url_base}/module/{name}")
+        } else {
+            format!("{url_base}/component/{i}")
+        };
+
+        let link_class = if kind == "component" {
+            "font-mono text-base font-medium text-wit-world hover:underline"
+        } else {
+            "font-mono text-base font-medium text-wit-module hover:underline"
+        };
+
+        ul.list_item(|li| {
+            li.class("py-1");
+            li.anchor(|a| {
+                a.href(href)
+                    .class(link_class.to_owned())
+                    .text(name.to_owned())
+            });
+            li
+        });
+    }
+    div.push(ul.build());
+    div.build()
 }
 
 /// Try parsing the WIT text into a rich document model.
@@ -252,10 +351,12 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
 
     for world in &detail.worlds {
         container.division(|world_div| {
-            world_div.heading_2(|h2| {
-                h2.class("text-lg font-medium text-fg-muted mb-3")
-                    .text(format!("world {}", world.name))
-            });
+            if world.name != "root" {
+                world_div.heading_2(|h2| {
+                    h2.class("text-lg font-medium text-fg-muted mb-3")
+                        .text(format!("world {}", world.name))
+                });
+            }
 
             if let Some(desc) = &world.description {
                 world_div.paragraph(|p| {
@@ -277,43 +378,80 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
     container.build()
 }
 
-/// Render a list of WIT interface references (fallback).
+/// Render a list of WIT interface references (fallback), styled like world
+/// imports/exports with clickable links. Includes version to disambiguate
+/// duplicates.
 fn render_iface_ref_list(
     label: &str,
     interfaces: &[wasm_meta_registry_client::WitInterfaceRef],
 ) -> Division {
+    let items: Vec<package_shell::ImportExportEntry> = interfaces
+        .iter()
+        .map(package_shell::iface_ref_to_entry)
+        .collect();
+
     let mut div = Division::builder();
     div.class("mb-4");
-    div.heading_3(|h3| {
-        h3.class("text-sm font-medium text-fg-muted mb-2")
-            .text(label.to_owned())
+    div.push(package_shell::render_import_export_section(label, &items));
+    div.build()
+}
+
+/// Format a byte size into a human-readable string.
+pub(crate) fn format_size(bytes: u64) -> String {
+    const KIB: u64 = 1024;
+    const MIB: u64 = 1024 * KIB;
+    #[allow(clippy::cast_precision_loss)]
+    match bytes {
+        b if b >= MIB => format!("{:.1} MiB", b as f64 / MIB as f64),
+        b if b >= KIB => format!("{:.1} KiB", b as f64 / KIB as f64),
+        b => format!("{b} B"),
+    }
+}
+
+/// Render producer entries as a list, excluding language entries.
+fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> Division {
+    let filtered: Vec<_> = producers.iter().filter(|e| e.field != "language").collect();
+    if filtered.is_empty() {
+        return Division::builder().build();
+    }
+
+    let mut div = Division::builder();
+    div.heading_2(|h2| {
+        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            .text("Producers")
     });
 
     let mut ul = UnorderedList::builder();
-    ul.class("space-y-0.5");
-    for iface in interfaces {
-        let display = format_iface_ref(iface);
+    for entry in &filtered {
+        let name = entry.name.clone();
+        let version = entry.version.clone();
+        let display_version = version
+            .split_once(" (")
+            .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
+        let tooltip = if version.is_empty() {
+            name.clone()
+        } else {
+            format!("{name} {version}")
+        };
         ul.list_item(|li| {
-            li.class("py-1.5")
-                .span(|s| s.class("text-base font-mono text-accent").text(display))
+            li.class("py-1");
+            li.span(|s| {
+                s.class("font-mono text-base min-w-0 truncate")
+                    .title(tooltip);
+                s.span(|n| n.class("text-accent").text(name));
+                if !display_version.is_empty() {
+                    s.span(|v| {
+                        v.class("text-fg-faint ml-1")
+                            .text(format!("@{display_version}"))
+                    });
+                }
+                s
+            });
+            li
         });
     }
     div.push(ul.build());
     div.build()
-}
-
-/// Format a WIT interface reference as a display string.
-fn format_iface_ref(iface: &wasm_meta_registry_client::WitInterfaceRef) -> String {
-    let mut s = iface.package.clone();
-    if let Some(name) = &iface.interface {
-        s.push('/');
-        s.push_str(name);
-    }
-    if let Some(v) = &iface.version {
-        s.push('@');
-        s.push_str(v);
-    }
-    s
 }
 
 /// Extract the first sentence from a doc comment for summary display.
@@ -323,6 +461,7 @@ fn first_sentence(text: &str) -> String {
         |(first, _)| first.trim().to_owned(),
     )
 }
+
 /// Detect whether WIT text is the lossy hand-rolled format rather than
 /// genuine parseable WIT.  The lossy format contains debug patterns like
 /// `type foo: "type"` and `interface-Id { idx: 0 }`.

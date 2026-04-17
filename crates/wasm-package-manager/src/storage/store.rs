@@ -137,8 +137,7 @@ impl Store {
         let store_size = dir_size(&store_dir).await;
         let metadata_size = tokio::fs::metadata(&metadata_file)
             .await
-            .map(|m| m.len())
-            .unwrap_or(0);
+            .map_or(0, |m| m.len());
         let state_info = StateInfo::new_at(
             data_dir,
             config_file,
@@ -501,14 +500,23 @@ impl Store {
 
         // For compiled components, create wasm_component and component_target rows
         if metadata.is_component {
-            let component_id =
-                match WasmComponent::insert(&self.conn, manifest_id, layer_id, None, None) {
-                    Ok(id) => id,
-                    Err(e) => {
-                        tracing::warn!("Failed to insert WasmComponent: {}", e);
-                        return false;
-                    }
-                };
+            // Extract rich metadata (name, producers) via wasm-metadata
+            let (comp_name, comp_desc, producers_json) = extract_component_metadata(wasm_bytes);
+
+            let component_id = match WasmComponent::insert(
+                &self.conn,
+                manifest_id,
+                layer_id,
+                comp_name.as_deref(),
+                comp_desc.as_deref(),
+                producers_json.as_deref(),
+            ) {
+                Ok(id) => id,
+                Err(e) => {
+                    tracing::warn!("Failed to insert WasmComponent: {}", e);
+                    return false;
+                }
+            };
 
             for world in &metadata.worlds {
                 let wit_world_id = world_ids.get(&world.name).copied();
@@ -604,20 +612,36 @@ impl Store {
     ///
     /// Original OCI data (manifests, layers, blobs) is never modified.
     pub(crate) async fn reindex_wit_packages(&self) -> anyhow::Result<u64> {
-        // Collect (wit_package.id, oci_manifest_id, layer_digest) tuples.
+        // Collect (wit_package.id, oci_manifest_id, oci_layer_id, layer_digest)
+        // tuples.  Two sources:
+        //   1. wit_package rows that already have an oci_layer_id.
+        //   2. wit_package rows with only an oci_manifest_id (legacy data) —
+        //      we resolve the layer via the manifest's first wasm layer.
         let mut stmt = self.conn.prepare(
-            "SELECT wp.id, wp.oci_manifest_id, ol.digest
+            "SELECT wp.id, wp.oci_manifest_id, ol.id, ol.digest
              FROM wit_package wp
-             JOIN oci_layer ol ON ol.id = wp.oci_layer_id",
+             JOIN oci_layer ol ON ol.id = wp.oci_layer_id
+             UNION ALL
+             SELECT wp.id, wp.oci_manifest_id, ol.id, ol.digest
+             FROM wit_package wp
+             JOIN oci_layer ol ON ol.oci_manifest_id = wp.oci_manifest_id
+             WHERE wp.oci_layer_id IS NULL
+               AND wp.oci_manifest_id IS NOT NULL
+               AND ol.position = (
+                   SELECT MIN(ol2.position) FROM oci_layer ol2
+                   WHERE ol2.oci_manifest_id = wp.oci_manifest_id
+               )",
         )?;
-        let rows: Vec<(i64, i64, String)> = stmt
-            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))?
+        let rows: Vec<(i64, i64, i64, String)> = stmt
+            .query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+            })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let store_dir = self.state_info.store_dir().to_path_buf();
         let mut reindexed = 0u64;
 
-        for (wit_id, manifest_id, digest) in &rows {
+        for (wit_id, manifest_id, layer_id, digest) in &rows {
             // Read the raw bytes from cacache.
             let bytes = match cacache::read(&store_dir, digest).await {
                 Ok(b) => b,
@@ -633,15 +657,25 @@ impl Store {
             }
 
             // Delete old rows and re-extract with current logic atomically.
+            // Delete both wit_package and wasm_component rows so stale cached
+            // JSON (producers, imports, exports) is fully cleared.
             let replaced = self
                 .conn
                 .execute("DELETE FROM wit_package WHERE id = ?1", [wit_id])
+                .and_then(|_| {
+                    self.conn.execute(
+                        "DELETE FROM wasm_component WHERE oci_manifest_id = ?1",
+                        [manifest_id],
+                    )
+                })
                 .map_or_else(
                     |e| {
-                        tracing::warn!("reindex: failed to delete wit_package {wit_id}: {e}");
+                        tracing::warn!(
+                            "reindex: failed to delete rows for wit_package {wit_id}: {e}"
+                        );
                         false
                     },
-                    |_| self.try_extract_wit_package(*manifest_id, None, &bytes),
+                    |_| self.try_extract_wit_package(*manifest_id, Some(*layer_id), &bytes),
                 );
 
             let savepoint_sql = if replaced {
@@ -1212,7 +1246,9 @@ impl Store {
             let components = self.get_components_for_manifest(m.id)?;
             let dependencies = self.get_dependencies_for_manifest(m.id)?;
             let referrers = self.get_referrers_for_manifest(m.id)?;
+            let layers = self.get_layers_for_manifest(m.id)?;
             let wit_text = self.get_wit_text_for_manifest(m.id)?;
+            let type_docs = self.build_type_docs(&dependencies);
 
             versions.push(PackageVersion {
                 tag,
@@ -1225,7 +1261,9 @@ impl Store {
                 components,
                 dependencies,
                 referrers,
+                layers,
                 wit_text,
+                type_docs,
             });
         }
 
@@ -1344,7 +1382,9 @@ impl Store {
         let components = self.get_components_for_manifest(m.id)?;
         let dependencies = self.get_dependencies_for_manifest(m.id)?;
         let referrers = self.get_referrers_for_manifest(m.id)?;
+        let layers = self.get_layers_for_manifest(m.id)?;
         let wit_text = self.get_wit_text_for_manifest(m.id)?;
+        let type_docs = self.build_type_docs(&dependencies);
 
         Ok(Some(PackageVersion {
             tag: Some(version_tag.to_string()),
@@ -1357,7 +1397,9 @@ impl Store {
             components,
             dependencies,
             referrers,
+            layers,
             wit_text,
+            type_docs,
         }))
     }
 
@@ -1381,8 +1423,10 @@ impl Store {
         for pkg_id in pkg_ids {
             let db_worlds = WitWorld::list_by_type(&self.conn, pkg_id)?;
             for w in db_worlds {
-                let imports = self.get_world_imports(w.id())?;
-                let exports = self.get_world_exports(w.id())?;
+                let mut imports = self.get_world_imports(w.id())?;
+                let mut exports = self.get_world_exports(w.id())?;
+                self.enrich_iface_docs(&mut imports);
+                self.enrich_iface_docs(&mut exports);
                 worlds.push(WitWorldSummary {
                     name: w.name,
                     description: w.description,
@@ -1401,34 +1445,65 @@ impl Store {
         manifest_id: i64,
     ) -> anyhow::Result<Vec<wasm_meta_registry_types::ComponentSummary>> {
         use wasm_meta_registry_types::{ComponentSummary, ComponentTargetRef};
+        type ComponentRow = (i64, Option<String>, Option<String>, Option<String>);
 
         let mut stmt = self.conn.prepare(
-            "SELECT id, name, description FROM wasm_component
+            "SELECT id, name, description, producers_json FROM wasm_component
              WHERE oci_manifest_id = ?1
              ORDER BY name ASC",
         )?;
 
-        let components: Vec<(i64, Option<String>, Option<String>)> = stmt
+        let components: Vec<ComponentRow> = stmt
             .query_map([manifest_id], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut result = Vec::new();
-        for (comp_id, name, description) in components {
+        for (comp_id, name, description, metadata_json) in components {
             let targets = ComponentTarget::list_by_component(&self.conn, comp_id)?;
-            result.push(ComponentSummary {
-                name,
-                description,
-                targets: targets
-                    .into_iter()
-                    .map(|t| ComponentTargetRef {
-                        package: t.declared_package,
-                        world: t.declared_world,
-                        version: t.declared_version,
-                    })
-                    .collect(),
-            });
+            let target_refs: Vec<ComponentTargetRef> = targets
+                .into_iter()
+                .map(|t| ComponentTargetRef {
+                    package: t.declared_package,
+                    world: t.declared_world,
+                    version: t.declared_version,
+                })
+                .collect();
+
+            // Try to deserialize the full ComponentSummary tree from JSON.
+            // If available, merge in the DB-stored targets. Otherwise
+            // fall back to a basic summary.
+            let mut summary: ComponentSummary = metadata_json
+                .as_deref()
+                .and_then(|json| serde_json::from_str(json).ok())
+                .unwrap_or_else(|| ComponentSummary {
+                    name: name.clone(),
+                    description: description.clone(),
+                    targets: vec![],
+                    producers: vec![],
+                    kind: None,
+                    size_bytes: None,
+                    languages: vec![],
+                    children: vec![],
+                    source: None,
+                    homepage: None,
+                    licenses: None,
+                    authors: None,
+                    revision: None,
+                    component_version: None,
+                    bill_of_materials: vec![],
+                    imports: vec![],
+                    exports: vec![],
+                });
+
+            summary.targets = target_refs;
+
+            // Enrich imports/exports with docs from stored WIT packages.
+            self.enrich_iface_docs(&mut summary.imports);
+            self.enrich_iface_docs(&mut summary.exports);
+
+            result.push(summary);
         }
 
         Ok(result)
@@ -1483,6 +1558,156 @@ impl Store {
         for row in rows {
             result.push(row?);
         }
+        Ok(result)
+    }
+
+    /// Enrich `WitInterfaceRef` entries with docs from stored WIT packages.
+    ///
+    /// For each import/export that has a package name and version but no docs,
+    /// look up the stored `wit_text` for that WIT package, parse it, and
+    /// extract the interface's doc comment.
+    fn enrich_iface_docs(&self, refs: &mut [wasm_meta_registry_types::WitInterfaceRef]) {
+        for iface_ref in refs.iter_mut() {
+            if iface_ref.docs.is_some() {
+                continue;
+            }
+            let Some(iface_name) = &iface_ref.interface else {
+                continue;
+            };
+
+            // Look up the WIT text for this package+version.
+            let wit_text: Option<String> = self
+                .conn
+                .query_row(
+                    "SELECT wit_text FROM wit_package
+                     WHERE package_name = ?1
+                       AND wit_text IS NOT NULL
+                     ORDER BY (COALESCE(version, '') = COALESCE(?2, '')) DESC, id DESC
+                     LIMIT 1",
+                    rusqlite::params![&iface_ref.package, &iface_ref.version],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let Some(wit_text) = wit_text else {
+                continue;
+            };
+
+            // Parse the WIT text and find the interface's docs.
+            if let Ok(pkg) = wit_parser::UnresolvedPackageGroup::parse("lookup.wit", &wit_text) {
+                for (_, iface) in &pkg.main.interfaces {
+                    if iface.name.as_deref() == Some(iface_name.as_str())
+                        && let Some(doc) = &iface.docs.contents
+                    {
+                        iface_ref.docs = Some(first_doc_sentence(doc));
+                    }
+                }
+            }
+        }
+    }
+
+    /// Build a map of cross-package type documentation.
+    ///
+    /// For each dependency that has stored WIT text, parse it and extract
+    /// docs for all types in all interfaces. Returns a map from
+    /// `"package/interface/type"` → doc string.
+    fn build_type_docs(
+        &self,
+        deps: &[wasm_meta_registry_types::PackageDependencyRef],
+    ) -> HashMap<String, String> {
+        let mut result = HashMap::new();
+
+        for dep in deps {
+            let wit_text: Option<String> = self
+                .conn
+                .query_row(
+                    "SELECT wit_text FROM wit_package
+                     WHERE package_name = ?1
+                       AND wit_text IS NOT NULL
+                     ORDER BY (version = ?2) DESC, id DESC LIMIT 1",
+                    rusqlite::params![&dep.package, &dep.version],
+                    |row| row.get(0),
+                )
+                .ok();
+
+            let Some(wit_text) = wit_text else { continue };
+            let Ok(pkg) = wit_parser::UnresolvedPackageGroup::parse("dep.wit", &wit_text) else {
+                continue;
+            };
+
+            for (_, iface) in &pkg.main.interfaces {
+                let Some(iface_name) = &iface.name else {
+                    continue;
+                };
+                for (type_name, type_id) in &iface.types {
+                    if let Some(type_def) = pkg.main.types.get(*type_id)
+                        && let Some(docs) = &type_def.docs.contents
+                        && !docs.is_empty()
+                    {
+                        let key = format!("{}/{iface_name}/{type_name}", dep.package);
+                        let first = docs
+                            .split_once("\n\n")
+                            .map_or_else(|| docs.trim().to_owned(), |(f, _)| f.trim().to_owned());
+                        result.insert(key, first);
+                    }
+                }
+            }
+        }
+
+        result
+    }
+
+    /// Return the full OCI layout for a manifest: manifest descriptor,
+    /// config descriptor, and content layers.
+    fn get_layers_for_manifest(
+        &self,
+        manifest_id: i64,
+    ) -> anyhow::Result<Vec<wasm_meta_registry_types::LayerInfo>> {
+        use wasm_meta_registry_types::LayerInfo;
+
+        let mut result = Vec::new();
+
+        // Manifest descriptor.
+        if let Ok((digest, media_type, size)) = self.conn.query_row(
+            "SELECT digest, media_type, size_bytes FROM oci_manifest WHERE id = ?1",
+            [manifest_id],
+            |row| {
+                Ok((
+                    row.get::<_, String>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<i64>>(2)?,
+                ))
+            },
+        ) {
+            result.push(LayerInfo {
+                digest,
+                media_type,
+                size_bytes: size,
+            });
+        }
+
+        // Config descriptor.
+        if let Ok((config_digest, config_media_type)) = self.conn.query_row(
+            "SELECT config_digest, config_media_type FROM oci_manifest
+             WHERE id = ?1 AND config_digest IS NOT NULL",
+            [manifest_id],
+            |row| Ok((row.get::<_, String>(0)?, row.get::<_, Option<String>>(1)?)),
+        ) {
+            result.push(LayerInfo {
+                digest: config_digest,
+                media_type: config_media_type,
+                size_bytes: None,
+            });
+        }
+
+        // Content layers.
+        let layers = OciLayer::list_by_manifest(&self.conn, manifest_id)?;
+        result.extend(layers.into_iter().map(|l| LayerInfo {
+            digest: l.digest,
+            media_type: l.media_type,
+            size_bytes: l.size_bytes,
+        }));
+
         Ok(result)
     }
 
@@ -1545,6 +1770,7 @@ impl Store {
                 package: row.get(0)?,
                 interface: row.get(1)?,
                 version: row.get(2)?,
+                docs: None,
             })
         })?;
 
@@ -1572,6 +1798,7 @@ impl Store {
                 package: row.get(0)?,
                 interface: row.get(1)?,
                 version: row.get(2)?,
+                docs: None,
             })
         })?;
 
@@ -1728,6 +1955,292 @@ fn split_package_version(raw: &str) -> (&str, Option<&str>) {
     } else {
         (raw, None)
     }
+}
+
+/// Extract component-level metadata using `wasm-metadata`.
+///
+/// Returns `(name, description, metadata_json)` where `metadata_json` is the
+/// full `ComponentSummary` tree serialized as JSON (producers, children, kind,
+/// size, languages). Targets are not included — they come from the DB.
+fn extract_component_metadata(
+    wasm_bytes: &[u8],
+) -> (Option<String>, Option<String>, Option<String>) {
+    let Ok(payload) = wasm_metadata::Payload::from_binary(wasm_bytes) else {
+        return (None, None, None);
+    };
+
+    // Decode WIT once for the full component — used by all children.
+    let root_wit = wit_parser::decoding::decode(wasm_bytes).ok();
+
+    let summary = payload_to_summary(&payload, wasm_bytes, root_wit.as_ref());
+    let name = summary.name.clone();
+    let description = summary.description.clone();
+    let json = serde_json::to_string(&summary).ok();
+
+    (name, description, json)
+}
+
+/// Convert a `wasm_metadata::Payload` tree into a `ComponentSummary` tree.
+///
+/// `parent_bytes` is the full wasm binary; child byte ranges are sliced from
+/// it to extract WIT imports/exports via `wit-parser`.
+/// `root_wit` is the decoded WIT from the full parent binary, used to resolve
+/// inner component names back to WIT-qualified names.
+fn payload_to_summary(
+    payload: &wasm_metadata::Payload,
+    parent_bytes: &[u8],
+    root_wit: Option<&wit_parser::decoding::DecodedWasm>,
+) -> wasm_meta_registry_types::ComponentSummary {
+    use wasm_meta_registry_types::{BomEntry, ComponentSummary, ProducerEntry};
+
+    let meta = payload.metadata();
+
+    let (kind, children) = match payload {
+        wasm_metadata::Payload::Component { children, .. } => (
+            "component",
+            children
+                .iter()
+                .map(|c| payload_to_summary(c, parent_bytes, root_wit))
+                .collect(),
+        ),
+        wasm_metadata::Payload::Module(_) => ("module", vec![]),
+    };
+
+    let producers: Vec<ProducerEntry> = meta
+        .producers
+        .iter()
+        .flat_map(|p| {
+            p.iter().flat_map(|(field, pairs)| {
+                pairs.iter().map(move |(tool, ver)| ProducerEntry {
+                    field: field.clone(),
+                    name: tool.clone(),
+                    version: ver.clone(),
+                })
+            })
+        })
+        .collect();
+
+    let languages: Vec<String> = producers
+        .iter()
+        .filter(|e| e.field == "language")
+        .map(|e| e.name.clone())
+        .collect();
+
+    #[allow(clippy::cast_sign_loss)]
+    let size_bytes = {
+        let r = &meta.range;
+        let size = r.end.saturating_sub(r.start);
+        if size > 0 { Some(size as u64) } else { None }
+    };
+
+    let bill_of_materials: Vec<BomEntry> = meta
+        .dependencies
+        .as_ref()
+        .map(|deps| {
+            deps.version_info()
+                .packages
+                .iter()
+                .map(|p| BomEntry {
+                    name: p.name.clone(),
+                    version: p.version.to_string(),
+                    source: Some(String::from(p.source.clone())),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    // Extract WIT imports/exports from this component's byte range.
+    let (imports, exports) = extract_wit_imports_exports(parent_bytes, &meta.range, root_wit);
+
+    ComponentSummary {
+        name: meta.name.clone(),
+        description: meta.description.as_ref().map(ToString::to_string),
+        targets: vec![],
+        producers,
+        kind: Some(kind.to_string()),
+        size_bytes,
+        languages,
+        children,
+        source: meta.source.as_ref().map(ToString::to_string),
+        homepage: meta.homepage.as_ref().map(ToString::to_string),
+        licenses: meta.licenses.as_ref().map(ToString::to_string),
+        authors: meta.authors.as_ref().map(ToString::to_string),
+        revision: meta.revision.as_ref().map(ToString::to_string),
+        component_version: meta.version.as_ref().map(ToString::to_string),
+        bill_of_materials,
+        imports,
+        exports,
+    }
+}
+
+/// Extract WIT imports and exports from a wasm binary at the given byte range.
+///
+/// First tries `wit-parser` for a full decode (works for self-contained
+/// components). Falls back to using the root component's decoded WIT to
+/// provide the correct WIT-qualified names. If neither works, uses
+/// `wasmparser` to read raw component import/export names.
+fn extract_wit_imports_exports(
+    parent_bytes: &[u8],
+    range: &std::ops::Range<usize>,
+    root_wit: Option<&wit_parser::decoding::DecodedWasm>,
+) -> (
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+) {
+    let Some(bytes) = parent_bytes.get(range.start..range.end) else {
+        return (vec![], vec![]);
+    };
+
+    // Try wit-parser on the child's own bytes (works for self-contained components).
+    if let Ok(decoded) = wit_parser::decoding::decode(bytes) {
+        let resolve = decoded.resolve();
+        if let wit_parser::decoding::DecodedWasm::Component(_, world_id) = &decoded
+            && let Some(world) = resolve.worlds.get(*world_id)
+        {
+            let imports = world
+                .imports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            let exports = world
+                .exports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            return (imports, exports);
+        }
+    }
+
+    // For inner components that can't be decoded standalone, use the root
+    // component's already-decoded WIT world. The root world's imports/exports
+    // are the WIT-level view of what the inner component implements.
+    if let Some(decoded) = root_wit {
+        let resolve = decoded.resolve();
+        if let wit_parser::decoding::DecodedWasm::Component(_, world_id) = decoded
+            && let Some(world) = resolve.worlds.get(*world_id)
+        {
+            let imports = world
+                .imports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            let exports = world
+                .exports
+                .keys()
+                .filter_map(|k| world_key_to_iface_ref(resolve, k))
+                .collect();
+            return (imports, exports);
+        }
+    }
+
+    // Last resort: raw wasmparser names.
+    extract_wit_imports_exports_wasmparser(bytes)
+}
+
+/// Use `wasmparser` to extract component import/export names from raw bytes.
+///
+/// This handles inner components that can't be decoded by `wit-parser` because
+/// they reference types from the outer component scope.
+fn extract_wit_imports_exports_wasmparser(
+    bytes: &[u8],
+) -> (
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+    Vec<wasm_meta_registry_types::WitInterfaceRef>,
+) {
+    use wasmparser::{Parser, Payload};
+
+    let mut imports = Vec::new();
+    let mut exports = Vec::new();
+
+    for payload in Parser::new(0).parse_all(bytes) {
+        let Ok(payload) = payload else { continue };
+        match payload {
+            Payload::ComponentImportSection(reader) => {
+                for import in reader {
+                    let Ok(import) = import else { continue };
+                    imports.push(parse_component_extern_name(import.name.0));
+                }
+            }
+            Payload::ComponentExportSection(reader) => {
+                for export in reader {
+                    let Ok(export) = export else { continue };
+                    exports.push(parse_component_extern_name(export.name.0));
+                }
+            }
+            _ => {}
+        }
+    }
+
+    (imports, exports)
+}
+
+/// Parse a component extern name like `"wasi:http/types@0.2.3"` into a
+/// `WitInterfaceRef`.
+fn parse_component_extern_name(name: &str) -> wasm_meta_registry_types::WitInterfaceRef {
+    // Component extern names follow the pattern:
+    //   "namespace:package/interface@version"
+    //   "namespace:package@version"
+    //   or just a plain name
+    if !name.contains(':') {
+        return wasm_meta_registry_types::WitInterfaceRef {
+            package: name.to_string(),
+            interface: None,
+            version: None,
+            docs: None,
+        };
+    }
+
+    let (name_part, version) = match name.rsplit_once('@') {
+        Some((n, v)) => (n, Some(v.to_string())),
+        None => (name, None),
+    };
+
+    let (package, interface) = match name_part.split_once('/') {
+        Some((pkg, iface)) => (pkg.to_string(), Some(iface.to_string())),
+        None => (name_part.to_string(), None),
+    };
+
+    wasm_meta_registry_types::WitInterfaceRef {
+        package,
+        interface,
+        version,
+        docs: None,
+    }
+}
+
+/// Convert a `wit_parser::WorldKey` to a `WitInterfaceRef`, including docs.
+fn world_key_to_iface_ref(
+    resolve: &wit_parser::Resolve,
+    key: &wit_parser::WorldKey,
+) -> Option<wasm_meta_registry_types::WitInterfaceRef> {
+    match key {
+        wit_parser::WorldKey::Name(name) => Some(wasm_meta_registry_types::WitInterfaceRef {
+            package: name.clone(),
+            interface: None,
+            version: None,
+            docs: None,
+        }),
+        wit_parser::WorldKey::Interface(id) => {
+            let iface = resolve.interfaces.get(*id)?;
+            let pkg_id = iface.package?;
+            let pkg = resolve.packages.get(pkg_id)?;
+            let docs = iface.docs.contents.as_deref().map(first_doc_sentence);
+            Some(wasm_meta_registry_types::WitInterfaceRef {
+                package: format!("{}:{}", pkg.name.namespace, pkg.name.name),
+                interface: iface.name.clone(),
+                version: pkg.name.version.as_ref().map(ToString::to_string),
+                docs,
+            })
+        }
+    }
+}
+
+/// Extract the first sentence from a doc comment.
+fn first_doc_sentence(text: &str) -> String {
+    text.split_once("\n\n").map_or_else(
+        || text.trim().to_owned(),
+        |(first, _)| first.trim().to_owned(),
+    )
 }
 
 #[cfg(test)]
@@ -1897,7 +2410,7 @@ mod tests {
 
         // Insert the component
         let comp_id =
-            WasmComponent::insert(&conn, manifest_id, Some(layer_id), None, None).unwrap();
+            WasmComponent::insert(&conn, manifest_id, Some(layer_id), None, None, None).unwrap();
         assert!(comp_id > 0);
 
         // Insert a target pointing to the world we just created
@@ -2233,7 +2746,8 @@ mod tests {
         let world_id = WitWorld::insert(&conn, iface_id, "proxy", None).unwrap();
 
         // Create a component with a target but NO wit_world_id (cross-package)
-        let comp_id = WasmComponent::insert(&conn, comp_manifest_id, None, None, None).unwrap();
+        let comp_id =
+            WasmComponent::insert(&conn, comp_manifest_id, None, None, None, None).unwrap();
         ComponentTarget::insert(
             &conn,
             comp_id,
@@ -2633,5 +3147,226 @@ mod tests {
             .get_package_detail("ghcr.io", "does/not/exist")
             .unwrap();
         assert!(detail.is_none());
+    }
+
+    #[test]
+    fn parse_component_extern_name_full() {
+        let ref_ = parse_component_extern_name("wasi:http/types@0.2.3");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface.as_deref(), Some("types"));
+        assert_eq!(ref_.version.as_deref(), Some("0.2.3"));
+    }
+
+    #[test]
+    fn parse_component_extern_name_no_interface() {
+        let ref_ = parse_component_extern_name("wasi:http@0.2.3");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface, None);
+        assert_eq!(ref_.version.as_deref(), Some("0.2.3"));
+    }
+
+    #[test]
+    fn parse_component_extern_name_no_version() {
+        let ref_ = parse_component_extern_name("wasi:http/types");
+        assert_eq!(ref_.package, "wasi:http");
+        assert_eq!(ref_.interface.as_deref(), Some("types"));
+        assert_eq!(ref_.version, None);
+    }
+
+    #[test]
+    fn parse_component_extern_name_plain() {
+        let ref_ = parse_component_extern_name("my-import");
+        assert_eq!(ref_.package, "my-import");
+        assert_eq!(ref_.interface, None);
+        assert_eq!(ref_.version, None);
+    }
+
+    #[test]
+    fn parse_component_extern_name_prerelease_version() {
+        let ref_ = parse_component_extern_name("wasi:cli/run@0.2.0-rc1");
+        assert_eq!(ref_.package, "wasi:cli");
+        assert_eq!(ref_.interface.as_deref(), Some("run"));
+        assert_eq!(ref_.version.as_deref(), Some("0.2.0-rc1"));
+    }
+
+    #[test]
+    fn extract_wit_imports_exports_returns_empty_for_non_wasm() {
+        let (imports, exports) = extract_wit_imports_exports(b"not wasm", &(0..8), None);
+        assert!(imports.is_empty());
+        assert!(exports.is_empty());
+    }
+
+    #[test]
+    fn extract_wit_imports_exports_returns_empty_for_out_of_range() {
+        let (imports, exports) = extract_wit_imports_exports(b"short", &(0..100), None);
+        assert!(imports.is_empty());
+        assert!(exports.is_empty());
+    }
+
+    #[test]
+    fn extract_component_metadata_returns_none_for_invalid_bytes() {
+        let (name, desc, json) = extract_component_metadata(b"not wasm");
+        assert!(name.is_none());
+        assert!(desc.is_none());
+        assert!(json.is_none());
+    }
+
+    /// Read the sample-wasi-http-rust component fixture if available.
+    fn read_sample_component() -> Option<Vec<u8>> {
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../examples/1-hello-world/vendor/wasm/ghcr-io-bytecodealliance-sample-wasi-http-rust-sample-wasi-http-rust-0.1.6-b33f82f30175.wasm");
+        std::fs::read(path).ok()
+    }
+
+    #[test]
+    fn extract_component_metadata_from_real_binary() {
+        let Some(bytes) = read_sample_component() else {
+            eprintln!("skipping: sample component not found");
+            return;
+        };
+
+        let (name, _desc, json) = extract_component_metadata(&bytes);
+
+        // Root component may or may not have an embedded name.
+        let _ = name;
+
+        // JSON should be present and deserializable.
+        let json = json.expect("metadata JSON should be present");
+        let summary: wasm_meta_registry_types::ComponentSummary =
+            serde_json::from_str(&json).expect("JSON should deserialize");
+
+        // Should be a component.
+        assert_eq!(summary.kind.as_deref(), Some("component"));
+
+        // Should have children (modules + possibly inner components).
+        assert!(
+            !summary.children.is_empty(),
+            "root component should have children"
+        );
+
+        // At least one child should be a module.
+        let modules: Vec<_> = summary
+            .children
+            .iter()
+            .filter(|c| c.kind.as_deref() == Some("module"))
+            .collect();
+        assert!(!modules.is_empty(), "should have at least one module child");
+
+        // The main module should have a name.
+        let main_module = modules
+            .iter()
+            .find(|m| m.name.as_deref() == Some("sample_wasi_http_rust.wasm"));
+        assert!(main_module.is_some(), "should have the main Rust module");
+
+        // The main module should report languages.
+        let main = main_module.unwrap();
+        assert!(
+            main.languages.contains(&"Rust".to_string()),
+            "main module should list Rust as a language"
+        );
+
+        // The main module should have producers.
+        assert!(
+            !main.producers.is_empty(),
+            "main module should have producers"
+        );
+        assert!(
+            main.producers.iter().any(|p| p.name == "rustc"),
+            "main module should have rustc as a producer"
+        );
+
+        // Root component should have producers (wit-component, cargo-component).
+        assert!(
+            !summary.producers.is_empty(),
+            "root component should have producers"
+        );
+        assert!(
+            summary.producers.iter().any(|p| p.name == "wit-component"),
+            "root should have wit-component producer"
+        );
+
+        // Root component should have WIT imports.
+        assert!(
+            !summary.imports.is_empty(),
+            "root component should have WIT imports"
+        );
+
+        // Should import wasi:http interfaces.
+        assert!(
+            summary.imports.iter().any(|i| i.package == "wasi:http"),
+            "should import wasi:http"
+        );
+
+        // Should have a size.
+        assert!(summary.size_bytes.is_some(), "should have a size");
+    }
+
+    #[test]
+    fn component_metadata_round_trips_through_store() {
+        let Some(bytes) = read_sample_component() else {
+            eprintln!("skipping: sample component not found");
+            return;
+        };
+
+        let conn = setup_test_db();
+        let manifest_id = insert_test_manifest(&conn);
+
+        // Extract and store metadata (simulating what try_extract_wit_package does).
+        let (comp_name, comp_desc, producers_json) = extract_component_metadata(&bytes);
+        WasmComponent::insert(
+            &conn,
+            manifest_id,
+            None,
+            comp_name.as_deref(),
+            comp_desc.as_deref(),
+            producers_json.as_deref(),
+        )
+        .unwrap();
+
+        // Query it back via the store.
+        let store = Store::from_conn(conn);
+        let components = store.get_components_for_manifest(manifest_id).unwrap();
+
+        assert_eq!(components.len(), 1, "should have one component");
+        let comp = &components[0];
+
+        // Should have children.
+        assert!(
+            !comp.children.is_empty(),
+            "queried component should have children"
+        );
+
+        // Should have producers.
+        assert!(
+            !comp.producers.is_empty(),
+            "queried component should have producers"
+        );
+
+        // Should have WIT imports.
+        assert!(
+            !comp.imports.is_empty(),
+            "queried component should have WIT imports"
+        );
+
+        // Children should be preserved.
+        let modules: Vec<_> = comp
+            .children
+            .iter()
+            .filter(|c| c.kind.as_deref() == Some("module"))
+            .collect();
+        assert!(
+            !modules.is_empty(),
+            "queried component should have module children"
+        );
+
+        // Child producers should be preserved.
+        let main = modules
+            .iter()
+            .find(|m| m.name.as_deref() == Some("sample_wasi_http_rust.wasm"));
+        assert!(main.is_some(), "main module should survive round-trip");
+        assert!(
+            !main.unwrap().producers.is_empty(),
+            "child producers should survive round-trip"
+        );
     }
 }

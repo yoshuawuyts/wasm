@@ -5,5 +5,3 @@ registry = "ghcr.io/yoshuawuyts"
 [[component]]
 name = "fetch"
 repository = "fetch"
-
-

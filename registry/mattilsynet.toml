@@ -12,5 +12,3 @@ repository = "map-me-gcp"
 [[interface]]
 name = "h8s-provider"
 repository = "h8s-provider"
-
-

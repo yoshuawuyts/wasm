@@ -39,7 +39,11 @@ enum Xtask {
     /// Run a clean demo: reset state, init, and install ba:sample-wasi-http-rust
     Demo,
     /// Build and serve the frontend with a local meta-registry
-    Serve,
+    Serve {
+        /// Re-index WIT packages on startup
+        #[arg(long)]
+        reindex: bool,
+    },
     /// Database schema and migration management
     Sql {
         #[command(subcommand)]
@@ -104,7 +108,7 @@ fn main() -> Result<()> {
             run_command("cargo", &cargo_args)?;
         }
         Xtask::Demo => run_demo()?,
-        Xtask::Serve => serve::run_serve()?,
+        Xtask::Serve { reindex } => serve::run_serve(reindex)?,
         Xtask::Sql { command } => match command {
             SqlCommand::Migrate { name } => sql::migrate(&name)?,
             SqlCommand::Check => sql::check()?,

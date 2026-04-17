@@ -56,11 +56,24 @@ pub(crate) fn render(
     let mut content = Division::builder();
     content.class("space-y-10 max-w-3xl");
 
+    // Build a doc lookup from the API's enriched world data (has cross-package docs).
+    let api_docs = build_api_doc_lookup(version_detail, &world.name);
+
     if !world.imports.is_empty() {
-        content.push(render_item_section("Imports", &world.imports, true));
+        content.push(render_item_section(
+            "Imports",
+            &world.imports,
+            true,
+            &api_docs,
+        ));
     }
     if !world.exports.is_empty() {
-        content.push(render_item_section("Exports", &world.exports, false));
+        content.push(render_item_section(
+            "Exports",
+            &world.exports,
+            false,
+            &api_docs,
+        ));
     }
 
     let body_html = format!("{header}{}", content.build());
@@ -75,25 +88,86 @@ pub(crate) fn render(
     package_shell::render_page_with_crumbs(&ctx, &title, &body_html, &[])
 }
 
-/// Render an imports or exports section, grouped by package namespace.
-fn render_item_section(heading: &str, items: &[WorldItemDoc], is_import: bool) -> Division {
-    let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
-            .text(heading.to_owned())
-    });
-
-    let link_color = if is_import {
-        "block font-mono text-wit-import hover:underline text-base"
-    } else {
-        "block font-mono text-accent hover:underline text-base"
+/// Build a lookup map of interface name → doc string from the API's enriched
+/// world data. This provides cross-package docs that the WIT parser can't.
+fn build_api_doc_lookup(
+    version_detail: Option<&PackageVersion>,
+    world_name: &str,
+) -> std::collections::HashMap<String, String> {
+    let mut map = std::collections::HashMap::new();
+    let Some(detail) = version_detail else {
+        return map;
     };
+    for world in &detail.worlds {
+        if world.name != world_name {
+            continue;
+        }
+        for iface in world.imports.iter().chain(world.exports.iter()) {
+            if let Some(docs) = &iface.docs {
+                let mut key = iface.package.clone();
+                if let Some(name) = &iface.interface {
+                    key.push('/');
+                    key.push_str(name);
+                }
+                map.insert(key, docs.clone());
+            }
+        }
+    }
+    map
+}
 
-    let mut ul = UnorderedList::builder();
+/// Render an imports or exports section, grouped by package namespace.
+fn render_item_section(
+    heading: &str,
+    items: &[WorldItemDoc],
+    _is_import: bool,
+    api_docs: &std::collections::HashMap<String, String>,
+) -> Division {
+    // Separate interface items (shared rendering) from non-interface items
+    let mut iface_entries: Vec<package_shell::ImportExportEntry> = Vec::new();
+    let mut other_items: Vec<&WorldItemDoc> = Vec::new();
+
     for item in items {
-        ul.push(render_world_item_row(item, link_color));
+        match item {
+            WorldItemDoc::Interface { name, url, docs } => {
+                // Use WIT-parsed docs first, fall back to API-enriched docs.
+                let name_no_ver = strip_version(name);
+                let effective_docs = docs.clone().or_else(|| api_docs.get(name_no_ver).cloned());
+                iface_entries.push(package_shell::ImportExportEntry {
+                    label: name.clone(),
+                    url: url.clone(),
+                    docs: effective_docs,
+                    item_kind: package_shell::WorldItemKind::Interface,
+                });
+            }
+            _ => other_items.push(item),
+        }
     }
 
+    // If everything is an interface, use the shared renderer directly.
+    if other_items.is_empty() {
+        return package_shell::render_import_export_section(heading, &iface_entries);
+    }
+
+    // Mixed content: render heading + interfaces via shared code, then
+    // append functions/types with custom rendering.
+    let mut div = Division::builder();
+    if iface_entries.is_empty() {
+        div.heading_2(|h2| {
+            h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+                .text(heading.to_owned())
+        });
+    } else {
+        div.push(package_shell::render_import_export_section(
+            heading,
+            &iface_entries,
+        ));
+    }
+
+    let mut ul = UnorderedList::builder();
+    for item in other_items {
+        ul.push(render_world_item_row(item));
+    }
     div.push(ul.build());
     div.build()
 }
@@ -106,7 +180,7 @@ fn strip_version(name: &str) -> &str {
 }
 
 /// Render a single world item row.
-fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
+fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
     let mut li = ListItem::builder();
     li.class("py-1");
 
@@ -114,24 +188,25 @@ fn render_world_item_row(item: &WorldItemDoc, link_color: &str) -> ListItem {
         WorldItemDoc::Interface {
             name,
             url: Some(url),
+            ..
         } => {
-            let display = strip_version(name);
             li.anchor(|a| {
                 a.href(url.clone())
-                    .class(link_color.to_owned())
-                    .text(display.to_owned())
+                    .class("block font-mono text-wit-iface hover:underline text-base")
+                    .text(name.to_owned())
             });
         }
-        WorldItemDoc::Interface { name, url: None } => {
-            let display = strip_version(name);
+        WorldItemDoc::Interface {
+            name, url: None, ..
+        } => {
             li.span(|s| {
                 s.class("block font-mono text-fg text-base")
-                    .text(display.to_owned())
+                    .text(name.to_owned())
             });
         }
         WorldItemDoc::Function(func) => {
             let sig = format_function_signature(func);
-            li.code(|c| c.class("block font-mono text-base text-accent").text(sig));
+            li.code(|c| c.class("block font-mono text-base text-wit-func").text(sig));
             if let Some(docs) = &func.docs {
                 li.paragraph(|p| {
                     p.class("text-base text-fg-secondary mt-1")
