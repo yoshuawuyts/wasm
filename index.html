@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard Design System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://rsms.me/" />
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: [
+                "Inter",
+                "ui-sans-serif",
+                "system-ui",
+                "-apple-system",
+                "sans-serif",
+              ],
+            },
+            colors: {
+              // Surfaces
+              canvas: "#EFEAE1",      // warm cream — top workspace
+              surface: "#FBF8F2",     // lighter cream — bottom chart-data section
+              surfaceMuted: "#E5DFD2",// hovered/secondary surface
+              // Ink (text)
+              ink: {
+                900: "#1A1D24", // primary text, active pill bg
+                700: "#3A3F4A",
+                500: "#6B7280", // muted labels
+                400: "#9AA0AB", // axis / placeholder
+                300: "#C9CCD2", // hairline emphasis
+              },
+              // Hairline borders
+              line: "#E5E1D8",
+              lineSoft: "#EDEAE2",
+              // Semantic
+              positive: "#1F8A4C", // +% green
+              // Pastel categorical palette
+              cat: {
+                blue: "#D6E4FF",
+                blueInk: "#3D5A99",
+                pink: "#FBD9DF",
+                pinkInk: "#9B4F5E",
+                green: "#D2ECD8",
+                greenInk: "#3F7A52",
+                peach: "#F8E2C2",
+                peachInk: "#8E6529",
+                lilac: "#E4DAF1",
+                lilacInk: "#6B528F",
+                cream: "#F4ECC2",
+                creamInk: "#7A6A2A",
+              },
+            },
+            boxShadow: {
+              tooltip: "0 8px 24px -8px rgba(20,22,28,0.35)",
+              card: "0 1px 0 0 rgba(20,22,28,0.04)",
+            },
+            borderRadius: {
+              pill: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      html,
+      body {
+        font-feature-settings:
+          "ss01" 1,
+          "cv11" 1;
+        -webkit-font-smoothing: antialiased;
+      }
+      .hairline {
+        border-color: #e5e1d8;
+      }
+      /* Bar segment helper */
+      .bar {
+        height: 28px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        padding: 0 12px;
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      /* Subtle scrollbars */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #e5e1d8;
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body class="bg-canvas text-ink-900 font-sans antialiased">
+    <!-- Top hairline (chrome boundary) -->
+    <div class="border-t hairline"></div>
+
+    <main class="mx-auto max-w-[1280px] px-8">
+      <!-- ============================================== -->
+      <!-- HEADER ROW: tabs + title + actions             -->
+      <!-- ============================================== -->
+      <section class="grid grid-cols-[200px_1fr_160px] gap-8 pt-8">
+        <!-- Segmented pill tabs (Charts / Maps) -->
+        <div>
+          <div class="inline-flex p-1 rounded-pill bg-surfaceMuted">
+            <button class="px-4 h-8 rounded-pill bg-ink-900 text-canvas text-sm font-medium">Charts</button>
+            <button class="px-4 h-8 rounded-pill text-sm text-ink-500">Maps</button>
+          </div>
+        </div>
+
+        <!-- Page title -->
+        <h1 class="text-[28px] leading-[1.15] font-semibold tracking-tight">
+          Monthly Recurring Revenue
+        </h1>
+
+        <!-- Top right controls -->
+        <div class="flex items-center justify-end gap-2">
+          <button class="h-9 w-9 grid place-items-center rounded-md border hairline bg-surface hover:bg-surfaceMuted" aria-label="Filter">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+          </button>
+          <button class="h-9 w-9 grid place-items-center rounded-md border hairline bg-surface hover:bg-surfaceMuted" aria-label="Save">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h11l3 3v15H5z"/><path d="M8 3v6h8V3"/></svg>
+          </button>
+          <button class="h-9 px-3 inline-flex items-center gap-2 rounded-md border hairline bg-surface text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 9h18M8 3v4M16 3v4"/></svg>
+            2024 – 2025
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Divider under header -->
+      <div class="border-b hairline mt-6"></div>
+
+      <!-- ============================================== -->
+      <!-- WORKSPACE: sidebar | chart | metrics           -->
+      <!-- ============================================== -->
+      <section class="grid grid-cols-[200px_1fr_160px] gap-8 pt-6">
+        <!-- ===== SIDEBAR ===== -->
+        <aside>
+          <!-- Underline sub-tabs -->
+          <div class="flex items-center gap-6 border-b hairline">
+            <button class="relative pb-3 text-[15px] font-medium">
+              Default
+              <span class="absolute left-0 right-0 -bottom-px h-px bg-ink-900"></span>
+            </button>
+            <button class="pb-3 text-[15px] text-ink-500">Saved</button>
+          </div>
+
+          <!-- Nav group 1 -->
+          <ul class="mt-4 space-y-px text-[14px]">
+            <li>
+              <a href="#" class="flex items-center justify-between px-3 h-9 rounded-md bg-ink-900 text-canvas">
+                <span>MRR</span>
+              </a>
+            </li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">MRR Movements</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Net MRR Change</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Annual Run Rate</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">CMRR Forecast</a></li>
+          </ul>
+
+          <div class="my-4 border-t hairline"></div>
+
+          <!-- Nav group 2 -->
+          <ul class="space-y-px text-[14px]">
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Leads</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Free Trials</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Trial Conversion</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Funnel Analysis</a></li>
+            <li><a href="#" class="flex items-center px-3 h-9 rounded-md hover:bg-surfaceMuted text-ink-700">Sales Cycle</a></li>
+          </ul>
+        </aside>
+
+        <!-- ===== CHART AREA ===== -->
+        <div class="min-w-0">
+          <!-- Chart toolbar -->
+          <div class="flex items-center justify-between">
+            <!-- Left: chart-type icon group + secondary icons -->
+            <div class="flex items-center gap-4">
+              <div class="inline-flex p-1 rounded-md bg-ink-900">
+                <button class="h-7 w-7 grid place-items-center rounded text-canvas" aria-label="Line">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17 9 11l4 4 8-8"/></svg>
+                </button>
+                <button class="h-7 w-7 grid place-items-center rounded text-ink-400" aria-label="Bar">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>
+                </button>
+              </div>
+              <div class="flex items-center gap-3 text-ink-400">
+                <button class="h-7 w-7 grid place-items-center hover:text-ink-900" aria-label="Axis"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4v16h16"/><path d="M8 16V8M12 16v-4M16 16v-2"/></svg></button>
+                <button class="h-7 w-7 grid place-items-center hover:text-ink-900" aria-label="Annotate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20h16M6 16l8-8 4 4-8 8H6z"/></svg></button>
+                <button class="h-7 w-7 grid place-items-center hover:text-ink-900" aria-label="Forecast"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg></button>
+                <button class="h-7 w-7 grid place-items-center hover:text-ink-900" aria-label="Refresh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+                <button class="h-7 w-7 grid place-items-center hover:text-ink-900" aria-label="Percent"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 19 14-14"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/></svg></button>
+              </div>
+            </div>
+            <!-- Right: range segmented (D / W / M / All) -->
+            <div class="inline-flex items-center gap-1 text-[13px] text-ink-500">
+              <button class="h-7 w-7 grid place-items-center rounded">D</button>
+              <button class="h-7 w-7 grid place-items-center rounded">W</button>
+              <button class="h-7 w-7 grid place-items-center rounded text-ink-900">M</button>
+              <button class="h-7 px-3 inline-flex items-center gap-2 rounded-pill bg-surfaceMuted text-ink-900">
+                <span class="h-3 w-3 rounded-full bg-ink-300"></span>
+                All
+              </button>
+            </div>
+          </div>
+
+          <!-- Chart body -->
+          <div class="relative mt-6 h-[280px]">
+            <!-- Y axis labels -->
+            <div class="absolute left-0 top-0 bottom-6 w-12 flex flex-col justify-between text-[11px] text-ink-400 text-right pr-2">
+              <span>$1,750</span><span>$1,500</span><span>$1,250</span>
+              <span>$1,000</span><span>$500</span><span>$100</span><span>$0</span>
+            </div>
+
+            <!-- Plot area -->
+            <div class="absolute left-12 right-0 top-0 bottom-6">
+              <!-- Gantt-style bars (positioned roughly across the timeline) -->
+              <div class="absolute left-[2%] top-[6%] w-[28%]"><div class="bar bg-cat-blue text-cat-blueInk">New subscriptions</div></div>
+              <div class="absolute left-[16%] top-[18%] w-[26%]"><div class="bar bg-cat-pink text-cat-pinkInk">Churn</div></div>
+              <div class="absolute left-[30%] top-[30%] w-[28%]"><div class="bar bg-cat-cream text-cat-creamInk">Expansions</div></div>
+              <div class="absolute left-[42%] top-[42%] w-[34%]"><div class="bar bg-cat-green text-cat-greenInk">Reactivations</div></div>
+              <div class="absolute left-[50%] top-[58%] w-[36%]"><div class="bar bg-cat-pink text-cat-pinkInk">Trial-to-paid</div></div>
+              <div class="absolute left-[82%] top-[58%] w-[14%]"><div class="bar bg-cat-peach text-cat-peachInk">Expansions</div></div>
+              <div class="absolute left-[64%] top-[70%] w-[18%]"><div class="bar bg-cat-lilac text-cat-lilacInk">Seasonal</div></div>
+
+              <!-- Vertical hover line -->
+              <div class="absolute top-0 bottom-0 left-[36%] w-px bg-ink-300"></div>
+
+              <!-- Tooltip -->
+              <div class="absolute left-[27%] top-[28%] shadow-tooltip rounded-md bg-ink-900/85 backdrop-blur text-canvas px-3 py-2 text-[12px] leading-tight">
+                <div class="text-ink-300">Jan 8, 2025</div>
+                <div class="mt-1 flex items-center justify-between gap-6"><span>High:</span><span class="font-medium">$1,150</span></div>
+                <div class="flex items-center justify-between gap-6"><span>Low:</span><span class="font-medium">$950</span></div>
+              </div>
+            </div>
+
+            <!-- X axis labels -->
+            <div class="absolute left-12 right-0 bottom-0 flex justify-between text-[11px] text-ink-400">
+              <span>Jul 21, 24</span><span>Sep 15, 24</span><span>Nov 10, 24</span>
+              <span>Jan 5, 25</span><span>Mar 2, 25</span><span>Apr 27, 25</span>
+              <span>Jun 22, 25</span><span>Jul 22, 25</span><span>Aug 8, 25</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== METRICS COLUMN ===== -->
+        <aside class="space-y-4">
+          <div>
+            <div class="text-[12px] text-ink-500">Current MRR</div>
+            <div class="text-[20px] font-semibold tracking-tight leading-tight mt-1">$1,254</div>
+          </div>
+          <div class="border-t hairline"></div>
+
+          <div>
+            <div class="text-[12px] text-ink-500">30 days ago</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-[20px] font-semibold tracking-tight leading-tight">$1,216</span>
+              <span class="text-[11px] font-medium text-positive">+4.2%</span>
+            </div>
+          </div>
+          <div class="border-t hairline"></div>
+
+          <div>
+            <div class="text-[12px] text-ink-500">60 days ago</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-[20px] font-semibold tracking-tight leading-tight">$1,109</span>
+              <span class="text-[11px] font-medium text-positive">+13.6%</span>
+            </div>
+          </div>
+          <div class="border-t hairline"></div>
+
+          <div>
+            <div class="text-[12px] text-ink-500">180 days ago</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-[20px] font-semibold tracking-tight leading-tight">$983</span>
+              <span class="text-[11px] font-medium text-positive">+27.5%</span>
+            </div>
+          </div>
+          <div class="border-t hairline"></div>
+
+          <div>
+            <div class="text-[12px] text-ink-500">360 days ago</div>
+            <div class="mt-1 flex items-baseline gap-1.5">
+              <span class="text-[20px] font-semibold tracking-tight leading-tight">$850</span>
+              <span class="text-[11px] font-medium text-positive">+47.1%</span>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- CHART DATA TABLE                                -->
+      <!-- ============================================== -->
+      <section class="mt-12 pt-8 pb-16 relative">
+        <!-- Full-bleed lighter background + top divider -->
+        <div class="absolute left-1/2 -translate-x-1/2 top-0 w-screen h-full bg-surface border-t hairline -z-10"></div>
+        <!-- Section header -->
+        <div class="grid grid-cols-[200px_1fr_160px] gap-8 items-center">
+          <h2 class="text-[26px] font-semibold tracking-tight">Chart data</h2>
+
+          <!-- Legend -->
+          <div class="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[13px] text-ink-700">
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-blueInk"></span>New subscriptions</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-pinkInk"></span>Churn</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-peachInk"></span>Expansions</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-greenInk"></span>Reactivations</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-pinkInk"></span>Trial-to-paid conversions</span>
+            <span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-cat-lilacInk"></span>Seasonal</span>
+          </div>
+
+          <!-- Table actions -->
+          <div class="flex items-center justify-end gap-2">
+            <button class="h-9 w-9 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-500" aria-label="Export">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v12"/><path d="m6 10 6-6 6 6"/><path d="M4 20h16"/></svg>
+            </button>
+            <button class="h-9 px-3 inline-flex items-center gap-2 rounded-md border hairline bg-surface text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
+              All MRR Movements
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="mt-8 border-t hairline">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="text-ink-400">
+                <th class="text-left font-normal py-4 pr-6 w-[220px]"></th>
+                <th class="text-right font-normal py-4 px-4">Jun 22, 25</th>
+                <th class="text-right font-normal py-4 px-4">Jun 22, 25</th>
+                <th class="text-right font-normal py-4 px-4">Jun 22, 25</th>
+                <th class="text-right font-normal py-4 px-4">Jul 6, 25</th>
+                <th class="text-right font-normal py-4 px-4">Jul 13, 25</th>
+                <th class="text-right font-normal py-4 px-4">Jul 16, 25</th>
+              </tr>
+            </thead>
+            <tbody class="text-ink-900">
+              <tr class="border-t hairline">
+                <td class="py-5 pr-6 text-ink-700">New Business MRR</td>
+                <td class="text-right px-4 tabular-nums">$877.87</td>
+                <td class="text-right px-4 tabular-nums">$1,024.63</td>
+                <td class="text-right px-4 tabular-nums">$932.41</td>
+                <td class="text-right px-4 tabular-nums text-ink-400">$0.00</td>
+                <td class="text-right px-4 tabular-nums">$564.28</td>
+                <td class="text-right px-4 tabular-nums">$1,112.53</td>
+              </tr>
+              <tr class="border-t lineSoft border-lineSoft">
+                <td class="py-5 pr-6 text-ink-700">Expansion MRR</td>
+                <td class="text-right px-4 tabular-nums">$214.00</td>
+                <td class="text-right px-4 tabular-nums">$318.42</td>
+                <td class="text-right px-4 tabular-nums">$402.10</td>
+                <td class="text-right px-4 tabular-nums">$190.50</td>
+                <td class="text-right px-4 tabular-nums">$276.00</td>
+                <td class="text-right px-4 tabular-nums">$345.77</td>
+              </tr>
+              <tr class="border-t border-lineSoft">
+                <td class="py-5 pr-6 text-ink-700">Reactivation MRR</td>
+                <td class="text-right px-4 tabular-nums">$58.20</td>
+                <td class="text-right px-4 tabular-nums">$72.10</td>
+                <td class="text-right px-4 tabular-nums">$64.00</td>
+                <td class="text-right px-4 tabular-nums">$110.40</td>
+                <td class="text-right px-4 tabular-nums">$84.55</td>
+                <td class="text-right px-4 tabular-nums">$96.18</td>
+              </tr>
+              <tr class="border-t border-lineSoft">
+                <td class="py-5 pr-6 text-ink-700">Churned MRR</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$142.30</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$98.40</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$210.00</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$76.20</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$188.92</td>
+                <td class="text-right px-4 tabular-nums text-cat-pinkInk">−$132.10</td>
+              </tr>
+              <tr class="border-t hairline">
+                <td class="py-5 pr-6 font-medium">Net MRR Movement</td>
+                <td class="text-right px-4 tabular-nums font-medium">$1,007.77</td>
+                <td class="text-right px-4 tabular-nums font-medium">$1,316.75</td>
+                <td class="text-right px-4 tabular-nums font-medium">$1,188.51</td>
+                <td class="text-right px-4 tabular-nums font-medium">$224.70</td>
+                <td class="text-right px-4 tabular-nums font-medium">$735.91</td>
+                <td class="text-right px-4 tabular-nums font-medium">$1,422.38</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
