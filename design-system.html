@@ -1639,10 +1639,31 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
           <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Form Fields</h2>
           <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
             Inputs sit on a surface with a 1px line border. Focus darkens the border
-            to ink — no thickening, no glow.
+            to ink — no thickening, no glow. Two sizes: <strong>md</strong>
+            (default) for primary forms, <strong>sm</strong> for dense contexts
+            like sidebars, metadata strips, and toolbars.
           </p>
         </div>
         <div class="space-y-8 max-w-md">
+          <!-- Sizes -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-2">Sizes</div>
+            <div class="space-y-3">
+              <div>
+                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">md · default</span>
+                <div class="mt-1 text-[11px] text-ink-500"><code class="mono text-[10.5px]">h-9 · px-3 · text-[14px]</code> — primary forms, settings pages, modal dialogs.</div>
+                <input type="text" placeholder="Lorem ipsum"
+                  class="mt-1 block w-full h-9 px-3 rounded-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
+              </div>
+              <div>
+                <span class="text-[11px] text-ink-500 mono uppercase tracking-wider">sm · compact</span>
+                <div class="mt-1 text-[11px] text-ink-500"><code class="mono text-[10.5px]">h-7 · px-2.5 · text-[12px]</code> — sidebars, metadata strips, toolbars, inline filters. Mono content uses <code class="mono text-[10.5px]">text-[12.5px]</code> to match optical weight.</div>
+                <input type="text" placeholder="Lorem ipsum"
+                  class="mt-1 block w-full h-7 px-2.5 rounded-md border border-line bg-surface text-[12px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
+              </div>
+            </div>
+            <p class="mt-3 text-[11px] text-ink-500">Pick by context, not preference. <strong>Don't mix sizes within one form.</strong> Addons (prefix, suffix, button) match the field's size — never combine an md input with an sm button.</p>
+          </div>
           <!-- States -->
           <div>
             <div class="text-[12px] text-ink-500 mb-2">States</div>
@@ -1778,7 +1799,7 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
             <span class="text-[12px] text-ink-500">Input group · button with dropdown</span>
             <div class="mt-1 flex relative">
               <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted">
+                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900">
                 Tellus
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
@@ -1786,23 +1807,23 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                 </svg>
               </button>
               <input type="text" placeholder="Lorem ipsum…"
-                class="block w-full h-9 px-3 rounded-r-md border-[1.5px] border-ink-900 bg-surface text-[14px] placeholder:text-ink-400" />
+                class="block w-full h-9 px-3 rounded-r-md border border-line bg-surface text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
             </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Combine an outline button with the field — same border
-              weight on both edges.</span>
+            <span class="mt-1 block text-[11px] text-ink-500">Quiet dropdown addon paired with the field — same border
+              and addon vocabulary as the prefix/suffix variants.</span>
           </label>
           <!-- Input group: split button (trailing dropdown) -->
           <label class="block">
             <span class="text-[12px] text-ink-500">Input group · split dropdown</span>
             <div class="mt-1 flex">
               <input type="text" value="https://lorem.ipsum/dolor"
-                class="block w-full h-9 px-3 rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-[14px]" />
+                class="block w-full h-9 px-3 rounded-l-md border border-r-0 border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900" />
               <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 border-y-[1.5px] border-ink-900 bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300">
+                class="inline-flex items-center gap-2 px-3 h-9 border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900">
                 Copy
               </button>
               <button type="button" aria-label="More"
-                class="inline-flex items-center px-2 h-9 rounded-r-md border-[1.5px] border-l-0 border-ink-900 bg-surfaceMuted text-ink-900 hover:bg-ink-300">
+                class="inline-flex items-center px-2 h-9 rounded-r-md border border-line bg-surfaceMuted text-ink-700 hover:bg-ink-300 hover:text-ink-900">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                   stroke-linecap="round" stroke-linejoin="round">
                   <path d="m6 9 6 6 6-6" />
@@ -1811,27 +1832,112 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
             </div>
           </label>
           <!-- Input group: command (readonly + copy) -->
-          <label class="block">
-            <span class="text-[12px] text-ink-500">Input group · command</span>
-            <div class="mt-1 flex">
+          <div>
+            <span class="text-[12px] text-ink-500">Command · default</span>
+            <div class="mt-1 flex group">
               <span
-                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
-              <input type="text" value="wasm install wasi:http-handler" readonly
-                class="block w-full h-9 px-3 border border-line bg-surface mono text-[13px] text-ink-900 focus:outline-none focus:border-ink-900" />
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none"
+                aria-hidden="true">$</span>
+              <code
+                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
               <button type="button"
-                class="inline-flex items-center gap-1 px-3 h-9 rounded-r-md border border-l-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900"
+                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900"
                 aria-label="Copy command">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
                   aria-hidden="true">
                   <rect x="4" y="4" width="9" height="9" rx="1.2" />
                   <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
                 </svg>
-                Copy
               </button>
             </div>
-            <span class="mt-1 block text-[11px] text-ink-500">Readonly mono field with shell prompt prefix and copy
-              affordance — for install snippets and shareable command examples.</span>
-          </label>
+            <span class="mt-1 block text-[11px] text-ink-500">Use for install snippets and shareable shell commands.
+              Renders as <code class="mono text-[10.5px]">&lt;code&gt;</code> — keyboard select-all + copy works
+              natively. Don't use for inline code in prose; use a <code class="mono text-[10.5px]">&lt;code&gt;</code>
+              chip instead.</span>
+          </div>
+          <!-- Command · copied (success feedback) -->
+          <div>
+            <span class="text-[12px] text-ink-500">Command · copied (1.6s after click)</span>
+            <div class="mt-1 flex">
+              <span
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
+              <code
+                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
+              <button type="button"
+                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive"
+                aria-label="Copied">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="m3 8 3.5 3.5L13 5" />
+                </svg>
+              </button>
+            </div>
+            <span class="mt-1 block text-[11px] text-ink-500">Icon swaps to a check in
+              <code class="mono text-[10.5px]">text-positive</code>; reverts after 1.6s.</span>
+          </div>
+          <!-- Command · long content (overflow) -->
+          <div>
+            <span class="text-[12px] text-ink-500">Command · long (horizontal overflow)</span>
+            <div class="mt-1 flex">
+              <span
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
+              <code
+                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain</code>
+              <button type="button"
+                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted"
+                aria-label="Copy command">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+                  aria-hidden="true">
+                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
+                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
+                </svg>
+              </button>
+            </div>
+            <span class="mt-1 block text-[11px] text-ink-500">Field scrolls horizontally; the prefix and copy button
+              stay anchored.</span>
+          </div>
+          <!-- Command · failed (clipboard blocked) -->
+          <div>
+            <span class="text-[12px] text-ink-500">Command · copy failed</span>
+            <div class="mt-1 flex">
+              <span
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-500 mono select-none">$</span>
+              <code
+                class="block w-full h-9 px-3 inline-flex items-center border border-line bg-surface mono text-[13px] text-ink-900 overflow-x-auto whitespace-nowrap">wasm install wasi:http-handler</code>
+              <button type="button"
+                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative"
+                aria-label="Copy failed">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"
+                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 4l8 8M12 4l-8 8" />
+                </svg>
+              </button>
+            </div>
+            <span class="mt-1 block text-[11px] text-ink-500">Clipboard API blocked (insecure context, permission
+              denied). Border + icon shift to <code class="mono text-[10.5px]">negative</code>; helper toast (not
+              shown) explains "select and copy manually."</span>
+          </div>
+          <!-- Command · disabled -->
+          <div>
+            <span class="text-[12px] text-ink-500">Command · disabled</span>
+            <div class="mt-1 flex opacity-70">
+              <span
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-dashed border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
+              <code
+                class="block w-full h-9 px-3 inline-flex items-center border border-dashed border-line bg-surfaceMuted mono text-[13px] text-ink-400 overflow-x-auto whitespace-nowrap cursor-not-allowed">wasm install wasi:http-handler</code>
+              <button type="button" disabled
+                class="inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed"
+                aria-label="Copy command">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+                  aria-hidden="true">
+                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
+                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
+                </svg>
+              </button>
+            </div>
+            <span class="mt-1 block text-[11px] text-ink-500">Use during pending/async states — e.g. while a registry
+              version is being resolved. Shares the dashed-border / opacity-70 vocabulary with disabled inputs.</span>
+          </div>
           <!-- Number stepper -->
           <label class="block">
             <span class="text-[12px] text-ink-500">Number stepper</span>
@@ -1860,7 +1966,7 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
             <span class="text-[12px] text-ink-500">File input</span>
             <div class="mt-1 flex">
               <button type="button"
-                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border-[1.5px] border-r-0 border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted whitespace-nowrap">
+                class="inline-flex items-center gap-2 px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900 whitespace-nowrap">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"
                   stroke-linecap="round" stroke-linejoin="round">
                   <path
@@ -1869,7 +1975,7 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                 Choose file
               </button>
               <span
-                class="block w-full h-9 px-3 inline-flex items-center rounded-r-md border-[1.5px] border-ink-900 bg-surfaceMuted text-[13px] text-ink-500">No
+                class="block w-full h-9 px-3 inline-flex items-center rounded-r-md border border-line bg-surface text-[13px] text-ink-500">No
                 file selected</span>
             </div>
           </label>
@@ -2881,7 +2987,7 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
             <div class="py-4 border-b hairline space-y-2.5">
               <div>
                 <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Version</div>
-                <button class="w-full h-7 px-2 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
+                <button class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
                   <span class="mono">v2.4.0 (latest)</span>
                   <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor"
                     stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
@@ -2889,7 +2995,7 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
               </div>
               <div>
                 <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Shell</div>
-                <button class="w-full h-7 px-2 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
+                <button class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
                   <span class="mono">bash · zsh · fish · pwsh</span>
                   <svg class="h-3 w-3 text-ink-500 flex-shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor"
                     stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
@@ -3259,25 +3365,27 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                 <span class="mono text-[13px]">wasi:http/incoming-handler</span>
                 interface. Drop-in compatible with any wasi:http host.
               </p>
-              <!-- Install command -->
-              <div class="mt-6">
-                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Install</div>
-                <div class="flex max-w-lg">
-                  <span
-                    class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
-                  <input type="text" value="wasm install wasi:http-handler" readonly
-                    class="block w-full h-9 px-3 border border-line bg-surface mono text-[13px] text-ink-900 focus:outline-none focus:border-ink-900" />
-                  <button type="button"
-                    class="inline-flex items-center gap-1 px-3 h-9 rounded-r-md border border-l-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900"
-                    aria-label="Copy install command">
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
-                      aria-hidden="true">
-                      <rect x="4" y="4" width="9" height="9" rx="1.2" />
-                      <path
-                        d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
-                    </svg>
-                    Copy
-                  </button>
+              <!-- Metadata strip with install command -->
+              <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
+                <div class="inline-flex items-center gap-2">
+                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Install</span>
+                  <div class="flex">
+                    <span
+                      class="inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[12.5px] text-ink-500 mono select-none"
+                      aria-hidden="true">$</span>
+                    <code
+                      class="inline-flex items-center px-2.5 h-7 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap">wasm install wasi:http-handler</code>
+                    <button type="button"
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900"
+                      aria-label="Copy install command">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                        stroke-width="1.4" aria-hidden="true">
+                        <rect x="4" y="4" width="9" height="9" rx="1.2" />
+                        <path
+                          d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

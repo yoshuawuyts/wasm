@@ -349,6 +349,27 @@
     /* When a search filter forces all groups open, hide the chev rotation cue. */
     .sidebar.search-active details > summary .chev { opacity: 0.35; }
 
+    /* Right-rail "On this page" table of contents (port from DS C02). */
+    .toc { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; padding-right: 4px; }
+    .toc-link {
+      display: block;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: var(--c-ink-500);
+      border-left: 1.5px solid transparent;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+    .toc-link:hover {
+      color: var(--c-ink-900);
+      border-left-color: var(--c-line);
+    }
+    .toc-link.active {
+      color: var(--c-ink-900);
+      border-left-color: var(--c-ink-900);
+    }
+    .toc-link.indent { padding-left: 22px; }
+
     .theme-icon-sun { display: none; }
     .theme-icon-moon { display: inline-block; }
     @media (prefers-color-scheme: dark) {
@@ -526,7 +547,7 @@
     <!-- ============================== -->
     <!-- BODY: SIDEBAR + CONTENT        -->
     <!-- ============================== -->
-    <div class="grid md:grid-cols-[220px_1fr] gap-6 md:gap-12 pt-10">
+    <div class="grid md:grid-cols-[220px_1fr] xl:grid-cols-[220px_minmax(0,1fr)_200px] gap-6 md:gap-12 pt-10">
 
       <!-- ============================== -->
       <!-- SIDEBAR                        -->
@@ -1394,6 +1415,41 @@
         </div><!-- /region-surface -->
 
       </div><!-- /content -->
+
+      <!-- ============================== -->
+      <!-- TOC (right rail)               -->
+      <!-- ============================== -->
+      <aside class="toc hidden xl:block" id="toc" aria-label="On this page">
+        <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5">On this page</div>
+        <nav class="space-y-px">
+          <a href="#overview"     class="toc-link">Overview</a>
+          <a href="#auth"         class="toc-link">Authentication</a>
+          <a href="#errors"       class="toc-link">Errors</a>
+          <a href="#pagination"   class="toc-link">Pagination</a>
+          <a href="#op-health"    class="toc-link">Endpoints</a>
+          <a href="#op-health"    class="toc-link indent">Health</a>
+          <a href="#op-detail"    class="toc-link indent">Package detail</a>
+          <a href="#op-versions"  class="toc-link indent">List versions</a>
+          <a href="#op-version"   class="toc-link indent">Get version</a>
+          <a href="#op-publish"   class="toc-link indent">Publish</a>
+          <a href="#op-yank"      class="toc-link indent">Yank</a>
+          <a href="#op-by-import" class="toc-link indent">Search by import</a>
+          <a href="#op-by-export" class="toc-link indent">Search by export</a>
+          <a href="#schema-package" class="toc-link">Schemas</a>
+          <a href="#schema-package" class="toc-link indent">Package</a>
+          <a href="#schema-detail"  class="toc-link indent">PackageDetail</a>
+          <a href="#schema-version" class="toc-link indent">PackageVersion</a>
+          <a href="#schema-error"   class="toc-link indent">Error</a>
+        </nav>
+        <div class="px-2.5 mt-4">
+          <a href="#top"
+            class="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] mono text-ink-500 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
+            <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round"><path d="m3 7.5 3-3 3 3" /></svg>
+            Back to top
+          </a>
+        </div>
+      </aside>
     </div><!-- /grid -->
   </main>
 
@@ -1529,6 +1585,48 @@
         e.preventDefault();
         input.focus(); input.select();
       });
+    })();
+
+    // TOC scrollspy — highlight the toc-link whose target is currently in view.
+    (function () {
+      var toc = document.getElementById("toc");
+      if (!toc) return;
+      var links = Array.from(toc.querySelectorAll(".toc-link"));
+      // Group links by target id; the first link wins active state.
+      var byId = {};
+      links.forEach(function (a) {
+        var id = a.getAttribute("href").slice(1);
+        if (!byId[id]) byId[id] = [];
+        byId[id].push(a);
+      });
+      var ids = Object.keys(byId);
+      var targets = ids.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+      if (!targets.length) return;
+
+      var activeId = null;
+      function setActive(id) {
+        if (id === activeId) return;
+        activeId = id;
+        links.forEach(function (a) { a.classList.remove("active"); });
+        (byId[id] || []).forEach(function (a) { a.classList.add("active"); });
+      }
+
+      // Sticky header is 64px; bias the rootMargin so a section becomes active
+      // as soon as its heading clears the topbar.
+      var io = new IntersectionObserver(function (entries) {
+        // Pick the topmost intersecting target.
+        var visible = entries
+          .filter(function (e) { return e.isIntersecting; })
+          .map(function (e) { return e.target; });
+        if (!visible.length) return;
+        // Among currently intersecting, prefer the one with smallest top.
+        visible.sort(function (a, b) {
+          return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
+        });
+        setActive(visible[0].id);
+      }, { rootMargin: "-72px 0px -65% 0px", threshold: 0 });
+
+      targets.forEach(function (t) { io.observe(t); });
     })();
   </script>
 </body>

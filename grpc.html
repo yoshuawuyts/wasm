@@ -212,7 +212,9 @@
     /* Status code dot (gRPC status colors mapped onto categoricals) */
     .status-dot { display: inline-block; height: 8px; width: 8px; border-radius: 999px; }
 
-    /* Surface region — mirrors http.html exactly */
+    /* Surface region — bleeds to viewport edges in single/two-column layouts.
+       At lg (TOC visible), it stays within its content cell so the surface
+       doesn't slide under the right rail. */
     .region-surface { position: relative; }
     .region-surface::before {
       content: '';
@@ -226,8 +228,22 @@
     @media (max-width: 767px) {
       .region-surface::before { left: calc(50% - 50vw); }
     }
+    @media (min-width: 1024px) {
+      .region-surface::before { right: -24px; }
+    }
 
     .group-eyebrow { font-size: 11px; letter-spacing: 0.08em; }
+
+    /* Reference list — outer rhythm for the surface region.
+       Default sibling gap is 48px; consecutive RPC articles also get a
+       hairline rule centered in that gap so each item has an
+       unambiguous start and end. */
+    .rpc-list > * + * { margin-top: 48px; }
+    .rpc-list > article + article {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--c-line-soft);
+    }
 
     /* RPC header — same shape as op-header */
     .rpc-header {
@@ -752,7 +768,7 @@
         <!-- REFERENCE REGION                                             -->
         <!-- ============================================================ -->
         <div class="region-surface mt-2 pt-12 md:pt-16 pb-12">
-          <div class="space-y-12">
+          <div class="rpc-list">
 
         <!-- =========================== HEALTH =========================== -->
         <section>
@@ -1146,7 +1162,7 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
           </p>
         </article>
 
-          </div><!-- /space-y-12 -->
+          </div><!-- /rpc-list -->
 
         <!-- ============================================================ -->
         <!-- MESSAGES                                                     -->
@@ -1382,7 +1398,7 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
       });
     })();
 
-    // Sidebar search — same pattern as http.html.
+    // Sidebar search — filter tree-link rows; force-open <details> while filtering.
     (function () {
       var wrap = document.getElementById("search");
       var input = document.getElementById("search-input");
@@ -1391,60 +1407,89 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
       if (!input || !sidebar) return;
 
       var groups = sidebar.querySelectorAll(".nav-group");
-      var items = sidebar.querySelectorAll(".nav-group li");
-      items.forEach(function (li) {
-        var label = li.querySelector("a > span:last-child");
-        if (label) li.__label = label.textContent;
+      var rows = sidebar.querySelectorAll(".tree-link");
+      var detailsEls = sidebar.querySelectorAll("details");
+
+      groups.forEach(function (g) {
+        var name = g.getAttribute("data-group") || "";
+        g.querySelectorAll(".tree-link").forEach(function (row) {
+          row.dataset.group = name;
+          var spans = row.querySelectorAll("span");
+          var label = null;
+          for (var i = spans.length - 1; i >= 0; i--) {
+            if (!spans[i].classList.contains("sigil") && !spans[i].classList.contains("chev")) {
+              label = spans[i]; break;
+            }
+          }
+          if (label) { row.__label = label.textContent; row.__labelEl = label; }
+        });
       });
+
+      detailsEls.forEach(function (d) { d.__openByUser = d.open; });
 
       function escapeRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); }
       function escapeHtml(s) { return s.replace(/[&<>]/g, function (c) { return ({"&":"&amp;","<":"&lt;",">":"&gt;"})[c]; }); }
 
       function apply() {
         var q = input.value.trim().toLowerCase();
-        wrap.classList.toggle("has-value", q.length > 0);
+        var filtering = q.length > 0;
+        wrap.classList.toggle("has-value", filtering);
+        sidebar.classList.toggle("search-active", filtering);
         var anyVisible = false;
         var re = q ? new RegExp(escapeRe(q), "ig") : null;
 
-        items.forEach(function (li) {
-          var label = li.__label || "";
-          var hay = (label + " " + (li.dataset.group || "")).toLowerCase();
-          var hit = !q || hay.indexOf(q) !== -1;
-          li.style.display = hit ? "" : "none";
-          var span = li.querySelector("a > span:last-child");
-          if (span) {
-            if (hit && q) {
-              span.innerHTML = escapeHtml(label).replace(re, function (m) {
+        rows.forEach(function (row) {
+          var label = row.__label || "";
+          var hay = (label + " " + (row.dataset.group || "")).toLowerCase();
+          var hit = !filtering || hay.indexOf(q) !== -1;
+          row.style.display = hit ? "" : "none";
+          if (row.__labelEl) {
+            if (hit && filtering) {
+              row.__labelEl.innerHTML = escapeHtml(label).replace(re, function (m) {
                 return '<span class="nav-hit">' + escapeHtml(m) + '</span>';
               });
             } else {
-              span.textContent = label;
+              row.__labelEl.textContent = label;
             }
           }
-          if (hit) anyVisible = true;
+          if (hit && row.tagName === "A") anyVisible = true;
+        });
+
+        detailsEls.forEach(function (d) {
+          if (!filtering) { d.open = d.__openByUser; return; }
+          var anyChild = Array.from(d.querySelectorAll(".tree-children .tree-link"))
+            .some(function (a) { return a.style.display !== "none"; });
+          if (anyChild) {
+            d.open = true;
+            var s = d.querySelector("summary.tree-link");
+            if (s) s.style.display = "";
+            anyVisible = true;
+          }
         });
 
         groups.forEach(function (g) {
-          var visible = g.querySelectorAll("li:not([style*='display: none'])").length > 0;
+          var visible = Array.from(g.querySelectorAll(".tree-link"))
+            .some(function (r) { return r.style.display !== "none"; });
           g.classList.toggle("is-hidden", !visible);
         });
-        sidebar.classList.toggle("is-empty", q.length > 0 && !anyVisible);
+        sidebar.classList.toggle("is-empty", filtering && !anyVisible);
       }
-
-      groups.forEach(function (g) {
-        var name = g.getAttribute("data-group") || "";
-        g.querySelectorAll("li").forEach(function (li) { li.dataset.group = name; });
-      });
 
       input.addEventListener("input", apply);
       input.addEventListener("keydown", function (e) {
         if (e.key === "Escape") { input.value = ""; apply(); input.blur(); }
         if (e.key === "Enter") {
-          var first = sidebar.querySelector(".nav-group:not(.is-hidden) li:not([style*='display: none']) a");
+          var first = sidebar.querySelector(".nav-group:not(.is-hidden) a.tree-link:not([style*='display: none'])");
           if (first) { e.preventDefault(); first.click(); }
         }
       });
       if (clear) clear.addEventListener("click", function () { input.value = ""; apply(); input.focus(); });
+
+      detailsEls.forEach(function (d) {
+        d.addEventListener("toggle", function () {
+          if (!sidebar.classList.contains("search-active")) d.__openByUser = d.open;
+        });
+      });
 
       document.addEventListener("keydown", function (e) {
         if (e.key !== "/") return;
@@ -1453,6 +1498,48 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
         e.preventDefault();
         input.focus(); input.select();
       });
+    })();
+
+    // On-this-page scroll-spy — light up the toc-link whose target is in view.
+    (function () {
+      var toc = document.getElementById("toc");
+      if (!toc) return;
+      var links = Array.from(toc.querySelectorAll("a.toc-link"));
+      // Map id -> first link that points there (top-level wins over indented).
+      var byId = {};
+      links.forEach(function (a) {
+        var id = a.getAttribute("href").slice(1);
+        if (!byId[id]) byId[id] = a;
+      });
+      var targets = Object.keys(byId)
+        .map(function (id) { return document.getElementById(id); })
+        .filter(Boolean);
+      if (!targets.length) return;
+
+      var visible = new Set();
+      function paint() {
+        if (!visible.size) return;
+        // Choose the target nearest the top of the viewport.
+        var best = null, bestTop = Infinity;
+        visible.forEach(function (el) {
+          var t = el.getBoundingClientRect().top;
+          if (t < bestTop) { bestTop = t; best = el; }
+        });
+        if (!best) return;
+        links.forEach(function (a) { a.classList.remove("active"); });
+        var active = byId[best.id];
+        if (active) active.classList.add("active");
+      }
+
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) visible.add(e.target);
+          else visible.delete(e.target);
+        });
+        paint();
+      }, { rootMargin: "-72px 0px -70% 0px", threshold: 0 });
+
+      targets.forEach(function (t) { io.observe(t); });
     })();
   </script>
 </body>

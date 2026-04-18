@@ -572,129 +572,93 @@
                 </div>
             </div>
 
-            <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <ol class="mt-8 grid md:grid-cols-2 gap-x-12 gap-y-7">
 
-                <!-- Card 1 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-blue text-cat-blueInk">HTTP</div>
-                        <span class="text-[12px] text-ink-500 mono">0.2.3</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">wasi:http</div>
-                        <div class="text-[12px] text-ink-500 mono">wasi · 3d ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        Standard HTTP request and response types for components — incoming
-                        handlers, outgoing clients, headers, and trailers.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0</span>
-                        <span class="mono">4 interfaces · 0 deps</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">01</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">wasi:http</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.2.3</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            The WASI standard for HTTP — incoming handlers, outgoing clients,
+                            headers, and trailers. The first thing most components need.
+                        </p>
+                    </a>
+                </li>
 
-                <!-- Card 2 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-green text-cat-greenInk">CLI</div>
-                        <span class="text-[12px] text-ink-500 mono">0.2.3</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">wasi:cli</div>
-                        <div class="text-[12px] text-ink-500 mono">wasi · 3d ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        Command-line interface primitives — stdio streams, environment access,
-                        argument parsing, and exit codes.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0</span>
-                        <span class="mono">5 interfaces · 2 deps</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">02</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">wasi:cli</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.2.3</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            Command-line primitives — stdio, environment, arguments, and exit
+                            codes. Build a real shell tool, not a toy.
+                        </p>
+                    </a>
+                </li>
 
-                <!-- Card 3 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-peach text-cat-peachInk">Storage</div>
-                        <span class="text-[12px] text-ink-500 mono">3.1.0</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">fermyon:spin-sdk</div>
-                        <div class="text-[12px] text-ink-500 mono">fermyon · 1w ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        High-level SDK for building Spin applications — HTTP triggers, key-value
-                        stores, and outbound networking.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0</span>
-                        <span class="mono">7 interfaces · 12 deps</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">03</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">fermyon:spin-sdk</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">3.1.0</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            High-level SDK for Spin applications. HTTP triggers, key-value
+                            stores, and outbound networking, in one import.
+                        </p>
+                    </a>
+                </li>
 
-                <!-- Card 4 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-lilac text-cat-lilacInk">Cryptography</div>
-                        <span class="text-[12px] text-ink-500 mono">1.0.4</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">wasmcloud:secrets</div>
-                        <div class="text-[12px] text-ink-500 mono">wasmcloud · 2d ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        A capability provider for fetching, rotating, and revoking secrets across
-                        environments without baking them into binaries.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0</span>
-                        <span class="mono">2 interfaces · 4 deps</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">04</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">wasmcloud:secrets</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">1.0.4</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            Fetch, rotate, and revoke secrets across environments without
+                            baking them into binaries. A capability, not a library.
+                        </p>
+                    </a>
+                </li>
 
-                <!-- Card 5 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-teal text-cat-tealInk">Tooling</div>
-                        <span class="text-[12px] text-ink-500 mono">0.36.0</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">microsoft:wit-bindgen</div>
-                        <div class="text-[12px] text-ink-500 mono">microsoft · 5d ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        Generate guest and host bindings from WIT files for Rust, C, Go, JS,
-                        and Python. The reference implementation.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0 / MIT</span>
-                        <span class="mono">3 interfaces · 1 dep</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">05</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">microsoft:wit-bindgen</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.36.0</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            Generate guest and host bindings from WIT for Rust, C, Go, JS,
+                            and Python. The reference implementation.
+                        </p>
+                    </a>
+                </li>
 
-                <!-- Card 6 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="bar bg-cat-rust text-cat-rustInk">Messaging</div>
-                        <span class="text-[12px] text-ink-500 mono">2.4.1</span>
-                    </div>
-                    <div class="mt-4">
-                        <div class="text-[15px] font-semibold tracking-tight">cosmonic:nats</div>
-                        <div class="text-[12px] text-ink-500 mono">cosmonic-labs · 6d ago</div>
-                    </div>
-                    <p class="mt-3 text-[13px] text-ink-700 leading-relaxed line-clamp-2">
-                        NATS messaging client component — pub/sub, request/reply, and JetStream
-                        with at-least-once delivery semantics.
-                    </p>
-                    <div class="mt-auto pt-5 flex items-center justify-between text-[12px] text-ink-500">
-                        <span class="mono">Apache-2.0</span>
-                        <span class="mono">3 interfaces · 6 deps</span>
-                    </div>
-                </a>
+                <li>
+                    <a href="#" class="group block">
+                        <div class="flex items-baseline gap-3">
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">06</span>
+                            <h3 class="mono text-[18px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">cosmonic:nats</h3>
+                            <span class="mono text-[12px] text-ink-500 tabular-nums">2.4.1</span>
+                        </div>
+                        <p class="mt-2 ml-7 text-[14px] text-ink-700 leading-relaxed">
+                            NATS messaging — pub/sub, request/reply, and JetStream with
+                            at-least-once delivery semantics.
+                        </p>
+                    </a>
+                </li>
 
-            </div>
+            </ol>
         </section>
 
         <!-- ============================== -->
