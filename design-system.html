@@ -652,12 +652,13 @@
     .id-http-status-4xx { background: var(--c-cat-peach); color: var(--c-cat-peach-ink); }
     .id-http-status-5xx { background: var(--c-cat-pink);  color: var(--c-cat-pink-ink); }
     /* Code block — used by request/response/example panels.
-       Token palette mirrors the canonical syntax guide:
-       cli.html .code (.cmd/.fl/.ar/.st/.cm) and the --color-wit-* tokens.
-       Categorical pastel inks are paired with their pastel backgrounds and
-       read muddy on canvas, so we use the saturated WIT/CLI hex values. */
+       Theme-aware. Panel sits on --c-surface so it reads as a quiet inset panel
+       on light surfaces and as the standard dark code surface in dark mode.
+       Token colours use the --color-wit-* and --c-cli-* vars, which already
+       carry calibrated light + dark hex pairs (saturated on light, bright on
+       dark) so chroma stays balanced regardless of theme. */
     pre.id-code {
-      background: var(--c-surface-muted);
+      background: var(--c-surface);
       border: 1px solid var(--c-line-soft);
       border-radius: 5px;
       padding: 14px 16px;
@@ -668,17 +669,45 @@
       color: var(--c-ink-900);
       margin: 0;
     }
-    pre.id-code .k  { color: var(--c-cat-blue-ink); }    /* keywords / object keys / flags-as-keys */
-    pre.id-code .s  { color: var(--c-cat-rust-ink); }    /* strings */
-    pre.id-code .n  { color: var(--c-cat-green-ink); }   /* numbers / booleans */
-    pre.id-code .c  { color: var(--c-ink-500); font-style: italic; }
-    pre.id-code .p  { color: var(--c-ink-400); }         /* punctuation */
-    pre.id-code .ty { color: var(--c-cat-plum-ink); }    /* types */
-    pre.id-code .fn { color: var(--c-cat-teal-ink); }    /* function names */
-    pre.id-code .at { color: var(--c-cat-teal-ink); }    /* attributes / field names */
-    pre.id-code .v  { color: var(--c-ink-900); font-weight: 600; } /* shell verb (curl, wasm, …) */
-    pre.id-code .f  { color: var(--c-cat-blue-ink); }    /* shell flag (-X, --insecure, …) */
-    pre.id-code .h  { color: var(--c-cat-plum-ink); font-weight: 600; } /* TOML / INI section header */
+    pre.id-code .k  { color: var(--color-wit-struct); }              /* keywords / object keys / flags-as-keys */
+    pre.id-code .s  { color: var(--color-wit-resource); }            /* strings */
+    pre.id-code .n  { color: var(--color-wit-func); }                /* numbers / booleans */
+    pre.id-code .c  { color: var(--c-ink-500); font-style: italic; } /* comments */
+    pre.id-code .p  { color: var(--c-ink-400); }                     /* punctuation */
+    pre.id-code .ty { color: var(--color-wit-world); }               /* types */
+    pre.id-code .fn { color: var(--color-wit-iface); }               /* function names */
+    pre.id-code .at { color: var(--color-wit-iface); }               /* attributes / field names */
+    pre.id-code .v  { color: var(--c-ink-900); font-weight: 600; }   /* shell verb (curl, wasm, …) */
+    pre.id-code .f  { color: var(--color-wit-struct); }              /* shell flag (-X, --insecure, …) */
+    pre.id-code .h  { color: var(--color-wit-module); font-weight: 600; } /* TOML / INI section header */
+
+    /* Dark-mode override: Base16 Tomorrow Night Eighties — softer, less saturated
+       than the WIT palette. Scoped to pre.id-code only so WIT diagrams keep their
+       brighter hues. */
+    [data-theme="dark"] pre.id-code .k  { color: #6699cc; }   /* blue */
+    [data-theme="dark"] pre.id-code .f  { color: #6699cc; }
+    [data-theme="dark"] pre.id-code .s  { color: #99cc99; }   /* green */
+    [data-theme="dark"] pre.id-code .n  { color: #f99157; }   /* orange */
+    [data-theme="dark"] pre.id-code .ty { color: #ffcc66; }   /* yellow */
+    [data-theme="dark"] pre.id-code .fn { color: #66cccc; }   /* aqua */
+    [data-theme="dark"] pre.id-code .at { color: #66cccc; }
+    [data-theme="dark"] pre.id-code .h  { color: #cc99cc; }   /* purple */
+    [data-theme="dark"] pre.id-code .c  { color: #999999; }   /* comment grey */
+    [data-theme="dark"] pre.id-code .p  { color: #888888; }   /* punctuation */
+    [data-theme="dark"] pre.id-code .v  { color: #cccccc; }   /* fg */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) pre.id-code .k  { color: #6699cc; }
+      :root:not([data-theme="light"]) pre.id-code .f  { color: #6699cc; }
+      :root:not([data-theme="light"]) pre.id-code .s  { color: #99cc99; }
+      :root:not([data-theme="light"]) pre.id-code .n  { color: #f99157; }
+      :root:not([data-theme="light"]) pre.id-code .ty { color: #ffcc66; }
+      :root:not([data-theme="light"]) pre.id-code .fn { color: #66cccc; }
+      :root:not([data-theme="light"]) pre.id-code .at { color: #66cccc; }
+      :root:not([data-theme="light"]) pre.id-code .h  { color: #cc99cc; }
+      :root:not([data-theme="light"]) pre.id-code .c  { color: #999999; }
+      :root:not([data-theme="light"]) pre.id-code .p  { color: #888888; }
+      :root:not([data-theme="light"]) pre.id-code .v  { color: #cccccc; }
+    }
     /* Item title — top of an Item Details page. Title + aux row, then tagline. */
     .id-title-head {
       display: flex; align-items: baseline; justify-content: space-between;
@@ -743,7 +772,7 @@
     }
     .id-lang-tab.is-active {
       color: var(--c-ink-900);
-      background: var(--c-surface-muted);
+      background: var(--c-surface);
       border-color: var(--c-line-soft);
     }
     .id-lang-tab.is-soon { color: var(--c-ink-400); }
@@ -808,7 +837,7 @@
       <a href="#buttons" class="text-ink-700 hover:text-ink-900">05 — Buttons</a>
       <a href="#tabs" class="text-ink-700 hover:text-ink-900">06 — Tabs & Pills</a>
       <a href="#nav" class="text-ink-700 hover:text-ink-900">07 — Navigation</a>
-      <a href="#metrics" class="text-ink-700 hover:text-ink-900">08 — Metrics</a>
+      <a href="#code" class="text-ink-700 hover:text-ink-900">08 — Code Samples</a>
       <a href="#bars" class="text-ink-700 hover:text-ink-900">09 — Labels</a>
       <a href="#tooltip" class="text-ink-700 hover:text-ink-900">10 — Tooltip</a>
       <a href="#table" class="text-ink-700 hover:text-ink-900">11 — Table</a>
@@ -831,6 +860,7 @@
       <a href="#c-page-header" class="text-ink-700 hover:text-ink-900">C03 — Page Header</a>
       <a href="#c-item-list" class="text-ink-700 hover:text-ink-900">C04 — Item List</a>
       <a href="#c-item-details" class="text-ink-700 hover:text-ink-900">C05 — Item Details</a>
+      <a href="#c-top-bar" class="text-ink-700 hover:text-ink-900">C06 — Top Bar</a>
     </nav>
 
     <div class="border-t rule"></div>
@@ -1140,25 +1170,24 @@
                 </p>
                 <h4 class="text-[16px] font-semibold tracking-tight text-ink-900 leading-snug pt-2">Manifest fields</h4>
                 <ul class="list-disc pl-5 space-y-1 marker:text-ink-400">
-                  <li><code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">name</code>
-                    &mdash; reverse-DNS package identifier</li>
-                  <li><code
+                  <li><p><code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">name</code>
+                    &mdash; reverse-DNS package identifier</p></li>
+                  <li><p><code
                       class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">version</code>
-                    &mdash; semantic version, must be unique per registry</li>
-                  <li><code
+                    &mdash; semantic version, must be unique per registry</p></li>
+                  <li><p><code
                       class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">authors</code>
-                    &mdash; one or more contact strings</li>
+                    &mdash; one or more contact strings</p></li>
                 </ul>
                 <h4 class="text-[16px] font-semibold tracking-tight text-ink-900 leading-snug pt-2">Resolution order
                 </h4>
                 <ol class="list-decimal pl-5 space-y-1 marker:text-ink-400 marker:tabular-nums">
-                  <li>Local cache at <code
-                      class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">~/.wasm/store</code>
-                  </li>
-                  <li>Registries declared in the manifest, in order</li>
-                  <li>The default registry, unless <code
+                  <li><p>Local cache at <code
+                      class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">~/.wasm/store</code></p></li>
+                  <li><p>Registries declared in the manifest, in order</p></li>
+                  <li><p>The default registry, unless <code
                       class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">--offline</code>
-                    is set</li>
+                    is set</p></li>
                 </ol>
                 <blockquote class="border-l-2 border-ink-900 pl-4 text-ink-700 italic">
                   Registries are append-only. A version, once published, cannot be
@@ -1421,26 +1450,6 @@
               <button class="pb-3 text-[15px] text-ink-500">Vivamus</button>
             </div>
           </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Pills</h3>
-            <div class="flex flex-wrap items-center gap-2 text-[13px]">
-              <a class="inline-flex items-center px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium">Tellus</a>
-              <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700">Pellentesque</a>
-              <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700">Vestibulum</a>
-              <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700">Convallis</a>
-            </div>
-          </div>
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Range selector</h3>
-            <div class="inline-flex items-center gap-1 text-[13px] text-ink-500">
-              <button class="h-7 w-7 grid place-items-center rounded">D</button>
-              <button class="h-7 w-7 grid place-items-center rounded">W</button>
-              <button class="h-7 w-7 grid place-items-center rounded text-ink-900 font-medium">M</button>
-              <button class="h-7 pl-1 pr-3 inline-flex items-center gap-1.5 rounded-pill bg-surfaceMuted text-ink-900">
-                <span class="h-5 w-5 rounded-full bg-ink-300"></span> All
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -1487,55 +1496,148 @@
     </section>
 
 
+
     <div class="border-t rule mt-16"></div>
 
     <!-- ============================== -->
-    <!-- 08 METRICS                     -->
+    <!-- 08 CODE SAMPLES                -->
     <!-- ============================== -->
-    <section id="metrics" class="pt-12 md:pt-16">
+    <section id="code" class="pt-12 md:pt-16">
       <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
         <div>
           <div class="text-[12px] mono uppercase tracking-wider text-ink-500">08</div>
-          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Metrics</h2>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Code Samples</h2>
           <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
-            Caption label, large value, optional delta. Stacked vertically on desktop;
-            cards on mobile.
+            One panel — <code class="mono text-[12px]">pre.id-code</code> — sitting on
+            <code class="mono text-[12px]">--c-surface</code>, with token colours pulled from the
+            theme-aware <code class="mono text-[12px]">--color-wit-*</code> palette so chroma stays
+            balanced on both light and dark pages. Three forms: a plain block, a tabbed
+            multi-language block, and a paired request / response grid.
           </p>
         </div>
-        <div class="space-y-8">
-          <div class="max-w-[180px]">
-            <div class="pb-4">
-              <div class="text-[12px] text-ink-500">Current Index</div>
-              <div class="text-[20px] font-semibold tracking-tight leading-tight mt-1">42.7 k</div>
-            </div>
-            <div class="py-4 border-t-[1.5px] border-rule">
-              <div class="text-[12px] text-ink-500">Last cycle</div>
-              <div class="mt-1 flex items-baseline gap-1.5">
-                <span class="text-[20px] font-semibold tracking-tight leading-tight">38.1 k</span>
-                <span class="text-[11px] font-medium text-positive">+12.1%</span>
-              </div>
-            </div>
-            <div class="pt-4 border-t-[1.5px] border-rule">
-              <div class="text-[12px] text-ink-500">Two cycles ago</div>
-              <div class="mt-1 flex items-baseline gap-1.5">
-                <span class="text-[20px] font-semibold tracking-tight leading-tight">31.4 k</span>
-                <span class="text-[11px] font-medium text-positive">+36.0%</span>
-              </div>
-            </div>
-          </div>
+        <div class="space-y-12">
+
+          <!-- Plain · single panel -->
           <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Card variant</h3>
-            <div class="w-[160px] p-3 rounded-lg border border-line bg-surface">
-              <div class="text-[12px] text-ink-500">Baseline</div>
-              <div class="mt-1 flex items-baseline gap-1.5">
-                <span class="text-[18px] font-semibold tracking-tight leading-tight">22.9 k</span>
-                <span class="text-[11px] font-medium text-positive">+86.4%</span>
+            <div class="text-[12px] text-ink-500 mb-3">Plain · single panel</div>
+<pre class="id-code"><span class="h">[package]</span>
+<span class="k">name</span>    <span class="p">=</span> <span class="s">"example.com/hello-world"</span>
+<span class="k">version</span> <span class="p">=</span> <span class="s">"0.1.0"</span>
+<span class="k">authors</span> <span class="p">=</span> <span class="p">[</span><span class="s">"Lorem Ipsum &lt;lorem@example.com&gt;"</span><span class="p">]</span>
+
+<span class="h">[dependencies]</span>
+<span class="k">"wasi:http"</span>   <span class="p">=</span> <span class="s">"0.2"</span>
+<span class="k">"wasi:cli"</span>    <span class="p">=</span> <span class="s">"0.2"</span></pre>
+            <p class="mt-3 text-[12px] text-ink-500">Default form. Used for one-off TOML, JSON, or
+              shell snippets where the language is obvious from context.</p>
+          </div>
+
+          <!-- Tabbed · multiple languages -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Tabbed · same call, multiple languages</div>
+            <div class="id-lang-tabs">
+              <span class="id-lang-tab is-active"><span class="dot"></span>curl</span>
+              <span class="id-lang-tab"><span class="dot"></span>Rust</span>
+              <span class="id-lang-tab is-soon"><span class="dot"></span>Python</span>
+              <span class="id-lang-tab is-soon"><span class="dot"></span>TypeScript</span>
+            </div>
+            <div class="id-lang-panel">
+<pre class="id-code"><span class="v">curl</span> <span class="f">-X</span> POST \
+  <span class="f">-H</span> <span class="s">"Authorization: Bearer $TOKEN"</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{"version":"0.2.4","digest":"sha256:1f08…"}'</span> \
+  https://registry.example.com/v1/packages/wasi/http</pre>
+            </div>
+            <p class="mt-3 text-[12px] text-ink-500">Tab strip uses
+              <code class="mono text-[12px]">.id-lang-tabs</code> + <code class="mono text-[12px]">.id-lang-tab</code>.
+              Active tab fuses with the panel (shared surface, top-left radius zeroed). The
+              <code class="mono text-[12px]">.is-soon</code> modifier dims tabs whose bindings haven't
+              landed yet — users see where future languages will appear without the link being live.</p>
+          </div>
+
+          <!-- Paired · request / response -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Paired · request and response</div>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
+<pre class="id-code"><span class="v">curl</span> <span class="f">-X</span> POST \
+  <span class="f">-H</span> <span class="s">"Authorization: Bearer $TOKEN"</span> \
+  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
+  <span class="f">-d</span> <span class="s">'{
+    "version": "0.2.4",
+    "digest":  "sha256:1f08…"
+  }'</span> \
+  https://registry.example.com/v1/packages/wasi/http</pre>
+              </div>
+              <div>
+                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 201</div>
+<pre class="id-code">{
+  <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.2.4"</span><span class="p">,</span>
+  <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:1f08…"</span><span class="p">,</span>
+  <span class="k">"yanked"</span><span class="p">:</span>  <span class="n">false</span><span class="p">,</span>
+  <span class="k">"published_at"</span><span class="p">:</span> <span class="s">"2026-04-18T08:11:02Z"</span>
+}</pre>
               </div>
             </div>
+            <p class="mt-3 text-[12px] text-ink-500">Two panels in a 2-col grid; each carries its own
+              11px ink-500 mono uppercase label above. Use for HTTP / RPC reference where the
+              response shape is part of the contract. Stacks to single column on narrow viewports.</p>
+          </div>
+
+          <!-- Token legend -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Token palette</div>
+            <div class="rounded-lg border border-line bg-canvas p-4">
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-2.5 text-[12px]">
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-struct)">.k .f</span><span class="text-ink-500">keys / keywords / shell flags</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-resource)">.s</span><span class="text-ink-500">strings</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-func)">.n</span><span class="text-ink-500">numbers / booleans</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-world)">.ty</span><span class="text-ink-500">types</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-iface)">.fn .at</span><span class="text-ink-500">functions / attributes</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12" style="color:var(--color-wit-module);font-weight:600">.h</span><span class="text-ink-500">section headers</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12 text-ink-900" style="font-weight:600">.v</span><span class="text-ink-500">shell verb</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12 text-ink-400">.p</span><span class="text-ink-500">punctuation</span></div>
+                <div class="flex items-center gap-3"><span class="mono w-12 text-ink-500" style="font-style:italic">.c</span><span class="text-ink-500">comments</span></div>
+              </div>
+            </div>
+            <p class="mt-3 text-[12px] text-ink-500">Each token references the same
+              <code class="mono text-[12px]">--color-wit-*</code> variables we use for WIT diagrams
+              — module pink, world purple, interface sky, function green, struct indigo, resource
+              amber. Both light and dark themes carry calibrated hex pairs so the panel never feels
+              over-saturated on paper or muddy on graphite.</p>
+          </div>
+
+          <!-- Anatomy / rules -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
+            <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
+              <li><p>Quiet inset panel — <code class="mono text-[12px]">--c-surface</code> background,
+                <code class="mono text-[12px]">--c-line-soft</code> hairline border, 5px radius.
+                Inverts with the rest of the page in dark mode.</p></li>
+              <li><p>12.5px monospace, line-height 1.55, padding 14×16. Horizontal overflow scrolls
+                rather than wrapping — code never reflows.</p></li>
+              <li><p>Tokens are short class names on <code class="mono text-[12px]">&lt;span&gt;</code>:
+                <code class="mono text-[12px]">.k</code>, <code class="mono text-[12px]">.s</code>,
+                <code class="mono text-[12px]">.n</code>, <code class="mono text-[12px]">.ty</code>,
+                <code class="mono text-[12px]">.fn</code>, <code class="mono text-[12px]">.at</code>,
+                <code class="mono text-[12px]">.h</code>, <code class="mono text-[12px]">.v</code>,
+                <code class="mono text-[12px]">.f</code>, <code class="mono text-[12px]">.p</code>,
+                <code class="mono text-[12px]">.c</code>. Untagged characters fall back to the panel's
+                default <code class="mono text-[12px]">--c-ink-900</code>.</p></li>
+              <li><p>Caption above each panel uses <code class="mono text-[12px]">12px ink-500</code>;
+                request/response labels use <code class="mono text-[12px]">11px mono uppercase
+                ink-500</code> with <code class="mono text-[12px]">tracking-wider</code> for parity
+                with the rest of the system.</p></li>
+              <li><p>Tabbed variant: <code class="mono text-[12px]">.id-lang-tabs</code> sits flush against
+                the panel; the active tab shares the panel's dark surface and zeros its bottom-left
+                corner so the two read as one piece.</p></li>
+            </ul>
           </div>
         </div>
       </div>
     </section>
+
 
 
     <div class="border-t rule mt-16"></div>
@@ -1752,11 +1854,118 @@
           <div class="text-[12px] mono uppercase tracking-wider text-ink-500">12</div>
           <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Icons</h2>
           <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
-            Stroke icons at 1.75 weight. Default size 16px in toolbars, 14px inside
-            buttons, 18px on mobile.
+            <a href="https://lucide.dev" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">Lucide</a>
+            outline icons, drawn at <code class="mono text-[12px]">stroke-width="1.75"</code>
+            with <code class="mono text-[12px]">stroke-linecap="round"</code> and
+            <code class="mono text-[12px]">stroke-linejoin="round"</code>. Sizes:
+            <strong>14px</strong> inside dense controls (tree links, kbd hints, tabs),
+            <strong>16px</strong> in toolbars and buttons, <strong>18px</strong> on mobile and in
+            empty states. Always <code class="mono text-[12px]">currentColor</code> so they pick up
+            the surrounding ink scale; never coloured directly.
           </p>
         </div>
-        <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+        <div class="space-y-10">
+
+          <!-- In context: small-form examples used across the docs surfaces -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">In context · 14px / ink-500 paired with text</div>
+            <div class="flex flex-wrap items-center gap-x-6 gap-y-3 rounded-lg border border-line bg-canvas px-4 py-3.5 text-[13px] text-ink-700">
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+                </svg>
+                <span class="mono text-[12.5px]">search</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m6 9 6 6 6-6"/>
+                </svg>
+                <span class="mono text-[12.5px]">chevron-down</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m9 18 6-6-6-6"/>
+                </svg>
+                <span class="mono text-[12.5px]">chevron-right</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M7 7h10v10"/><path d="M7 17 17 7"/>
+                </svg>
+                <span class="mono text-[12.5px]">arrow-up-right</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>
+                </svg>
+                <span class="mono text-[12.5px]">copy</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>
+                </svg>
+                <span class="mono text-[12.5px]">external-link</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                <span class="mono text-[12.5px]">check</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/>
+                </svg>
+                <span class="mono text-[12.5px]">info</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/>
+                </svg>
+                <span class="mono text-[12.5px]">triangle-alert</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>
+                </svg>
+                <span class="mono text-[12.5px]">file</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>
+                </svg>
+                <span class="mono text-[12.5px]">folder</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/>
+                </svg>
+                <span class="mono text-[12.5px]">terminal</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+                </svg>
+                <span class="mono text-[12.5px]">sun</span>
+              </span>
+              <span class="inline-flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                </svg>
+                <span class="mono text-[12.5px]">moon</span>
+              </span>
+            </div>
+            <p class="mt-3 text-[12px] text-ink-500">These are the icons you'll see most across the
+              site — in the top bar, in tree links, beside copyable code, and in callouts. They sit
+              at <code class="mono text-[12px]">h-3.5 w-3.5</code> (14px), coloured
+              <code class="mono text-[12px]">text-ink-500</code>, paired with body text or a mono
+              label. Larger swatches below are reference at 20px so the stroke geometry is visible.</p>
+          </div>
+
+          <!-- Reference grid: full lucide library samples at 20px -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Reference grid · 20px swatches</div>
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
           <!-- list-filter -->
           <div class="aspect-square grid place-items-center border border-lineSoft rounded-md text-ink-700"
             title="list-filter">
@@ -1875,6 +2084,8 @@
               stroke-linecap="round" stroke-linejoin="round">
               <path d="m6 9 6 6 6-6" />
             </svg>
+          </div>
+            </div>
           </div>
         </div>
       </div>
@@ -2928,38 +3139,38 @@
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
             <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>Outer
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span><p>Outer
                 container is always <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">max-w-[1440px]
                 px-4 md:px-6</code>. Use full bleed (no
                 <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">max-w</code>)
-                only for region surface swaps.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>Pick the
+                only for region surface swaps.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span><p>Pick the
                 widest layout that fits the content, not the page. A docs page with no in-page
-                anchors uses the two-column layout, not three-column with an empty column.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>Side
+                anchors uses the two-column layout, not three-column with an empty column.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span><p>Side
                 columns are <strong>fixed-width</strong>
                 (<code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">240px</code>,
                 <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">200px</code>);
                 only the centre column is <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">1fr</code>.
-                This keeps the reading column stable as the viewport grows.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>Gutter
+                This keeps the reading column stable as the viewport grows.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span><p>Gutter
                 scales with column count: two columns get
                 <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">md:gap-12</code>
                 (48px), three columns get
                 <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">lg:gap-10</code>
-                (40px). More columns means more boundaries, so each gets less air.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>Reading
+                (40px). More columns means more boundaries, so each gets less air.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span><p>Reading
                 text is <strong>always</strong>
                 <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted">max-w-[72ch]</code>
-                inside its column. Demos, code, and tables can fill the column.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">06</span>Side
+                inside its column. Demos, code, and tables can fill the column.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">06</span><p>Side
                 columns become sticky at <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted box-decoration-clone">lg:</code>
                 and above with <code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted box-decoration-clone">lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto</code>.
-                Below that breakpoint they collapse into the document flow.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">07</span>The
+                Below that breakpoint they collapse into the document flow.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">07</span><p>The
                 right column is the first to drop on narrow viewports
                 (<code class="mono text-[12px] text-ink-900 px-1 py-0.5 rounded-sm bg-surfaceMuted box-decoration-clone">hidden lg:block</code>).
-                On-this-page is a navigation aid, not load-bearing.</li>
+                On-this-page is a navigation aid, not load-bearing.</p></li>
             </ul>
           </div>
         </div>
@@ -3013,20 +3224,20 @@
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
             <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>The primary region (top of
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span><p>The primary region (top of
                 page) sits on <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">canvas</code>. Use it
-                for the main subject.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>Secondary regions sit on
+                for the main subject.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span><p>Secondary regions sit on
                 <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">surface</code>.
-                The boundary is the surface swap itself — no rule, no border.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>Use full-bleed background
-                swap on wide screens so the boundary reads as a true section break, not a card.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>Maximum two surface swaps
-                per page. Beyond that, switch to a new page or tabs.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>Within a region, use <code
+                The boundary is the surface swap itself — no rule, no border.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span><p>Use full-bleed background
+                swap on wide screens so the boundary reads as a true section break, not a card.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span><p>Maximum two surface swaps
+                per page. Beyond that, switch to a new page or tabs.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span><p>Within a region, use <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">lineSoft</code> for
-                internal subdivisions (table rows, list separators).</li>
+                internal subdivisions (table rows, list separators).</p></li>
             </ul>
           </div>
         </div>
@@ -3167,27 +3378,27 @@
           <div>
             <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Rules</h3>
             <ul class="space-y-2 text-[13px] text-ink-700 leading-relaxed">
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span>Animate <code
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">01</span><p>Animate <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">transform</code> and
                 <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">opacity</code>
                 only. Avoid <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">width</code>, <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">height</code>, <code
-                  class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">top</code>.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span>Default to <code
+                  class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">top</code>.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">02</span><p>Default to <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">base</code> + <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">standard</code>. Pick
-                another token only when intent demands it.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span>Pair entrance and exit
+                another token only when intent demands it.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">03</span><p>Pair entrance and exit
                 asymmetrically: enter on <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">entrance</code>, leave
                 on <code class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">exit</code>,
-                exits 60–80% of the entrance duration.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span>Spring is for
-                human-initiated, direct manipulation only. Never for system events.</li>
-              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span>Honor <code
+                exits 60–80% of the entrance duration.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">04</span><p>Spring is for
+                human-initiated, direct manipulation only. Never for system events.</p></li>
+              <li class="flex gap-3"><span class="mono text-ink-500 w-12 shrink-0">05</span><p>Honor <code
                   class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">prefers-reduced-motion</code>
-                — collapse to instant or to a 60ms cross-fade.</li>
+                — collapse to instant or to a 60ms cross-fade.</p></li>
             </ul>
           </div>
         </div>
@@ -3428,38 +3639,14 @@
           <!-- Live demo -->
           <div class="border border-line rounded-lg bg-canvas p-4 max-w-[300px]">
 
-            <!-- Tool summary -->
-            <div class="pb-4 border-b hairline">
-              <div class="flex items-center gap-2">
-                <span class="inline-grid place-items-center h-8 w-8 rounded-md bg-cat-teal text-cat-tealInk mono text-[14px] font-semibold">$</span>
-                <div class="min-w-0">
-                  <div class="mono text-[14px] font-semibold leading-tight truncate">wasm</div>
-                  <div class="mono text-[11px] text-ink-500">v2.4.0 · darwin/arm64</div>
-                </div>
-              </div>
-              <p class="mt-3 text-[12.5px] text-ink-700 leading-relaxed">
-                Build, publish, and run WebAssembly components from a single workflow.
-              </p>
-            </div>
-
             <!-- Version / scope -->
-            <div class="py-4 border-b hairline space-y-2.5">
-              <div>
-                <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Version</div>
-                <button class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
-                  <span class="mono">v2.4.0 (latest)</span>
-                  <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-                    stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
-                </button>
-              </div>
-              <div>
-                <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Shell</div>
-                <button class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
-                  <span class="mono">bash · zsh · fish · pwsh</span>
-                  <svg class="h-3 w-3 text-ink-500 flex-shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-                    stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
-                </button>
-              </div>
+            <div class="pb-4 border-b hairline">
+              <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Version</div>
+              <button class="w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
+                <span class="mono">v2.4.0 (latest)</span>
+                <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                  stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
+              </button>
             </div>
 
             <!-- Section label -->
@@ -3539,25 +3726,6 @@
               </a>
             </nav>
 
-            <!-- Reference shortcuts (different sigil kinds) -->
-            <div class="mt-5 pt-4 border-t hairline">
-              <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2">Reference</div>
-              <nav class="space-y-0.5">
-                <a href="#" class="tree-link">
-                  <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">F</span>
-                  Global flags <span class="ml-auto mono text-[10.5px] text-ink-400">9</span>
-                </a>
-                <a href="#" class="tree-link">
-                  <span class="sigil" style="background:var(--c-cat-peach);color:var(--c-cat-peachInk);">E</span>
-                  Environment <span class="ml-auto mono text-[10.5px] text-ink-400">12</span>
-                </a>
-                <a href="#" class="tree-link">
-                  <span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pinkInk);">X</span>
-                  Exit codes
-                </a>
-              </nav>
-            </div>
-
             <!-- Project links — external endpoints -->
             <div class="mt-5 pt-4 border-t hairline">
               <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2">Project</div>
@@ -3576,14 +3744,6 @@
                     <path d="M2.5 6.5h11M6 3v10" />
                   </svg>
                   Crates.io
-                </a>
-                <a href="#" class="tree-link">
-                  <svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none"
-                    stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true">
-                    <circle cx="8" cy="8" r="5.5" />
-                    <path d="M8 5v3.5M8 11v.01" />
-                  </svg>
-                  Issues<span class="ml-auto mono text-[10.5px] text-ink-400">12</span>
                 </a>
               </nav>
             </div>
@@ -3624,16 +3784,16 @@
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
             <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li>One <code class="mono text-[12px]">&lt;details&gt;</code> per group; rotates the chevron via
-                <code class="mono text-[12px]">details[open]</code>.</li>
-              <li>Children indent 14px with a 1px <code class="mono text-[12px]">--c-line-soft</code> guide on the left.</li>
-              <li>Active state uses <code class="mono text-[12px]">--c-surface-muted</code> + medium weight — no border, no accent.</li>
-              <li>Trailing meta (counts, tags) sits in a <code class="mono text-[12px]">ml-auto</code> slot in
-                10.5px ink-400 mono.</li>
-              <li>Sigil colour signals <em>kind</em>, never status. Use the categorical palette and pair
-                consistently across the surface.</li>
-              <li>Bottom <strong>Project</strong> section uses lucide-style 14px outline icons (ink-500) instead of
-                sigils — reserved for external links (repo, package registry, issues).</li>
+              <li><p>One <code class="mono text-[12px]">&lt;details&gt;</code> per group; rotates the chevron via
+                <code class="mono text-[12px]">details[open]</code>.</p></li>
+              <li><p>Children indent 14px with a 1px <code class="mono text-[12px]">--c-line-soft</code> guide on the left.</p></li>
+              <li><p>Active state uses <code class="mono text-[12px]">--c-surface-muted</code> + medium weight — no border, no accent.</p></li>
+              <li><p>Trailing meta (counts, tags) sits in a <code class="mono text-[12px]">ml-auto</code> slot in
+                10.5px ink-400 mono.</p></li>
+              <li><p>Sigil colour signals <em>kind</em>, never status. Use the categorical palette and pair
+                consistently across the surface.</p></li>
+              <li><p>Bottom <strong>Project</strong> section uses lucide-style 14px outline icons (ink-500) instead of
+                sigils — reserved for external links (repo, package registry, issues).</p></li>
             </ul>
           </div>
         </div>
@@ -3708,19 +3868,19 @@
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
             <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li>Two depth levels only: top-level entries and one indent
-                (<code class="mono text-[12px]">.indent</code>, +12px).</li>
-              <li>Hover lifts ink to <code class="mono text-[12px]">--c-ink-900</code> and tints the left rail to
-                <code class="mono text-[12px]">--c-line</code>.</li>
-              <li>Active state uses a full <code class="mono text-[12px]">--c-ink-900</code> rail; the rail is the
-                only marker — never combine with a background.</li>
-              <li>Drive the active state from a scroll-spy
+              <li><p>Two depth levels only: top-level entries and one indent
+                (<code class="mono text-[12px]">.indent</code>, +12px).</p></li>
+              <li><p>Hover lifts ink to <code class="mono text-[12px]">--c-ink-900</code> and tints the left rail to
+                <code class="mono text-[12px]">--c-line</code>.</p></li>
+              <li><p>Active state uses a full <code class="mono text-[12px]">--c-ink-900</code> rail; the rail is the
+                only marker — never combine with a background.</p></li>
+              <li><p>Drive the active state from a scroll-spy
                 (<code class="mono text-[12px]">IntersectionObserver</code> with a top rootMargin) so the marker
-                tracks the section currently in view.</li>
-              <li>The rail width is reserved (1.5px transparent border) on every row, so toggling active
-                doesn't shift the label.</li>
-              <li>End the rail with a quiet <strong>Back to top</strong> button — 11px mono, ink-500, no border;
-                hover reveals the surface-muted background.</li>
+                tracks the section currently in view.</p></li>
+              <li><p>The rail width is reserved (1.5px transparent border) on every row, so toggling active
+                doesn't shift the label.</p></li>
+              <li><p>End the rail with a quiet <strong>Back to top</strong> button — 11px mono, ink-500, no border;
+                hover reveals the surface-muted background.</p></li>
             </ul>
           </div>
         </div>
@@ -3745,66 +3905,6 @@
           </p>
         </div>
         <div class="space-y-10">
-          <!-- Live demo: full variant with metadata strip -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-3">Full · with metadata strip</div>
-            <div class="border border-line rounded-lg bg-canvas px-6 py-8">
-              <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
-                <span>v1</span>
-                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
-                <span>HTTP · JSON · OpenAPI 3.1</span>
-              </div>
-              <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
-                Registry API
-              </h1>
-              <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
-                A read-only HTTP interface over the WebAssembly component registry.
-                Resolve packages, inspect versions, and search by imported or exported
-                WIT interface. All endpoints return
-                <span class="mono text-[13px]">application/json</span>.
-              </p>
-              <!-- Metadata strip -->
-              <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
-                <div class="inline-flex items-center gap-2">
-                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Base URL</span>
-                  <span
-                    class="inline-flex items-center h-7 px-2.5 rounded-md bg-surfaceMuted text-ink-900 mono text-[12.5px]">https://registry.example.com</span>
-                </div>
-                <div class="inline-flex items-center gap-2">
-                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Schema</span>
-                  <a href="#"
-                    class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 mono text-[12.5px]">openapi.yaml</a>
-                </div>
-                <div class="inline-flex items-center gap-2">
-                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Status</span>
-                  <span
-                    class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-green text-cat-greenInk text-[12px] font-medium">
-                    <span class="h-1.5 w-1.5 rounded-full bg-cat-greenInk"></span>Operational
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Compact variant: kicker + title + tagline only -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-3">Compact · no metadata strip</div>
-            <div class="border border-line rounded-lg bg-canvas px-6 py-8">
-              <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
-                <span>v2.4.0</span>
-                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
-                <span>CLI Reference</span>
-              </div>
-              <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
-                wasm registry
-              </h1>
-              <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
-                Manage the set of registries the toolchain knows about — add,
-                remove, authenticate, and publish.
-              </p>
-            </div>
-          </div>
-
           <!-- Install variant: kicker + title + tagline + copyable install command -->
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Package · with install command</div>
@@ -3854,17 +3954,17 @@
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
             <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li><strong>Kicker</strong> — 12px ink-500 mono uppercase, dot-separated tokens (version,
-                category, format). Sets context before the title.</li>
-              <li><strong>Title</strong> — 36/44px semibold, tight tracking, leading 1.05. The page's anchor.</li>
-              <li><strong>Tagline</strong> — 15px ink-700, max-w-2xl, single paragraph. One sentence
-                describing what the page <em>is</em>, not what it does.</li>
-              <li><strong>Metadata strip</strong> (optional) — labelled key/value pairs separated by
+              <li><p><strong>Kicker</strong> — 12px ink-500 mono uppercase, dot-separated tokens (version,
+                category, format). Sets context before the title.</p></li>
+              <li><p><strong>Title</strong> — 36/44px semibold, tight tracking, leading 1.05. The page's anchor.</p></li>
+              <li><p><strong>Tagline</strong> — 15px ink-700, max-w-2xl, single paragraph. One sentence
+                describing what the page <em>is</em>, not what it does.</p></li>
+              <li><p><strong>Metadata strip</strong> (optional) — labelled key/value pairs separated by
                 horizontal gap, wrapping to a new row at narrow widths. Each label is 11px ink-500 mono
-                uppercase; each value uses the appropriate token (mono pill, link, or status badge).</li>
-              <li>Vertical rhythm: <code class="mono text-[12px]">pt-8 md:pt-12 pb-8 md:pb-12</code>, with
+                uppercase; each value uses the appropriate token (mono pill, link, or status badge).</p></li>
+              <li><p>Vertical rhythm: <code class="mono text-[12px]">pt-8 md:pt-12 pb-8 md:pb-12</code>, with
                 a strong <code class="mono text-[12px]">.rule</code> divider beneath separating the header from
-                page content.</li>
+                page content.</p></li>
             </ul>
           </div>
         </div>
@@ -3988,26 +4088,26 @@
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
             <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li>The whole row is the link —
+              <li><p>The whole row is the link —
                 <code class="mono text-[12px]">&lt;a class="item-row"&gt;</code> — so the entire chip
                 is the click target. The inner <code class="mono text-[12px]">.name</code> stays a
-                <code class="mono text-[12px]">&lt;span&gt;</code>.</li>
-              <li>Three-column grid: <code class="mono text-[12px]">sigil · name+desc · meta</code>; the
-                middle column is the only flexible one.</li>
-              <li>Rows separate with a 1px <code class="mono text-[12px]">--c-line-soft</code> hairline; the
-                first row drops it. No background fill, no cards.</li>
-              <li>Name is 13.5px mono ink-900 medium; underlines on hover only. Description is 13px ink-700,
-                one line, no wrapping pressure.</li>
-              <li>Trailing <code class="mono text-[12px]">.meta</code> stays mono ink-500 — version, status,
-                or count. Drop it entirely if there's nothing to show.</li>
-              <li>Sigil colour follows the C01 convention so the same kind reads consistently across
-                sidebar and item list.</li>
-              <li><strong>Hover</strong> tints the entire row to <code class="mono text-[12px]">--c-surface-muted</code>
-                — the only affordance that the row is interactive. No border or accent change.</li>
-              <li><strong>Deprecated</strong> rows fade name + description to ink-400, strike through the
+                <code class="mono text-[12px]">&lt;span&gt;</code>.</p></li>
+              <li><p>Three-column grid: <code class="mono text-[12px]">sigil · name+desc · meta</code>; the
+                middle column is the only flexible one.</p></li>
+              <li><p>Rows separate with a 1px <code class="mono text-[12px]">--c-line-soft</code> hairline; the
+                first row drops it. No background fill, no cards.</p></li>
+              <li><p>Name is 13.5px mono ink-900 medium; underlines on hover only. Description is 13px ink-700,
+                one line, no wrapping pressure.</p></li>
+              <li><p>Trailing <code class="mono text-[12px]">.meta</code> stays mono ink-500 — version, status,
+                or count. Drop it entirely if there's nothing to show.</p></li>
+              <li><p>Sigil colour follows the C01 convention so the same kind reads consistently across
+                sidebar and item list.</p></li>
+              <li><p><strong>Hover</strong> tints the entire row to <code class="mono text-[12px]">--c-surface-muted</code>
+                — the only affordance that the row is interactive. No border or accent change.</p></li>
+              <li><p><strong>Deprecated</strong> rows fade name + description to ink-400, strike through the
                 name with a 1px line, and drop the sigil opacity to 50%. Set the trailing
                 <code class="mono text-[12px]">.meta</code> to a one-word state
-                (“deprecated”, “removed”) instead of a version.</li>
+                (“deprecated”, “removed”) instead of a version.</p></li>
             </ul>
           </div>
         </div>
@@ -4065,80 +4165,6 @@
                 </span>
                 <span class="id-auth-tag">Auth required</span>
               </div>
-              <!-- Request body — structured table, name/type/required + description -->
-              <div>
-                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request body</div>
-                <div class="overflow-x-auto border-t-[1.5px] border-lineSoft">
-                  <table class="w-full min-w-[560px] text-[13px]">
-                    <tbody class="text-ink-900">
-                      <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
-                          <span class="mono">version</span>
-                          <span class="ml-2 text-[11px] text-ink-500">string · required</span>
-                        </td>
-                        <td class="py-3 align-baseline text-ink-700">SemVer tag, e.g. <span class="mono">0.2.4</span>.</td>
-                      </tr>
-                      <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
-                          <span class="mono">digest</span>
-                          <span class="ml-2 text-[11px] text-ink-500">string · required</span>
-                        </td>
-                        <td class="py-3 align-baseline text-ink-700">Manifest digest, prefixed with <span class="mono">sha256:</span>.</td>
-                      </tr>
-                      <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
-                          <span class="mono">signature</span>
-                          <span class="ml-2 text-[11px] text-ink-500">string · optional</span>
-                        </td>
-                        <td class="py-3 align-baseline text-ink-700">Detached cosign-compatible signature, base64 encoded.</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              <!-- Responses — divided list with status pill + description -->
-              <div>
-                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Responses</div>
-                <ul class="text-[13px] divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
-                  <li class="flex items-center gap-3 py-3">
-                    <span class="id-http-status id-http-status-2xx">201</span>
-                    <span class="text-ink-700">Version accepted; returns the canonical
-                      <a href="#c-item-details" class="underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">PackageVersion</a>.</span>
-                  </li>
-                  <li class="flex items-center gap-3 py-3">
-                    <span class="id-http-status id-http-status-4xx">409</span>
-                    <span class="text-ink-700">A version with this tag already exists.</span>
-                  </li>
-                  <li class="flex items-center gap-3 py-3">
-                    <span class="id-http-status id-http-status-4xx">401</span>
-                    <span class="text-ink-700">Missing or invalid bearer token.</span>
-                  </li>
-                </ul>
-              </div>
-              <!-- Example — paired request/response code -->
-              <div class="grid md:grid-cols-2 gap-4">
-                <div>
-                  <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Request</div>
-<pre class="id-code"><span class="v">curl</span> <span class="f">-X</span> POST \
-  <span class="f">-H</span> <span class="s">"Authorization: Bearer $TOKEN"</span> \
-  <span class="f">-H</span> <span class="s">"Content-Type: application/json"</span> \
-  <span class="f">-d</span> <span class="s">'{
-    "version": "0.2.4",
-    "digest":  "sha256:1f08…"
-  }'</span> \
-  https://registry.example.com\
-/v1/packages/wasi/http</pre>
-                </div>
-                <div>
-                  <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Response · 201</div>
-<pre class="id-code">{
-  <span class="k">"version"</span><span class="p">:</span> <span class="s">"0.2.4"</span><span class="p">,</span>
-  <span class="k">"digest"</span><span class="p">:</span>  <span class="s">"sha256:1f08…"</span><span class="p">,</span>
-  <span class="k">"yanked"</span><span class="p">:</span>  <span class="n">false</span><span class="p">,</span>
-  <span class="k">"published_at"</span><span class="p">:</span> <span class="s">"2026-04-18T08:11:02Z"</span>
-}</pre>
-                </div>
-              </div>
             </article>
           </div>
 
@@ -4146,43 +4172,43 @@
           <div>
             <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
             <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li><strong>Title</strong> — page-level <code class="mono text-[12px]">&lt;h2&gt;</code> in
+              <li><p><strong>Title</strong> — page-level <code class="mono text-[12px]">&lt;h2&gt;</code> in
                 <code class="mono text-[12px]">.id-title-head</code> with an aux row on the right
                 (<code class="mono text-[12px]">.id-since-tag</code> for the version a method/endpoint was
                 introduced, plus <code class="mono text-[12px]">.id-src-link</code> entries for source / spec
                 / man). A single-paragraph <code class="mono text-[12px]">.id-page-tagline</code> sits below
                 — what this thing is, in one sentence, capped at <code class="mono text-[12px]">72ch</code>.
-                Always the first element on the page.</li>
-              <li><strong>Header</strong> — pill (<code class="mono text-[12px]">.id-method</code> for HTTP,
+                Always the first element on the page.</p></li>
+              <li><p><strong>Header</strong> — pill (<code class="mono text-[12px]">.id-method</code> for HTTP,
                 <code class="mono text-[12px]">.id-kind</code> for RPC) on the left, mono path
                 (<code class="mono text-[12px]">.id-path</code>) center, optional
                 <code class="mono text-[12px]">.id-auth-tag</code> pushed right via
                 <code class="mono text-[12px]">margin-left: auto</code>. Sits in a hairline-bordered band on
-                <code class="mono text-[12px]">canvas</code> — distinct from cards, anchored to the article.</li>
-              <li><strong>Path coloring</strong> — static segments stay
+                <code class="mono text-[12px]">canvas</code> — distinct from cards, anchored to the article.</p></li>
+              <li><p><strong>Path coloring</strong> — static segments stay
                 <code class="mono text-[12px] text-ink-900">ink-900</code>, parameters
                 (<code class="mono text-[12px] text-ink-500">{registry}</code>) take
                 <code class="mono text-[12px]" style="color:var(--c-cat-plum-ink);font-weight:600;">plum-ink</code>
                 so the eye can scan placeholders without reading every character. Slashes drop to
-                <code class="mono text-[12px] text-ink-500">ink-400</code> as low-contrast punctuation.</li>
-              <li><strong>Request body</strong> (optional) — structured table, not a code block. Each row:
+                <code class="mono text-[12px] text-ink-500">ink-400</code> as low-contrast punctuation.</p></li>
+              <li><p><strong>Request body</strong> (optional) — structured table, not a code block. Each row:
                 a name + type/required line on the left
                 (<code class="mono text-[12px]">w-[180px]</code>, mono name + 11.5px ink-500 mono meta) and
                 a description on the right. Hairline rules between rows. Use this whenever the body
                 has more than two fields or any optional fields — code blocks become hard to scan past
-                ~3 keys.</li>
-              <li><strong>Responses</strong> — divided list. HTTP uses
+                ~3 keys.</p></li>
+              <li><p><strong>Responses</strong> — divided list. HTTP uses
                 <code class="mono text-[12px]">.id-http-status</code> pills (2xx green / 3xx blue /
                 4xx peach / 5xx pink). RPC uses <code class="mono text-[12px]">.id-status-dot</code> +
-                fixed-width mono code (<code class="mono text-[12px]">w-20</code> so descriptions align).</li>
-              <li><strong>Example</strong> — for HTTP, paired request/response code panels in a 2-col grid.
+                fixed-width mono code (<code class="mono text-[12px]">w-20</code> so descriptions align).</p></li>
+              <li><p><strong>Example</strong> — for HTTP, paired request/response code panels in a 2-col grid.
                 For RPC, language tabs above a single panel; inactive tabs are
                 <code class="mono text-[12px]">is-soon</code> placeholders so users see where future
-                bindings will land.</li>
-              <li>Sections always appear in this order: <strong>title → header → request body →
+                bindings will land.</p></li>
+              <li><p>Sections always appear in this order: <strong>title → header → request body →
                   responses → example</strong>. Optional sections (request body, auth tag, example, since-tag,
                 source/spec links) drop cleanly without reordering or backfilling — predictability across
-                pages matters more than local optimization.</li>
+                pages matters more than local optimization.</p></li>
             </ul>
           </div>
 
@@ -4215,6 +4241,207 @@
               swap by surface, not by stacking. The auth tag is the only header element that uses
               <code class="mono text-[12px]">cream</code> + the rounded-pill shape, reserving cream for
               "you need credentials" semantics across the design system.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="border-t rule mt-16"></div>
+
+    <!-- ============================== -->
+    <!-- C06 TOP BAR                    -->
+    <!-- ============================== -->
+    <section id="c-top-bar" class="pt-12 md:pt-16">
+      <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+        <div>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">C06</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Top Bar</h2>
+          <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
+            Sticky page chrome: brand mark, command palette trigger, primary nav, theme toggle.
+            Sits above all content with a translucent
+            <code class="mono text-[12px]">bg-canvas/90</code> + <code class="mono text-[12px]">backdrop-blur</code>
+            so scrolling content reads through without losing legibility.
+          </p>
+        </div>
+        <div class="space-y-12">
+
+          <!-- Desktop -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Desktop · ≥ 1024px</div>
+            <div class="rounded-lg border border-line overflow-hidden bg-canvas">
+              <div class="relative">
+                <div class="sticky top-0 z-10 bg-canvas/90 backdrop-blur border-b hairline">
+                  <div class="px-4 md:px-6 h-12 flex items-center gap-4">
+                    <a href="#" class="flex items-center gap-2 text-ink-900 no-underline min-w-0">
+                      <span class="inline-grid place-items-center h-6 w-6 rounded-md bg-cat-teal text-cat-tealInk mono text-[11px] font-semibold">$</span>
+                      <span class="mono text-[13px] font-medium truncate">wasm</span>
+                      <span class="mono text-[11px] text-ink-500 hidden sm:inline">CLI Reference</span>
+                    </a>
+                    <button type="button"
+                      class="flex-1 max-w-xl h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
+                      <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                        <circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/>
+                      </svg>
+                      <span class="truncate">Search commands, flags, env vars…</span>
+                      <span class="ml-auto mono text-[10px] text-ink-500 border border-lineSoft rounded-sm px-1.5 py-0.5 bg-surfaceMuted">⌘K</span>
+                    </button>
+                    <div class="flex items-center gap-1 text-[12px] text-ink-500">
+                      <a href="#" class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Guides</a>
+                      <a href="#" class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Reference</a>
+                      <a href="#" class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Changelog</a>
+                      <button type="button" aria-label="Toggle color theme"
+                        class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                          <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="px-6 py-6 space-y-2.5">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center justify-center h-5 px-1.5 rounded-sm text-[11px] mono font-semibold" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink)">GET</span>
+                    <span class="mono text-[13px] text-ink-700">/v1/packages/<span style="color:var(--c-cat-plum-ink);font-weight:600">{registry}</span>/<span style="color:var(--c-cat-plum-ink);font-weight:600">{*repo}</span></span>
+                  </div>
+                  <div class="h-2 rounded bg-surfaceMuted w-[88%]"></div>
+                  <div class="h-2 rounded bg-surfaceMuted w-[72%]"></div>
+                  <div class="h-2 rounded bg-surfaceMuted w-[80%]"></div>
+                  <div class="flex items-center gap-2 pt-2">
+                    <span class="inline-flex items-center justify-center h-5 px-1.5 rounded-sm text-[11px] mono font-semibold" style="background:var(--c-cat-green);color:var(--c-cat-green-ink)">200</span>
+                    <span class="inline-flex items-center justify-center h-5 px-1.5 rounded-sm text-[11px] mono font-semibold" style="background:var(--c-cat-peach);color:var(--c-cat-peach-ink)">404</span>
+                    <span class="inline-flex items-center justify-center h-5 px-1.5 rounded-sm text-[11px] mono font-semibold" style="background:var(--c-cat-pink);color:var(--c-cat-pink-ink)">500</span>
+                  </div>
+                  <div class="h-2 rounded bg-surfaceMuted w-[64%]"></div>
+                  <div class="h-2 rounded bg-surfaceMuted w-[78%]"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tablet & Mobile · side by side -->
+          <div class="grid md:grid-cols-[1fr_280px] gap-6 items-start">
+
+            <!-- Tablet -->
+            <div>
+              <div class="text-[12px] text-ink-500 mb-3">Tablet · 640–1023px</div>
+              <div class="rounded-lg border border-line overflow-hidden bg-canvas max-w-[680px]">
+                <div class="relative">
+                  <div class="sticky top-0 z-10 bg-canvas/90 backdrop-blur border-b hairline">
+                    <div class="px-4 h-12 flex items-center gap-3">
+                      <a href="#" class="flex items-center gap-2 text-ink-900 no-underline min-w-0">
+                        <span class="inline-grid place-items-center h-6 w-6 rounded-md bg-cat-teal text-cat-tealInk mono text-[11px] font-semibold">$</span>
+                        <span class="mono text-[13px] font-medium">wasm</span>
+                      </a>
+                      <button type="button"
+                        class="flex-1 h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
+                        <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                          <circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/>
+                        </svg>
+                        <span class="truncate">Search…</span>
+                        <span class="ml-auto mono text-[10px] text-ink-500 border border-lineSoft rounded-sm px-1.5 py-0.5 bg-surfaceMuted">⌘K</span>
+                      </button>
+                      <div class="flex items-center gap-1 text-[12px] text-ink-500">
+                        <a href="#" class="inline-flex items-center h-7 px-2 rounded-md hover:bg-surfaceMuted hover:text-ink-900">Reference</a>
+                        <button type="button" aria-label="Toggle color theme"
+                          class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
+                          <svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="px-4 py-5 space-y-2.5">
+                    <div class="h-2 rounded bg-surfaceMuted w-[80%]"></div>
+                    <div class="h-2 rounded bg-surfaceMuted w-[68%]"></div>
+                    <div class="h-2 rounded bg-surfaceMuted w-[74%]"></div>
+                    <div class="h-2 rounded bg-surfaceMuted w-[60%]"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mt-3 text-[12px] text-ink-500">Drops the secondary tagline and trims primary
+                nav to the most-used link. Search collapses placeholder copy but keeps full width
+                and the <code class="mono text-[12px]">⌘K</code> hint.</p>
+            </div>
+
+            <!-- Mobile -->
+            <div>
+              <div class="text-[12px] text-ink-500 mb-3">Mobile · &lt; 640px</div>
+              <div class="rounded-lg border border-line overflow-hidden bg-canvas w-[280px]">
+                <div class="relative">
+                  <div class="sticky top-0 z-10 bg-canvas/90 backdrop-blur border-b hairline">
+                    <div class="px-3 h-12 flex items-center gap-2">
+                      <a href="#" class="flex items-center gap-1.5 text-ink-900 no-underline">
+                        <span class="inline-grid place-items-center h-6 w-6 rounded-md bg-cat-teal text-cat-tealInk mono text-[11px] font-semibold">$</span>
+                        <span class="mono text-[13px] font-medium">wasm</span>
+                      </a>
+                      <span class="ml-auto"></span>
+                      <button type="button" aria-label="Search"
+                        class="inline-flex items-center justify-center h-8 w-8 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
+                        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                          <circle cx="7" cy="7" r="4.5"/><path d="m10.5 10.5 3 3"/>
+                        </svg>
+                      </button>
+                      <button type="button" aria-label="Open menu"
+                        class="inline-flex items-center justify-center h-8 w-8 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900">
+                        <svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+                          <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11"/>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="px-3 py-4 space-y-2.5">
+                    <div class="h-2 rounded bg-surfaceMuted w-[88%]"></div>
+                    <div class="h-2 rounded bg-surfaceMuted w-[70%]"></div>
+                    <div class="h-2 rounded bg-surfaceMuted w-[82%]"></div>
+                  </div>
+                </div>
+              </div>
+              <p class="mt-3 text-[12px] text-ink-500">Search collapses to a 32×32 icon button (the
+                same shape as the theme toggle); nav links collapse behind a hamburger. Brand stays
+                visible — it doubles as the home link.</p>
+            </div>
+          </div>
+
+          <!-- Anatomy / rules -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
+            <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
+              <li><p><strong>Translucent surface</strong> —
+                <code class="mono text-[12px]">sticky top-0 z-20 bg-canvas/90 backdrop-blur</code> with
+                a <code class="mono text-[12px]">.hairline</code> bottom border. Content scrolls
+                <em>under</em> the bar; the 90% canvas + blur keeps the chrome legible without
+                erasing the page beneath. Never use a solid surface — that breaks the layered feel.</p></li>
+              <li><p><strong>Height &amp; rhythm</strong> — fixed at <code class="mono text-[12px]">h-12</code>
+                (48px). Inner gutters match the page container
+                (<code class="mono text-[12px]">px-4 md:px-6</code>) so the brand mark aligns with
+                the leftmost column of content below.</p></li>
+              <li><p><strong>Brand cluster</strong> — 24×24 sigil + 13px mono name + optional 11px
+                ink-500 mono context label that hides below
+                <code class="mono text-[12px]">sm</code>. Wrapped in a single
+                <code class="mono text-[12px]">&lt;a&gt;</code> back to the home page.</p></li>
+              <li><p><strong>Command palette trigger</strong> — a button (not an input). Uses the
+                form system's compact recipe trimmed to bar height:
+                <code class="mono text-[12px]">h-8 rounded-md border-line bg-surface</code>,
+                placeholder colour <code class="mono text-[12px]">text-ink-500</code>, leading 14px
+                magnifier (<code class="mono text-[12px]">ink-400</code>), trailing
+                <code class="mono text-[12px]">⌘K</code> kbd hint matching Section 13's prominent
+                search variant. Clicking opens the palette modal — the input lives there, not in
+                the bar.</p></li>
+              <li><p><strong>Nav links</strong> — 12px ink-500 in
+                <code class="mono text-[12px]">h-7 px-2 rounded-md</code> hit areas with
+                <code class="mono text-[12px]">hover:bg-surfaceMuted hover:text-ink-900</code>. No
+                underline, no separator dots — spacing carries the rhythm.</p></li>
+              <li><p><strong>Theme toggle</strong> — same shape as the form system's icon button
+                (<code class="mono text-[12px]">h-7</code> bordered, surface bg). Always visible at
+                every viewport so users can correct an unwanted theme without hunting.</p></li>
+              <li><p><strong>Responsive collapse</strong> — drop the brand tagline below
+                <code class="mono text-[12px]">sm</code>; trim primary nav at
+                <code class="mono text-[12px]">md</code>; collapse the search button to a
+                <code class="mono text-[12px]">h-8 w-8</code> icon button below
+                <code class="mono text-[12px]">sm</code> and stash all links behind a hamburger.</p></li>
+            </ul>
           </div>
         </div>
       </div>
