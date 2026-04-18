@@ -554,7 +554,18 @@
     <!-- ============================== -->
     <!-- BODY: SIDEBAR + CONTENT        -->
     <!-- ============================== -->
-    <div class="grid grid-cols-1 lg:grid-cols-[240px_1fr_200px] gap-8 lg:gap-10 pt-8">
+    <!--
+      Three-tier responsive grid (DS #grid):
+        · base — single column; row-gap 48px so the stacked sidebar block sits
+                 well clear of the article that follows.
+        · md   — two columns [220px · 1fr]; column-gap 48px (rule 04: fewer
+                 columns get more air).
+        · lg   — three columns [240px · 1fr · 200px]; column-gap 40px (rule 04:
+                 more columns means more boundaries, so each gets less).
+      Vertical padding bumped to pt-10 so the rule above reads as a deliberate
+      region break, not a hairline next to the body.
+    -->
+    <div class="grid grid-cols-1 md:grid-cols-[220px_1fr] lg:grid-cols-[240px_1fr_200px] gap-y-12 md:gap-y-0 gap-x-10 md:gap-x-12 lg:gap-x-10 pt-10">
 
       <!-- ============================== -->
       <!-- SIDEBAR                        -->

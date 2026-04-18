@@ -668,16 +668,17 @@
       color: var(--c-ink-900);
       margin: 0;
     }
-    pre.id-code .k  { color: var(--color-wit-struct); }   /* keywords / object keys / flags-as-keys */
-    pre.id-code .s  { color: var(--color-wit-resource); } /* strings */
-    pre.id-code .n  { color: var(--color-wit-func); }     /* numbers / booleans */
+    pre.id-code .k  { color: var(--c-cat-blue-ink); }    /* keywords / object keys / flags-as-keys */
+    pre.id-code .s  { color: var(--c-cat-rust-ink); }    /* strings */
+    pre.id-code .n  { color: var(--c-cat-green-ink); }   /* numbers / booleans */
     pre.id-code .c  { color: var(--c-ink-500); font-style: italic; }
-    pre.id-code .p  { color: var(--c-ink-400); }          /* punctuation */
-    pre.id-code .ty { color: var(--color-wit-world); }    /* types */
-    pre.id-code .fn { color: var(--color-wit-func); }     /* function names */
-    pre.id-code .at { color: var(--color-wit-iface); }    /* attributes / field names */
+    pre.id-code .p  { color: var(--c-ink-400); }         /* punctuation */
+    pre.id-code .ty { color: var(--c-cat-plum-ink); }    /* types */
+    pre.id-code .fn { color: var(--c-cat-teal-ink); }    /* function names */
+    pre.id-code .at { color: var(--c-cat-teal-ink); }    /* attributes / field names */
     pre.id-code .v  { color: var(--c-ink-900); font-weight: 600; } /* shell verb (curl, wasm, …) */
-    pre.id-code .f  { color: var(--color-wit-struct); }   /* shell flag (-X, --insecure, …) */
+    pre.id-code .f  { color: var(--c-cat-blue-ink); }    /* shell flag (-X, --insecure, …) */
+    pre.id-code .h  { color: var(--c-cat-plum-ink); font-weight: 600; } /* TOML / INI section header */
     /* Item title — top of an Item Details page. Title + aux row, then tagline. */
     .id-title-head {
       display: flex; align-items: baseline; justify-content: space-between;
@@ -1163,15 +1164,14 @@
                   Registries are append-only. A version, once published, cannot be
                   overwritten &mdash; only yanked.
                 </blockquote>
-                <pre
-                  class="overflow-x-auto rounded-md border border-line bg-surfaceMuted text-ink-900 mono text-[13px] leading-relaxed p-4"><code>[package]
-name    = "example.com/hello-world"
-version = "0.1.0"
-authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
+                <pre class="id-code text-[13px] leading-relaxed"><span class="h">[package]</span>
+<span class="k">name</span>    <span class="p">=</span> <span class="s">"example.com/hello-world"</span>
+<span class="k">version</span> <span class="p">=</span> <span class="s">"0.1.0"</span>
+<span class="k">authors</span> <span class="p">=</span> <span class="p">[</span><span class="s">"Lorem Ipsum &lt;lorem@example.com&gt;"</span><span class="p">]</span>
 
-[dependencies]
-"wasi:http"   = "0.2"
-"wasi:cli"    = "0.2"</code></pre>
+<span class="h">[dependencies]</span>
+<span class="k">"wasi:http"</span>   <span class="p">=</span> <span class="s">"0.2"</span>
+<span class="k">"wasi:cli"</span>    <span class="p">=</span> <span class="s">"0.2"</span></pre>
                 <p class="text-[13px] text-ink-500">
                   See the <a href="#"
                     class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900">manifest

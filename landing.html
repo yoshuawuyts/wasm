@@ -507,307 +507,114 @@
         <div class="bg-surface pt-12 md:pt-16 pb-14 md:pb-20">
 
         <!-- ============================== -->
-        <!-- CATEGORIES                     -->
+        <!-- EXPLORE THE ECOSYSTEM          -->
         <!-- ============================== -->
         <section class="mx-auto max-w-[1280px] px-4 md:px-8">
-            <div>
-                <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Browse</div>
-                <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Categories</h2>
+            <div class="max-w-2xl">
+                <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Explore</div>
+                <h2 class="mt-2 text-[28px] md:text-[32px] font-semibold tracking-tight">The ecosystem.</h2>
+                <p class="mt-3 text-[14px] text-ink-700 leading-relaxed">
+                    <span class="mono tabular-nums text-ink-900">12 480</span> packages from
+                    <span class="mono tabular-nums text-ink-900">240+</span> authors across
+                    <span class="mono tabular-nums text-ink-900">38</span> categories.
+                </p>
             </div>
 
-            <div class="mt-6 relative max-w-[640px]">
+            <div class="mt-6 relative">
                 <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16"
                     viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
                     stroke-linejoin="round">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
                 </svg>
-                <input type="search" placeholder="Search 12 480 packages…"
-                    class="block w-full h-10 pl-10 pr-24 rounded-lg border border-line bg-canvas text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
+                <input type="search" placeholder="Search packages…"
+                    class="block w-full h-12 pl-11 pr-24 rounded-lg border border-line bg-canvas text-[15px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900" />
                 <kbd class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 h-6 px-2 rounded border border-lineSoft bg-surfaceMuted text-[11px] mono text-ink-500">
                     <span>⌘</span><span>K</span>
                 </kbd>
             </div>
 
-            <div class="mt-4 flex flex-wrap items-center gap-2 text-[13px]">
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">HTTP & networking
-                    <span class="ml-1.5 text-ink-500 tabular-nums">1 248</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">CLI & shell
-                    <span class="ml-1.5 text-ink-500 tabular-nums">906</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Storage
-                    <span class="ml-1.5 text-ink-500 tabular-nums">512</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Parsers
-                    <span class="ml-1.5 text-ink-500 tabular-nums">464</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Cryptography
-                    <span class="ml-1.5 text-ink-500 tabular-nums">388</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Observability
-                    <span class="ml-1.5 text-ink-500 tabular-nums">271</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Databases
-                    <span class="ml-1.5 text-ink-500 tabular-nums">198</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">ML & inference
-                    <span class="ml-1.5 text-ink-500 tabular-nums">142</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Compression
-                    <span class="ml-1.5 text-ink-500 tabular-nums">87</span></a>
-                <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Runtime ABIs
-                    <span class="ml-1.5 text-ink-500 tabular-nums">63</span></a>
-                <a href="#" class="ml-1 text-[13px] text-ink-700 hover:text-ink-900 inline-flex items-center gap-1">
-                    All
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14" />
-                        <path d="m12 5 7 7-7 7" />
-                    </svg>
-                </a>
-            </div>
-        </section>
+            <div class="mt-10 grid md:grid-cols-2 gap-x-12 gap-y-10">
 
-        <!-- ============================== -->
-        <!-- FEATURED PACKAGES              -->
-        <!-- ============================== -->
-        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-14 pb-2">
-            <div>
-                <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Curated</div>
-                <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Featured packages</h2>
-                <p class="mt-2 max-w-xl text-[13px] text-ink-500 leading-relaxed">
-                    Six picks worth knowing about. Updated each release.
-                </p>
-            </div>
-
-            <ol class="mt-7 grid md:grid-cols-2 md:grid-rows-3 md:grid-flow-col gap-x-12 gap-y-5">
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">01</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">wasi:http</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.2.3</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            The WASI standard for HTTP. The first thing most components reach for.
-                        </p>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">02</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">bytecodealliance:jco</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">1.8.0</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            Run components on Node and the browser. The fastest way to ship a
-                            component to JavaScript.
-                        </p>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">03</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">a-skua:json</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">1.2.0</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            A streaming JSON parser written in Rust. Tiny binary, predictable memory.
-                        </p>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">04</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">twitchax:image</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.5.1</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            Decode and resize images in any host language. Replaces a half-dozen
-                            native bindings.
-                        </p>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">05</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">ba:sqlite</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">3.46.0</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            SQLite as a component. The same library you trust, with no FFI shims.
-                        </p>
-                    </a>
-                </li>
-
-                <li>
-                    <a href="#" class="group block">
-                        <div class="flex items-baseline gap-3">
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">06</span>
-                            <h3 class="mono text-[16px] font-semibold tracking-tight group-hover:underline decoration-1 underline-offset-4">componentized:wasi-virt</h3>
-                            <span class="mono text-[12px] text-ink-500 tabular-nums">0.4.2</span>
-                        </div>
-                        <p class="mt-1 ml-7 text-[13px] text-ink-700 leading-snug line-clamp-2">
-                            Virtualize WASI imports at compose time. Stub a filesystem, fake a clock,
-                            sandbox a subgraph.
-                        </p>
-                    </a>
-                </li>
-
-            </ol>
-        </section>
-
-        <!-- ============================== -->
-        <!-- TWO-COLUMN: Recently updated + Top authors -->
-        <!-- ============================== -->
-        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-16 grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-12">
-
-            <!-- Recently updated table -->
-            <div>
-                <div class="flex items-end justify-between gap-4 flex-wrap">
-                    <div>
-                        <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Index</div>
-                        <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Recently updated</h2>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 text-[13px]">
-                        <a class="inline-flex items-center px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium">All</a>
-                        <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">HTTP</a>
-                        <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">CLI</a>
-                        <a class="inline-flex items-center px-3 h-8 rounded-pill bg-surfaceMuted text-ink-900 hover:bg-ink-300">Storage</a>
-                    </div>
-                </div>
-
-                <div class="mt-5 overflow-x-auto border-t-[1.5px] border-lineSoft">
-                    <table class="w-full min-w-[560px] text-[13px]">
-                        <thead>
-                            <tr class="text-ink-400">
-                                <th class="text-left font-normal py-2.5 pr-4">Package</th>
-                                <th class="text-left font-normal py-2.5 px-4 w-[100px]">Version</th>
-                                <th class="text-left font-normal py-2.5 px-4 w-[140px]">Author</th>
-                                <th class="text-right font-normal py-2.5 pl-4 w-[80px]">Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-ink-900">
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">wasi:http</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">0.2.3</td>
-                                <td class="py-2.5 px-4 text-ink-700">wasi</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">3d</td>
-                            </tr>
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">fermyon:spin-sdk</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">3.1.0</td>
-                                <td class="py-2.5 px-4 text-ink-700">fermyon</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">1w</td>
-                            </tr>
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">microsoft:wit-bindgen</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">0.36.0</td>
-                                <td class="py-2.5 px-4 text-ink-700">microsoft</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">5d</td>
-                            </tr>
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">wasmcloud:secrets</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">1.0.4</td>
-                                <td class="py-2.5 px-4 text-ink-700">wasmcloud</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">2d</td>
-                            </tr>
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">cosmonic:nats</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">2.4.1</td>
-                                <td class="py-2.5 px-4 text-ink-700">cosmonic-labs</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">6d</td>
-                            </tr>
-                            <tr class="border-t-[1.5px] border-lineSoft">
-                                <td class="py-2.5 pr-4 font-medium">wasmcp:auth-oidc</td>
-                                <td class="py-2.5 px-4 mono tabular-nums">0.7.2</td>
-                                <td class="py-2.5 px-4 text-ink-700">wasmcp</td>
-                                <td class="py-2.5 pl-4 text-right text-ink-500">9d</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-4 text-right text-[13px]">
-                    <a href="#" class="text-ink-900 hover:underline">Browse the full index →</a>
-                </div>
-            </div>
-
-            <!-- Featured authors aside -->
-            <aside>
+                <!-- Featured packages -->
                 <div>
-                    <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Community</div>
-                    <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Featured authors</h2>
+                    <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Featured</div>
+                    <ol class="mt-4 border-t-[1.5px] border-lineSoft">
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3">
+                                <span class="mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4">wasi:http</span>
+                                <span class="text-[13px] text-ink-500 truncate hidden sm:inline">WASI standard for HTTP</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3">
+                                <span class="mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4">bytecodealliance:jco</span>
+                                <span class="text-[13px] text-ink-500 truncate hidden sm:inline">Components on Node &amp; the browser</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3">
+                                <span class="mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4">ba:sqlite</span>
+                                <span class="text-[13px] text-ink-500 truncate hidden sm:inline">SQLite as a component</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3">
+                                <span class="mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4">twitchax:image</span>
+                                <span class="text-[13px] text-ink-500 truncate hidden sm:inline">Decode &amp; resize images anywhere</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3">
+                                <span class="mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4">componentized:wasi-virt</span>
+                                <span class="text-[13px] text-ink-500 truncate hidden sm:inline">Virtualize WASI imports</span>
+                            </a>
+                        </li>
+                    </ol>
                 </div>
 
-                <ul class="mt-5 divide-y divide-lineSoft border-t-[1.5px] border-lineSoft">
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            wa</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">wasi</div>
-                            <div class="text-[12px] text-ink-500 mono">42 packages</div>
-                        </div>
-                    </li>
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            ms</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">microsoft</div>
-                            <div class="text-[12px] text-ink-500 mono">28 packages</div>
-                        </div>
-                    </li>
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            fe</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">fermyon</div>
-                            <div class="text-[12px] text-ink-500 mono">19 packages</div>
-                        </div>
-                    </li>
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            wc</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">wasmcloud</div>
-                            <div class="text-[12px] text-ink-500 mono">31 packages</div>
-                        </div>
-                    </li>
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            co</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">cosmonic-labs</div>
-                            <div class="text-[12px] text-ink-500 mono">14 packages</div>
-                        </div>
-                    </li>
-                    <li class="py-3 flex items-center gap-3">
-                        <div
-                            class="h-8 w-8 rounded-md bg-surfaceMuted text-ink-900 grid place-items-center text-[12px] font-semibold mono">
-                            ba</div>
-                        <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-medium">bytecodealliance</div>
-                            <div class="text-[12px] text-ink-500 mono">11 packages</div>
-                        </div>
-                    </li>
-                </ul>
+                <!-- Top categories -->
+                <div>
+                    <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Categories</div>
+                    <ol class="mt-4 border-t-[1.5px] border-lineSoft">
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3 text-[14px]">
+                                <span class="text-ink-900 group-hover:underline decoration-1 underline-offset-4">HTTP &amp; networking</span>
+                                <span class="mono text-[13px] text-ink-500 tabular-nums">1 248</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3 text-[14px]">
+                                <span class="text-ink-900 group-hover:underline decoration-1 underline-offset-4">CLI &amp; shell</span>
+                                <span class="mono text-[13px] text-ink-500 tabular-nums">906</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3 text-[14px]">
+                                <span class="text-ink-900 group-hover:underline decoration-1 underline-offset-4">Storage</span>
+                                <span class="mono text-[13px] text-ink-500 tabular-nums">512</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3 text-[14px]">
+                                <span class="text-ink-900 group-hover:underline decoration-1 underline-offset-4">Parsers</span>
+                                <span class="mono text-[13px] text-ink-500 tabular-nums">464</span>
+                            </a>
+                        </li>
+                        <li class="border-b border-lineSoft">
+                            <a href="#" class="group flex items-baseline justify-between gap-4 py-3 text-[14px]">
+                                <span class="text-ink-900 group-hover:underline decoration-1 underline-offset-4">Cryptography</span>
+                                <span class="mono text-[13px] text-ink-500 tabular-nums">388</span>
+                            </a>
+                        </li>
+                    </ol>
+                </div>
 
-                <a href="#" class="mt-5 inline-flex items-center gap-1 text-[13px] text-ink-700 hover:text-ink-900">
-                    All authors
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                        stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M5 12h14" />
-                        <path d="m12 5 7 7-7 7" />
-                    </svg>
-                </a>
-            </aside>
+            </div>
+
+            <div class="mt-6 text-right text-[13px]">
+                <a href="#" class="text-ink-900 hover:underline">Browse all packages →</a>
+            </div>
         </section>
 
         <!-- ============================== -->
