@@ -11,7 +11,7 @@ pub(crate) fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
     let mut span = html::inline_text::Span::builder();
     match ty {
         TypeRef::Primitive { name } => {
-            span.class("text-fg-muted").text(name.clone());
+            span.class("text-ink-500").text(name.clone());
         }
         TypeRef::Named {
             name,
@@ -121,8 +121,7 @@ pub(crate) fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
 }
 
 /// CSS class for the standard WIT code block container.
-pub(crate) const CODE_BLOCK_CLASS: &str =
-    "border-2 border-fg px-4 py-3 text-base font-mono text-fg overflow-x-auto";
+pub(crate) const CODE_BLOCK_CLASS: &str = crate::components::code_block::CLASS;
 
 /// Render a type definition inline inside a `<code>` block.
 pub(crate) fn render_type_in_code(
@@ -135,7 +134,7 @@ pub(crate) fn render_type_in_code(
     match &ty.kind {
         TypeKind::Record { fields } => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("record "))
+                .span(|s| s.class("text-ink-500").text("record "))
                 .span(|s| s.class("text-wit-struct font-medium").text(ty.name.clone()))
                 .text(" {\n".to_owned());
             for f in fields {
@@ -147,7 +146,7 @@ pub(crate) fn render_type_in_code(
         }
         TypeKind::Variant { cases } => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("variant "))
+                .span(|s| s.class("text-ink-500").text("variant "))
                 .span(|s| s.class("text-wit-struct font-medium").text(ty.name.clone()))
                 .text(" {\n".to_owned());
             for case in cases {
@@ -163,7 +162,7 @@ pub(crate) fn render_type_in_code(
         }
         TypeKind::Enum { cases } => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("enum "))
+                .span(|s| s.class("text-ink-500").text("enum "))
                 .span(|s| s.class("text-wit-enum font-medium").text(ty.name.clone()))
                 .text(" {\n".to_owned());
             for case in cases {
@@ -173,7 +172,7 @@ pub(crate) fn render_type_in_code(
         }
         TypeKind::Flags { flags } => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("flags "))
+                .span(|s| s.class("text-ink-500").text("flags "))
                 .span(|s| s.class("text-wit-enum font-medium").text(ty.name.clone()))
                 .text(" {\n".to_owned());
             for f in flags {
@@ -183,7 +182,7 @@ pub(crate) fn render_type_in_code(
         }
         TypeKind::Resource { .. } => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("resource "))
+                .span(|s| s.class("text-ink-500").text("resource "))
                 .span(|s| {
                     s.class("text-wit-resource font-medium")
                         .text(ty.name.clone())
@@ -192,7 +191,7 @@ pub(crate) fn render_type_in_code(
         }
         TypeKind::Alias(type_ref) => {
             c.text(indent.to_owned())
-                .span(|s| s.class("text-fg-muted").text("type "))
+                .span(|s| s.class("text-ink-500").text("type "))
                 .span(|s| s.class("text-accent font-medium").text(ty.name.clone()))
                 .text(" = ".to_owned())
                 .push(render_type_ref(type_ref))
@@ -210,7 +209,7 @@ pub(crate) fn render_func_in_code(
     c.text(indent.to_owned())
         .span(|s| s.class("text-wit-func font-medium").text(func.name.clone()))
         .text(": ".to_owned())
-        .span(|s| s.class("text-fg-muted").text("func"))
+        .span(|s| s.class("text-ink-500").text("func"))
         .text("(".to_owned());
 
     let visible: Vec<_> = func.params.iter().filter(|p| p.name != "self").collect();

@@ -1,5 +1,6 @@
 //! Detail page for a child module or component inside a Wasm component.
 
+use crate::components::section_group;
 use html::text_content::{Division, UnorderedList};
 use wasm_meta_registry_client::{ComponentSummary, KnownPackage, PackageVersion};
 
@@ -47,10 +48,10 @@ pub(crate) fn render(
 
     let header = format!(
         r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-3xl font-light tracking-display font-display">
+  <h2 class="text-[28px] font-semibold tracking-tight font-mono">
     <span class="{kind_color}">{display_name}</span>
   </h2>
-  <span class="text-sm text-fg-muted mt-1 block">{subtitle}</span>
+  <span class="text-[13px] text-ink-500 mt-1 block">{subtitle}</span>
 </div>"#,
     );
 
@@ -111,10 +112,7 @@ fn render_producers_section(producers: &[wasm_meta_registry_client::ProducerEntr
     }
 
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
-            .text("Producers")
-    });
+    div.push(section_group::header("Producers", filtered.len()));
 
     let mut ul = UnorderedList::builder();
     for entry in &filtered {
@@ -132,12 +130,12 @@ fn render_producers_section(producers: &[wasm_meta_registry_client::ProducerEntr
         ul.list_item(|li| {
             li.class("py-1");
             li.span(|s| {
-                s.class("font-mono text-base min-w-0 truncate")
+                s.class("font-mono text-[14px] min-w-0 truncate")
                     .title(tooltip);
                 s.span(|n| n.class("text-accent").text(name));
                 if !display_version.is_empty() {
                     s.span(|v| {
-                        v.class("text-fg-faint ml-1")
+                        v.class("text-ink-400 ml-1")
                             .text(format!("@{display_version}"))
                     });
                 }
@@ -153,10 +151,7 @@ fn render_producers_section(producers: &[wasm_meta_registry_client::ProducerEntr
 /// Render dependencies as package URLs with links to crates.io.
 fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
-            .text("Dependencies")
-    });
+    div.push(section_group::header("Dependencies", deps.len()));
 
     let mut ul = UnorderedList::builder();
     for dep in deps {
@@ -175,19 +170,19 @@ fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
             li.class("py-1");
             if let Some(url) = href {
                 li.anchor(|a| {
-                    a.href(url).class("font-mono text-base hover:underline");
-                    a.span(|s| s.class("text-fg-muted").text(format!("pkg:{purl_type}/")));
+                    a.href(url).class("font-mono text-[14px] hover:underline");
+                    a.span(|s| s.class("text-ink-500").text(format!("pkg:{purl_type}/")));
                     a.span(|s| s.class("text-accent").text(name));
-                    a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{version}")));
+                    a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{version}")));
                     a
                 })
                 .title(purl);
             } else {
                 li.span(|s| {
-                    s.class("font-mono text-base");
-                    s.span(|ps| ps.class("text-fg-muted").text(format!("pkg:{purl_type}/")));
-                    s.span(|ns| ns.class("text-fg").text(name));
-                    s.span(|vs| vs.class("text-fg-faint ml-1").text(format!("@{version}")));
+                    s.class("font-mono text-[14px]");
+                    s.span(|ps| ps.class("text-ink-500").text(format!("pkg:{purl_type}/")));
+                    s.span(|ns| ns.class("text-ink-900").text(name));
+                    s.span(|vs| vs.class("text-ink-400 ml-1").text(format!("@{version}")));
                     s
                 })
                 .title(purl);

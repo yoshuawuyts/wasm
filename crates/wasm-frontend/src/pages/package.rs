@@ -2,6 +2,7 @@
 
 // r[impl frontend.pages.package-detail]
 
+use crate::components::{copy_button, section_heading};
 use crate::wit_doc::WitDocument;
 use html::content::Section;
 use html::text_content::{Division, ListItem, UnorderedList};
@@ -36,31 +37,13 @@ pub(crate) fn render(
         .map(|desc| crate::markdown::render_block(desc, crate::markdown::DOC_CLASS))
         .unwrap_or_default();
 
-    let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
-    let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
-
-    let header = format!(
-        r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
-    <span class="text-accent">{pkg_name}</span>
-    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-  </h2>
-  <span class="text-sm text-fg-muted mt-1 block">{kind_label}</span>
-  <div class="mt-4">{docs_md}</div>
-</div>
-<script>
-(function(){{
-  var btn=document.getElementById('copy-fqn-btn');
-  var copyIcon="{copy_icon}";
-  var checkIcon="{check_icon}";
-  btn.addEventListener('click',function(){{
-    navigator.clipboard.writeText('{display_name}').then(function(){{
-      btn.innerHTML=checkIcon;
-      setTimeout(function(){{btn.innerHTML=copyIcon}},2000);
-    }});
-  }});
-}})();
-</script>"#,
+    let header = copy_button::heading_with_copy_and_version(
+        pkg_name,
+        kind_label,
+        &display_name,
+        "text-accent",
+        &docs_md,
+        Some(version),
     );
 
     let wit_content = if let Some(detail) = version_detail {
@@ -184,7 +167,7 @@ fn render_children_overview(
 ) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+        h2.class(section_heading::BORDERED_CLASS)
             .text(heading.to_owned())
     });
 
@@ -199,9 +182,9 @@ fn render_children_overview(
         };
 
         let link_class = if kind == "component" {
-            "font-mono text-base font-medium text-wit-world hover:underline"
+            "font-mono text-[14px] font-medium text-wit-world hover:underline"
         } else {
-            "font-mono text-base font-medium text-wit-module hover:underline"
+            "font-mono text-[14px] font-medium text-wit-module hover:underline"
         };
 
         ul.list_item(|li| {
@@ -246,7 +229,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-1");
     container.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-2 pb-2 border-b border-border")
+        h2.class("text-[16px] font-medium text-ink-500 mb-2 pb-2 border-b border-lineSoft")
             .text("Interfaces")
     });
 
@@ -267,7 +250,7 @@ fn render_interface_row(iface: &crate::wit_doc::InterfaceDoc) -> ListItem {
     li.division(|left| {
         left.class("shrink-0 w-44").anchor(|a| {
             a.href(iface.url.clone())
-                .class("font-mono text-base font-medium text-wit-iface hover:underline")
+                .class("font-mono text-[14px] font-medium text-wit-iface hover:underline")
                 .text(iface.name.clone())
         })
     });
@@ -276,7 +259,7 @@ fn render_interface_row(iface: &crate::wit_doc::InterfaceDoc) -> ListItem {
     if let Some(docs) = &iface.docs {
         li.division(|right| {
             right
-                .class("text-base leading-relaxed text-fg-secondary min-w-0")
+                .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
                 .text(crate::markdown::render_inline(&first_sentence(docs)))
         });
     }
@@ -289,7 +272,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
     let mut container = Division::builder();
     container.class("space-y-1");
     container.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-2 pb-2 border-b border-border")
+        h2.class("text-[16px] font-medium text-ink-500 mb-2 pb-2 border-b border-lineSoft")
             .text("Worlds")
     });
 
@@ -310,7 +293,7 @@ fn render_world_row(world: &crate::wit_doc::WorldDoc) -> ListItem {
     li.division(|left| {
         left.class("shrink-0 w-44").anchor(|a| {
             a.href(world.url.clone())
-                .class("font-mono text-base font-medium text-wit-world hover:underline")
+                .class("font-mono text-[14px] font-medium text-wit-world hover:underline")
                 .text(world.name.clone())
         })
     });
@@ -319,7 +302,7 @@ fn render_world_row(world: &crate::wit_doc::WorldDoc) -> ListItem {
     if let Some(docs) = &world.docs {
         li.division(|right| {
             right
-                .class("text-base leading-relaxed text-fg-secondary min-w-0")
+                .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
                 .text(crate::markdown::render_inline(&first_sentence(docs)))
         });
     }
@@ -330,14 +313,11 @@ fn render_world_row(world: &crate::wit_doc::WorldDoc) -> ListItem {
 /// Render raw WIT text in a pre-formatted code block (fallback).
 fn render_raw_wit(wit_text: &str) -> Division {
     Division::builder()
-        .heading_2(|h2| {
-            h2.class("text-lg font-medium text-fg-muted mb-3")
-                .text("WIT Definition")
-        })
+        .heading_2(|h2| h2.class(section_heading::CLASS).text("WIT Definition"))
         .push(
             html::text_content::PreformattedText::builder()
-                .class("border-2 border-fg p-4 overflow-x-auto text-base leading-relaxed")
-                .code(|code| code.class("text-fg").text(wit_text.to_owned()))
+                .class("border border-line p-4 overflow-x-auto text-[15px] leading-relaxed")
+                .code(|code| code.class("text-ink-900").text(wit_text.to_owned()))
                 .build(),
         )
         .build()
@@ -353,14 +333,14 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
         container.division(|world_div| {
             if world.name != "root" {
                 world_div.heading_2(|h2| {
-                    h2.class("text-lg font-medium text-fg-muted mb-3")
+                    h2.class(section_heading::CLASS)
                         .text(format!("world {}", world.name))
                 });
             }
 
             if let Some(desc) = &world.description {
                 world_div.paragraph(|p| {
-                    p.class("text-fg-secondary text-base mb-3")
+                    p.class("text-ink-700 text-[15px] mb-3")
                         .text(crate::markdown::render_inline(desc))
                 });
             }
@@ -416,10 +396,7 @@ fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> D
     }
 
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
-            .text("Producers")
-    });
+    div.heading_2(|h2| h2.class(section_heading::BORDERED_CLASS).text("Producers"));
 
     let mut ul = UnorderedList::builder();
     for entry in &filtered {
@@ -436,12 +413,12 @@ fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> D
         ul.list_item(|li| {
             li.class("py-1");
             li.span(|s| {
-                s.class("font-mono text-base min-w-0 truncate")
+                s.class("font-mono text-[14px] min-w-0 truncate")
                     .title(tooltip);
                 s.span(|n| n.class("text-accent").text(name));
                 if !display_version.is_empty() {
                     s.span(|v| {
-                        v.class("text-fg-faint ml-1")
+                        v.class("text-ink-400 ml-1")
                             .text(format!("@{display_version}"))
                     });
                 }

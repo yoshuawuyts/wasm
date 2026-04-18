@@ -6,6 +6,8 @@ use html::text_content::Division;
 use html::text_content::builders::DivisionBuilder;
 use wasm_meta_registry_client::KnownPackage;
 
+use crate::components::package_card;
+use crate::components::search_bar::{self, SearchBar};
 use crate::layout;
 use wasm_meta_registry_client::{ApiError, RegistryClient};
 
@@ -36,7 +38,6 @@ fn render_packages(packages: &[KnownPackage]) -> String {
     let (components, interfaces) = split_by_kind(&ordered);
 
     let mut body = Division::builder();
-    body.class("font-mono");
 
     // Hero area
     body.push(render_hero(ordered.len()));
@@ -85,11 +86,11 @@ fn render_error(_err: &ApiError) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| {
-                p.class("text-fg font-medium")
+                p.class("text-ink-900 font-medium")
                     .text("Could not load components")
             })
             .paragraph(|p| {
-                p.class("text-sm text-fg-muted mt-2")
+                p.class("text-[13px] text-ink-500 mt-2")
                     .text("The registry may be temporarily unavailable. Try refreshing the page.")
             })
     });
@@ -99,69 +100,38 @@ fn render_error(_err: &ApiError) -> String {
 /// Render the hero area with heading, nav, search, and CTA.
 fn render_hero(_total: usize) -> Division {
     let mut hero = Division::builder();
-    hero.class("pt-16 pb-12");
+    hero.class("pt-8 sm:pt-16 pb-8 sm:pb-12");
 
     hero.division(|row| {
         row.class("flex flex-wrap items-start justify-between gap-4")
             .heading_1(|h1| {
-                h1.class("text-5xl font-light tracking-display font-display")
+                h1.class("text-[24px] sm:text-[36px] font-semibold tracking-tight leading-[1.1]")
                     .text("WebAssembly Component Registry")
             })
             .division(|nav| {
-                nav.class("flex gap-5 text-sm")
+                nav.class("flex gap-5 text-[13px]")
                     .anchor(|a| {
                         a.href("/docs")
-                            .class("text-fg-muted hover:text-fg transition-colors")
+                            .class("text-ink-500 hover:text-ink-900 transition-colors")
                             .text("Docs")
                     })
                     .anchor(|a| {
                         a.href("/downloads")
-                            .class("text-fg-muted hover:text-fg transition-colors")
+                            .class("text-ink-500 hover:text-ink-900 transition-colors")
                             .text("Downloads")
                     })
             })
     });
 
     hero.division(|row| {
-        row.class("mt-10 flex flex-col sm:flex-row gap-6 sm:items-center")
-            .form(|form| {
-                form.action("/search")
-                    .method("get")
-                    .class("flex flex-1 max-w-lg search-form")
-                    .division(|wrapper| {
-                        wrapper
-                            .class("flex-1 relative")
-                            .input(|input| {
-                                input
-                                    .type_("search")
-                                    .name("q")
-                                    .id("search-input")
-                                    .aria_label("Search components and interfaces")
-                                    .autofocus(true)
-                                    .class("w-full px-4 pr-8 py-2.5 text-sm border-2 border-fg bg-page text-fg focus:border-accent focus:outline-none transition-colors")
-                            })
-                            .span(|overlay| {
-                                overlay
-                                    .id("search-carousel")
-                                    .class("search-carousel")
-                                    .aria_hidden(true)
-                                    .span(|prefix| prefix.text("Search ".to_owned()))
-                                    .span(|word| {
-                                        word.id("carousel-word")
-                                            .class("carousel-word")
-                                            .text("components\u{2026}")
-                                    })
-                            })
-                    })
-                    .button(|btn| {
-                        btn.type_("submit")
-                            .class("px-5 py-2.5 text-sm font-normal bg-fg text-page border-2 border-fg border-l-0 transition-colors")
-                            .text("Search")
-                    })
-            })
+        row.class("mt-6 sm:mt-10 flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center")
+            .push(search_bar::hero(&SearchBar {
+                carousel: true,
+                ..SearchBar::default()
+            }))
             .anchor(|a| {
                 a.href("/docs")
-                    .class("group text-sm text-fg-muted hover:text-accent transition-colors shrink-0")
+                    .class("group text-[13px] text-ink-500 hover:text-ink-900 transition-colors shrink-0")
                     .span(|s| s.text("Publish a component ".to_owned()))
                     .span(|s| {
                         s.class("inline-block transition-transform group-hover:translate-x-1")
@@ -205,23 +175,28 @@ fn render_tabs(
     let mut wrapper = Division::builder();
     wrapper.class("tab-group");
 
-    // Tab bar
+    // Tab bar — pills style per design system
     let mut bar = Division::builder();
-    bar.class("flex");
+    bar.class("flex flex-wrap items-center gap-2 text-[13px] mb-6");
     bar.role("tablist");
     for (i, &(id, label, pkgs)) in tabs.iter().enumerate() {
         let count = pkgs.len();
         let selected = i == 0;
+        let cls = if selected {
+            "inline-flex items-center gap-2 px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium cursor-pointer"
+        } else {
+            "inline-flex items-center gap-2 px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700 cursor-pointer hover:bg-ink-300 transition-colors"
+        };
         bar.button(|btn| {
             btn.type_("button")
                 .role("tab")
-                .class("tab-btn")
+                .class(format!("tab-btn {cls}"))
                 .data("tab", id)
                 .aria_selected(selected)
                 .aria_controls_elements(format!("panel-{id}"))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| s.text(label.to_owned()))
                 .span(|s: &mut html::inline_text::builders::SpanBuilder| {
-                    s.class("opacity-50").text(format!("{count}"))
+                    s.class("text-[11px] opacity-70").text(format!("{count}"))
                 })
         });
     }
@@ -249,7 +224,7 @@ fn render_tabs(
 fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage]) {
     if packages.is_empty() {
         container.paragraph(|p| {
-            p.class("py-8 text-sm text-fg-faint")
+            p.class("py-8 text-[13px] text-ink-400")
                 .text("Nothing published yet. ")
                 .anchor(|a| {
                     a.href("/docs")
@@ -263,75 +238,11 @@ fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage])
     let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
 
     let mut grid = Division::builder();
-    grid.class("grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 border-t-2 border-l-2 border-fg");
+    grid.class(package_card::grid(4));
     for pkg in visible {
-        grid.push(render_card(pkg));
+        grid.push(package_card::render(pkg));
     }
     container.push(grid.build());
-}
-
-/// Render a single package as a card.
-fn render_card(pkg: &KnownPackage) -> Division {
-    let display_name = match (&pkg.wit_namespace, &pkg.wit_name) {
-        (Some(ns), Some(name)) => format!("{ns}:{name}"),
-        _ => pkg.repository.clone(),
-    };
-
-    let description = pkg.description.as_deref().unwrap_or("No description");
-    let version = crate::pick_redirect_version(&pkg.tags).unwrap_or_else(|| {
-        pkg.tags
-            .first()
-            .cloned()
-            .unwrap_or_else(|| "\u{2014}".to_owned())
-    });
-
-    match (&pkg.wit_namespace, &pkg.wit_name) {
-        (Some(ns), Some(name)) => Division::builder()
-            .anchor(|a| {
-                a.href(format!("/{ns}/{name}"))
-                    .class("flex flex-col h-full bg-page p-5 border-r-2 border-b-2 border-fg card-lift")
-                    .span(|s| {
-                        s.class("flex justify-between items-start")
-                            .span(|left| {
-                                left.class("text-sm text-fg-faint leading-tight")
-                                    .text(ns.clone())
-                            })
-                            .span(|right| {
-                                right.class("text-sm text-fg-faint font-mono shrink-0")
-                                    .text(version.clone())
-                            })
-                    })
-                    .span(|s| {
-                        s.class("block text-2xl font-light tracking-display font-display leading-tight truncate")
-                            .text(name.clone())
-                    })
-                    .span(|s| {
-                        s.class("block text-sm text-fg-muted mt-6 overflow-hidden")
-                            .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.75rem")
-                            .text(crate::markdown::render_inline(description))
-                    })
-            })
-            .build(),
-        _ => Division::builder()
-            .class("flex flex-col h-full bg-page p-5 border-r-2 border-b-2 border-fg card-lift")
-            .span(|s| {
-                s.class("flex justify-between items-start")
-                    .span(|left| {
-                        left.class("text-2xl font-light tracking-display font-display leading-tight truncate")
-                            .text(display_name)
-                    })
-                    .span(|right| {
-                        right.class("text-sm text-fg-faint font-mono shrink-0 mt-1")
-                            .text(version.clone())
-                    })
-            })
-            .span(|s| {
-                s.class("block text-sm text-fg-muted mt-6 overflow-hidden")
-                    .style("display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 2.75rem")
-                    .text(crate::markdown::render_inline(description))
-            })
-            .build(),
-    }
 }
 
 #[cfg(test)]

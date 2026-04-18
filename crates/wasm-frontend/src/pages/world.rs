@@ -1,5 +1,6 @@
 //! World detail page.
 
+use crate::components::{copy_button, section_heading};
 use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 use html::text_content::{Division, ListItem, UnorderedList};
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -25,32 +26,14 @@ pub(crate) fn render(
         .unwrap_or_default();
 
     let fqn = format!("{display_name}/{}", world.name);
-    let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
-    let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
 
-    let header = format!(
-        r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
-    <span class="text-wit-world">{world_name}</span>
-    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-  </h2>
-  <span class="text-sm text-fg-muted mt-1 block">World</span>
-  <div class="mt-4">{docs_md}</div>
-</div>
-<script>
-(function(){{
-  var btn=document.getElementById('copy-fqn-btn');
-  var copyIcon="{copy_icon}";
-  var checkIcon="{check_icon}";
-  btn.addEventListener('click',function(){{
-    navigator.clipboard.writeText('{fqn}').then(function(){{
-      btn.innerHTML=checkIcon;
-      setTimeout(function(){{btn.innerHTML=copyIcon}},2000);
-    }});
-  }});
-}})();
-</script>"#,
-        world_name = world.name,
+    let header = copy_button::heading_with_copy_and_version(
+        &world.name,
+        "World",
+        &fqn,
+        "text-wit-world",
+        &docs_md,
+        Some(version),
     );
 
     let mut content = Division::builder();
@@ -154,7 +137,7 @@ fn render_item_section(
     let mut div = Division::builder();
     if iface_entries.is_empty() {
         div.heading_2(|h2| {
-            h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+            h2.class(section_heading::BORDERED_CLASS)
                 .text(heading.to_owned())
         });
     } else {
@@ -192,7 +175,7 @@ fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
         } => {
             li.anchor(|a| {
                 a.href(url.clone())
-                    .class("block font-mono text-wit-iface hover:underline text-base")
+                    .class("block font-mono text-wit-iface hover:underline text-[15px]")
                     .text(name.to_owned())
             });
         }
@@ -200,29 +183,32 @@ fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
             name, url: None, ..
         } => {
             li.span(|s| {
-                s.class("block font-mono text-fg text-base")
+                s.class("block font-mono text-ink-900 text-[15px]")
                     .text(name.to_owned())
             });
         }
         WorldItemDoc::Function(func) => {
             let sig = format_function_signature(func);
-            li.code(|c| c.class("block font-mono text-base text-wit-func").text(sig));
+            li.code(|c| {
+                c.class("block font-mono text-[14px] text-wit-func")
+                    .text(sig)
+            });
             if let Some(docs) = &func.docs {
                 li.paragraph(|p| {
-                    p.class("text-base text-fg-secondary mt-1")
+                    p.class("text-[15px] text-ink-700 mt-1")
                         .text(crate::markdown::render_inline(&first_sentence(docs)))
                 });
             }
         }
         WorldItemDoc::Type(ty) => {
             li.span(|s| {
-                s.class("block font-mono text-base")
-                    .span(|s2| s2.class("text-fg-muted").text("type "))
+                s.class("block font-mono text-[14px]")
+                    .span(|s2| s2.class("text-ink-500").text("type "))
                     .span(|s2| s2.class("text-accent").text(ty.name.clone()))
             });
             if let Some(docs) = &ty.docs {
                 li.paragraph(|p| {
-                    p.class("text-base text-fg-secondary mt-1")
+                    p.class("text-[15px] text-ink-700 mt-1")
                         .text(crate::markdown::render_inline(&first_sentence(docs)))
                 });
             }

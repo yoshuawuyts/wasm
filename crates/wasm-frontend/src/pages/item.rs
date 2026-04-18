@@ -1,5 +1,6 @@
 //! Item detail page (type or function within an interface).
 
+use crate::components::{copy_button, section_heading};
 use crate::wit_doc::{FunctionDoc, TypeDoc, TypeKind, TypeRef, WitDocument};
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
@@ -33,37 +34,15 @@ pub(crate) fn render_type(
         .map(|docs| crate::markdown::render_block(docs, crate::markdown::DOC_CLASS))
         .unwrap_or_default();
 
-    let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
-    let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
+    let combined_docs = format!("{code_block}{docs_html}");
 
     // Header row: name on left, docs on right
-    let header = format!(
-        r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
-    <span class="{kind_color}">{name}</span>
-    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-  </h2>
-  <span class="text-sm text-fg-muted mt-1 block">{kind_label}</span>
-  <div class="mt-4">
-    {code_block}
-    {docs_html}
-  </div>
-</div>
-<script>
-(function(){{
-  var btn=document.getElementById('copy-fqn-btn');
-  var copyIcon="{copy_icon}";
-  var checkIcon="{check_icon}";
-  btn.addEventListener('click',function(){{
-    navigator.clipboard.writeText('{fqn}').then(function(){{
-      btn.innerHTML=checkIcon;
-      setTimeout(function(){{btn.innerHTML=copyIcon}},2000);
-    }});
-  }});
-}})();
-</script>"#,
-        kind_color = type_kind_color(&ty.kind),
-        name = ty.name,
+    let header = copy_button::heading_with_copy(
+        &ty.name,
+        kind_label,
+        &fqn,
+        type_kind_color(&ty.kind),
+        &combined_docs,
     );
 
     // Type body content (fields, variants, etc.)
@@ -113,36 +92,15 @@ pub(crate) fn render_function(
         .map(|docs| crate::markdown::render_block(docs, crate::markdown::DOC_CLASS))
         .unwrap_or_default();
 
-    let copy_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2' ry='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>";
-    let check_icon = "<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>";
+    let combined_docs = format!("{code_block}{docs_html}");
 
     // Header row: name on left, docs on right
-    let header = format!(
-        r#"<div class="max-w-3xl mb-6">
-  <h2 class="text-3xl font-light tracking-display font-display flex items-baseline gap-2 group">
-    <span class="text-wit-func">{name}</span>
-    <button id="copy-fqn-btn" class="text-fg-faint hover:text-fg transition-opacity cursor-pointer opacity-0 group-hover:opacity-100" style="font-size:0.5em;vertical-align:middle" title="Copy item path to clipboard">{copy_icon}</button>
-  </h2>
-  <span class="text-sm text-fg-muted mt-1 block">Function</span>
-  <div class="mt-4">
-    {code_block}
-    {docs_html}
-  </div>
-</div>
-<script>
-(function(){{
-  var btn=document.getElementById('copy-fqn-btn');
-  var copyIcon="{copy_icon}";
-  var checkIcon="{check_icon}";
-  btn.addEventListener('click',function(){{
-    navigator.clipboard.writeText('{fqn}').then(function(){{
-      btn.innerHTML=checkIcon;
-      setTimeout(function(){{btn.innerHTML=copyIcon}},2000);
-    }});
-  }});
-}})();
-</script>"#,
-        name = func.name,
+    let header = copy_button::heading_with_copy(
+        &func.name,
+        "Function",
+        &fqn,
+        "text-wit-func",
+        &combined_docs,
     );
 
     let content = header;
@@ -231,7 +189,7 @@ fn render_function_signature(func: &FunctionDoc) -> Division {
         .class("mb-2 bg-surface px-3 py-2")
         .push(
             html::text_content::PreformattedText::builder()
-                .class("text-base font-mono text-fg overflow-x-auto")
+                .class("text-[14px] font-mono text-ink-900 overflow-x-auto")
                 .code(|c| {
                     wit_render::render_func_in_code(c, func, "");
                     c
@@ -260,15 +218,12 @@ fn render_type_body(kind: &TypeKind) -> Division {
 /// Render a table of record fields.
 fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3")
-            .text(heading.to_owned())
-    });
+    div.heading_2(|h2| h2.class(section_heading::CLASS).text(heading.to_owned()));
 
     let mut table = Table::builder();
-    table.class("w-full text-sm");
+    table.class("w-full text-[13px]");
     table.table_row(|tr| {
-        tr.class("border-b-2 border-fg text-left text-fg-muted")
+        tr.class("border-b border-line text-left text-ink-500")
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Name"))
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Type"))
             .table_header(|th| th.class("py-2 font-medium").text("Description"))
@@ -287,17 +242,17 @@ fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Div
 /// Render a single field/param row.
 fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
     TableRow::builder()
-        .class("border-b-2 border-fg/50")
+        .class("border-b-2 border-line")
         .table_cell(|td| {
             td.class("py-2 pr-4 font-mono text-accent")
                 .text(name.to_owned())
         })
         .table_cell(|td| {
-            td.class("py-2 pr-4 font-mono text-fg")
+            td.class("py-2 pr-4 font-mono text-ink-900")
                 .push(super::wit_render::render_type_ref(ty))
         })
         .table_cell(|td| {
-            td.class("py-2 text-fg-secondary")
+            td.class("py-2 text-ink-700")
                 .text(crate::markdown::render_inline(docs.unwrap_or("")))
         })
         .build()
@@ -306,28 +261,25 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
 /// Render a variant cases table.
 fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3")
-            .text("Cases")
-    });
+    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
 
     let mut table = Table::builder();
-    table.class("w-full text-sm");
+    table.class("w-full text-[13px]");
     table.table_row(|tr| {
-        tr.class("border-b-2 border-fg text-left text-fg-muted")
+        tr.class("border-b border-line text-left text-ink-500")
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Case"))
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Payload"))
             .table_header(|th| th.class("py-2 font-medium").text("Description"))
     });
     for case in cases {
         table.table_row(|tr| {
-            tr.class("border-b-2 border-fg/50")
+            tr.class("border-b-2 border-line")
                 .table_cell(|td| {
                     td.class("py-2 pr-4 font-mono text-accent")
                         .text(case.name.clone())
                 })
                 .table_cell(|td| {
-                    td.class("py-2 pr-4 font-mono text-fg");
+                    td.class("py-2 pr-4 font-mono text-ink-900");
                     if let Some(t) = &case.ty {
                         td.push(super::wit_render::render_type_ref(t));
                     } else {
@@ -336,7 +288,7 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
                     td
                 })
                 .table_cell(|td| {
-                    td.class("py-2 text-fg-secondary")
+                    td.class("py-2 text-ink-700")
                         .text(crate::markdown::render_inline(
                             case.docs.as_deref().unwrap_or(""),
                         ))
@@ -350,26 +302,23 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
 /// Render an enum cases list.
 fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3")
-            .text("Cases")
-    });
+    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
     let mut table = Table::builder();
-    table.class("w-full text-sm");
+    table.class("w-full text-[13px]");
     table.table_row(|tr| {
-        tr.class("border-b-2 border-fg text-left text-fg-muted")
+        tr.class("border-b border-line text-left text-ink-500")
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Case"))
             .table_header(|th| th.class("py-2 font-medium").text("Description"))
     });
     for case in cases {
         table.table_row(|tr| {
-            tr.class("border-b-2 border-fg/50")
+            tr.class("border-b-2 border-line")
                 .table_cell(|td| {
                     td.class("py-2 pr-4 font-mono text-accent")
                         .text(case.name.clone())
                 })
                 .table_cell(|td| {
-                    td.class("py-2 text-fg-secondary")
+                    td.class("py-2 text-ink-700")
                         .text(crate::markdown::render_inline(
                             case.docs.as_deref().unwrap_or(""),
                         ))
@@ -383,26 +332,23 @@ fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
 /// Render a flags list.
 fn render_flags_list(flags: &[crate::wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3")
-            .text("Flags")
-    });
+    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Flags"));
     let mut table = Table::builder();
-    table.class("w-full text-sm");
+    table.class("w-full text-[13px]");
     table.table_row(|tr| {
-        tr.class("border-b-2 border-fg text-left text-fg-muted")
+        tr.class("border-b border-line text-left text-ink-500")
             .table_header(|th| th.class("py-2 pr-4 font-medium").text("Flag"))
             .table_header(|th| th.class("py-2 font-medium").text("Description"))
     });
     for flag in flags {
         table.table_row(|tr| {
-            tr.class("border-b-2 border-fg/50")
+            tr.class("border-b-2 border-line")
                 .table_cell(|td| {
                     td.class("py-2 pr-4 font-mono text-accent")
                         .text(flag.name.clone())
                 })
                 .table_cell(|td| {
-                    td.class("py-2 text-fg-secondary")
+                    td.class("py-2 text-ink-700")
                         .text(crate::markdown::render_inline(
                             flag.docs.as_deref().unwrap_or(""),
                         ))
@@ -424,15 +370,12 @@ fn render_resource_body(
 
     if let Some(ctor) = constructor {
         div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class("text-lg font-medium text-fg-muted mb-3")
-                    .text("Constructor")
-            })
-            .push(render_function_signature(ctor));
+            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Constructor"))
+                .push(render_function_signature(ctor));
             if let Some(docs) = &ctor.docs {
                 d.text(crate::markdown::render_block(
                     docs,
-                    "text-base text-fg-secondary leading-relaxed prose-doc",
+                    "text-[15px] text-ink-700 leading-relaxed prose-doc",
                 ));
             }
             d
@@ -440,18 +383,15 @@ fn render_resource_body(
     }
     if !methods.is_empty() {
         div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class("text-lg font-medium text-fg-muted mb-3")
-                    .text("Methods")
-            });
+            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Methods"));
             for func in methods {
                 d.division(|m| {
-                    m.class("py-3 border-b border-border-light");
+                    m.class("py-3 border-b border-lineSoft");
                     m.push(render_function_signature(func));
                     if let Some(docs) = &func.docs {
                         m.text(crate::markdown::render_block(
                             docs,
-                            "text-base text-fg-secondary leading-relaxed prose-doc",
+                            "text-[15px] text-ink-700 leading-relaxed prose-doc",
                         ));
                     }
                     m
@@ -462,18 +402,15 @@ fn render_resource_body(
     }
     if !statics.is_empty() {
         div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class("text-lg font-medium text-fg-muted mb-3")
-                    .text("Static Functions")
-            });
+            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Static Functions"));
             for func in statics {
                 d.division(|m| {
-                    m.class("py-3 border-b border-border-light");
+                    m.class("py-3 border-b border-lineSoft");
                     m.push(render_function_signature(func));
                     if let Some(docs) = &func.docs {
                         m.text(crate::markdown::render_block(
                             docs,
-                            "text-base text-fg-secondary leading-relaxed prose-doc",
+                            "text-[15px] text-ink-700 leading-relaxed prose-doc",
                         ));
                     }
                     m

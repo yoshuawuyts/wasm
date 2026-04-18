@@ -2,6 +2,7 @@
 
 pub(crate) mod all;
 pub(crate) mod child_component;
+pub(crate) mod design_system;
 pub(crate) mod docs;
 pub(crate) mod downloads;
 pub(crate) mod error;

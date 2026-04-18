@@ -12,7 +12,7 @@
 use crate::footer;
 
 /// Accent color used throughout the UI.
-pub(crate) const ACCENT_COLOR: &str = "#232cf4";
+pub(crate) const ACCENT_COLOR: &str = "#18181B";
 
 /// Render a complete HTML document with the given title and body content.
 ///
@@ -53,42 +53,65 @@ fn document_inner(
 
     format!(
         r#"<!DOCTYPE html>
-<html lang="en" style="view-transition-name:root;background:#d9d9d9">
+<html lang="en" style="view-transition-name:root">
 <head>
   <meta charset="utf-8">
+  <meta name="color-scheme" content="light dark">
+  <style>html{{background:#F4F4F5}}@media(prefers-color-scheme:dark){{html:not([data-theme=light]){{background:#1C1C20}}}}html[data-theme=dark]{{background:#1C1C20}}html[data-theme=light]{{background:#F4F4F5}}</style>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Browse and discover WebAssembly components and WIT interfaces published to OCI registries.">
   <title>{escaped_title} — wasm registry</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-  <link rel="preload" href="/fonts/iosevka-regular.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="/fonts/iosevka-semibold.woff2" as="font" type="font/woff2" crossorigin>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    /* Early theme init — prevent flash of wrong theme */
+    (function() {{
+      var t = localStorage.getItem('ds-theme');
+      if (t === 'dark' || t === 'light') {{
+        document.documentElement.setAttribute('data-theme', t);
+        document.documentElement.style.background = t === 'dark' ? '#1C1C20' : '#F4F4F5';
+      }} else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {{
+        document.documentElement.style.background = '#1C1C20';
+      }}
+    }})();
+  </script>
   <script>
     tailwind.config = {{
       theme: {{
         extend: {{
           colors: {{
-            accent: 'var(--color-accent)',
-            'accent-hover': 'var(--color-accent-hover)',
-            page: 'var(--color-bg)',
-            // Violet-tinted neutrals driven by CSS custom properties
+            /* — New design system tokens — */
+            canvas: 'var(--c-canvas)',
             surface: {{
-              DEFAULT: 'var(--color-surface)',
-              muted:   'var(--color-surface-muted)',
+              DEFAULT: 'var(--c-surface)',
+              muted:   'var(--c-surface-muted)',
             }},
-            border: {{
-              DEFAULT: 'var(--color-border)',
-              light:   'var(--color-border-light)',
+            surfaceMuted: 'var(--c-surface-muted)',
+            ink: {{
+              900: 'var(--c-ink-900)',
+              700: 'var(--c-ink-700)',
+              500: 'var(--c-ink-500)',
+              400: 'var(--c-ink-400)',
+              300: 'var(--c-ink-300)',
             }},
-            fg: {{
-              DEFAULT:   'var(--color-fg)',
-              secondary: 'var(--color-fg-secondary)',
-              muted:     'var(--color-fg-muted)',
-              faint:     'var(--color-fg-faint)',
+            line: 'var(--c-line)',
+            lineSoft: 'var(--c-line-soft)',
+            rule: 'var(--c-rule)',
+            positive: 'var(--c-positive)',
+            negative: 'var(--c-negative)',
+            accent: 'var(--c-accent)',
+            cat: {{
+              blue: 'var(--c-cat-blue)',       blueInk: 'var(--c-cat-blue-ink)',
+              pink: 'var(--c-cat-pink)',       pinkInk: 'var(--c-cat-pink-ink)',
+              green: 'var(--c-cat-green)',     greenInk: 'var(--c-cat-green-ink)',
+              peach: 'var(--c-cat-peach)',     peachInk: 'var(--c-cat-peach-ink)',
+              lilac: 'var(--c-cat-lilac)',     lilacInk: 'var(--c-cat-lilac-ink)',
+              cream: 'var(--c-cat-cream)',     creamInk: 'var(--c-cat-cream-ink)',
+              teal: 'var(--c-cat-teal)',       tealInk: 'var(--c-cat-teal-ink)',
+              rust: 'var(--c-cat-rust)',       rustInk: 'var(--c-cat-rust-ink)',
+              plum: 'var(--c-cat-plum)',       plumInk: 'var(--c-cat-plum-ink)',
+              slate: 'var(--c-cat-slate)',     slateInk: 'var(--c-cat-slate-ink)',
             }},
-            // WIT item kind colors
+            /* WIT semantic colors */
             wit: {{
               struct:   'var(--color-wit-struct)',
               enum:     'var(--color-wit-enum)',
@@ -101,9 +124,8 @@ fn document_inner(
             }},
           }},
           fontFamily: {{
-            sans: ['"Source Serif 4"', 'Georgia', 'serif'],
-            mono: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', '"Fira Code"', '"Cascadia Code"', 'Consolas', 'monospace'],
-            display: ['"Iosevka Web"', 'Iosevka', '"SF Mono"', 'monospace'],
+            sans: ['-apple-system', 'BlinkMacSystemFont', 'system-ui', '"Segoe UI"', '"Helvetica Neue"', 'Helvetica', 'Arial', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
           }},
           letterSpacing: {{
             display: '-0.06em',
@@ -112,76 +134,185 @@ fn document_inner(
             sm: ['0.875rem', {{ lineHeight: '1.375rem' }}],
             lg: ['1.125rem', {{ lineHeight: '1.625rem' }}],
           }},
+          boxShadow: {{
+            tooltip: 'var(--shadow-tooltip)',
+            card: 'var(--shadow-card)',
+          }},
+          borderRadius: {{
+            DEFAULT: '3px',
+            sm: '2px',
+            md: '4px',
+            lg: '5px',
+            pill: '9999px',
+          }},
+          transitionTimingFunction: {{
+            standard: 'cubic-bezier(0.2, 0, 0, 1)',
+            entrance: 'cubic-bezier(0, 0, 0, 1)',
+            exit: 'cubic-bezier(0.4, 0, 1, 1)',
+            spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }},
+          transitionDuration: {{
+            fast: '120ms',
+            base: '180ms',
+            slow: '260ms',
+            page: '360ms',
+          }},
         }}
       }}
     }}
   </script>
   <style>
-    /* Self-hosted Iosevka webfont */
-    @font-face {{
-      font-family: 'Iosevka Web';
-      font-style: normal;
-      font-weight: 400;
-      font-display: swap;
-      src: url('/fonts/iosevka-regular.woff2') format('woff2');
-    }}
-    @font-face {{
-      font-family: 'Iosevka Web';
-      font-style: normal;
-      font-weight: 500;
-      font-display: swap;
-      src: url('/fonts/iosevka-medium.woff2') format('woff2');
-    }}
-    @font-face {{
-      font-family: 'Iosevka Web';
-      font-style: normal;
-      font-weight: 600;
-      font-display: swap;
-      src: url('/fonts/iosevka-semibold.woff2') format('woff2');
-    }}
-    @font-face {{
-      font-family: 'Iosevka Web';
-      font-style: normal;
-      font-weight: 700;
-      font-display: swap;
-      src: url('/fonts/iosevka-bold.woff2') format('woff2');
-    }}
-    /* Color system: two-tone, inspired by charcuterie.elastiq.ch.
-       Warm off-white background, vivid blue foreground. */
+    /* ── Design system tokens ─────────────────────────────── */
     :root {{
-      --color-bg: #d9d9d9;
-      --color-accent: {ACCENT_COLOR};
-      --color-accent-hover: #1a22c0;
-      --color-surface: #cfcfcf;
-      --color-surface-muted: #c8c8c8;
-      --color-border: rgba(35, 44, 244, 0.25);
-      --color-border-light: rgba(35, 44, 244, 0.12);
-      --color-fg: {ACCENT_COLOR};
-      --color-fg-secondary: rgba(35, 44, 244, 0.85);
-      --color-fg-muted: rgba(35, 44, 244, 0.70);
-      --color-fg-faint: rgba(35, 44, 244, 0.4);
-      /* WIT item kind colors */
-      --color-wit-struct: #4338ca;
-      --color-wit-enum: #0d7377;
+      color-scheme: light dark;
+
+      /* Light mode — calm paper, near-black ink, pastel categoricals */
+      --c-canvas:        #F4F4F5;
+      --c-surface:       #FFFFFF;
+      --c-surface-muted: #E8E8EA;
+      --c-ink-900:       {ACCENT_COLOR};
+      --c-ink-700:       #3F3F46;
+      --c-ink-500:       #71717A;
+      --c-ink-400:       #A1A1AA;
+      --c-ink-300:       #D4D4D8;
+      --c-line:          #D4D4D8;
+      --c-line-soft:     #E4E4E7;
+      --c-positive:      #1F8A4C;
+      --c-negative:      #9B4F5E;
+      --c-accent:        {ACCENT_COLOR};
+
+      --c-cat-blue:      #D6E4FF;  --c-cat-blue-ink:   #3D5A99;
+      --c-cat-pink:      #FBD9DF;  --c-cat-pink-ink:   #9B4F5E;
+      --c-cat-green:     #D2ECD8;  --c-cat-green-ink:  #3F7A52;
+      --c-cat-peach:     #F8E2C2;  --c-cat-peach-ink:  #8E6529;
+      --c-cat-lilac:     #E4DAF1;  --c-cat-lilac-ink:  #6B528F;
+      --c-cat-cream:     #F4ECC2;  --c-cat-cream-ink:  #7A6A2A;
+      --c-cat-teal:      #BFE3EE;  --c-cat-teal-ink:   #1F6F87;
+      --c-cat-rust:      #F4D2C0;  --c-cat-rust-ink:   #9F5536;
+      --c-cat-plum:      #E8C5E8;  --c-cat-plum-ink:   #7E2E7E;
+      --c-cat-slate:     #DADCE0;  --c-cat-slate-ink:  #535A66;
+
+      --c-rule:          var(--c-ink-900);
+      --c-scrollbar:     #D4D4D8;
+
+      --shadow-tooltip:  0 8px 24px -8px rgba(20,22,28,0.35);
+      --shadow-card:     0 1px 0 0 rgba(20,22,28,0.04);
+
+      /* WIT syntax coloring */
+      --color-wit-struct:   #4338ca;
+      --color-wit-enum:     #0d7377;
       --color-wit-resource: #b45309;
-      --color-wit-func: #15803d;
-      --color-wit-world: #9333ea;
-      --color-wit-iface: #0369a1;
-      --color-wit-import: #b91c1c;
-      --color-wit-module: #be185d;
+      --color-wit-func:     #15803d;
+      --color-wit-world:    #9333ea;
+      --color-wit-iface:    #0369a1;
+      --color-wit-import:   #b91c1c;
+      --color-wit-module:   #be185d;
+
     }}
+
+    @media (prefers-color-scheme: dark) {{
+      :root:not([data-theme="light"]) {{
+        --c-canvas:        #1C1C20;
+        --c-surface:       #26262B;
+        --c-surface-muted: #2F2F35;
+        --c-ink-900:       #ECECEE;
+        --c-ink-700:       #B5B5BB;
+        --c-ink-500:       #8B8B92;
+        --c-ink-400:       #76767D;
+        --c-ink-300:       #4A4A50;
+        --c-line:          #3A3A40;
+        --c-line-soft:     #323238;
+        --c-positive:      #5EC787;
+        --c-negative:      #EE7B8E;
+        --c-accent:        #8FB1F5;
+
+        --c-cat-blue:      #B8D0FF;  --c-cat-blue-ink:   #1F3F8C;
+        --c-cat-pink:      #FFB8B0;  --c-cat-pink-ink:   #9E2823;
+        --c-cat-green:     #B5E8C0;  --c-cat-green-ink:  #1F6738;
+        --c-cat-peach:     #FBD3A0;  --c-cat-peach-ink:  #7A4E10;
+        --c-cat-lilac:     #C6B1F0;  --c-cat-lilac-ink:  #422684;
+        --c-cat-cream:     #F5E696;  --c-cat-cream-ink:  #6B5610;
+        --c-cat-teal:      #A6DDF0;  --c-cat-teal-ink:   #0F5C7A;
+        --c-cat-rust:      #F5BFA0;  --c-cat-rust-ink:   #87401C;
+        --c-cat-plum:      #DDB2EF;  --c-cat-plum-ink:   #571485;
+        --c-cat-slate:     #C6CDD8;  --c-cat-slate-ink:  #424B5C;
+
+        --c-rule:          #6B6B72;
+        --c-scrollbar:     #4A4A50;
+
+        --shadow-tooltip:  0 10px 28px -10px rgba(0,0,0,0.7);
+        --shadow-card:     inset 0 1px 0 0 rgba(255,255,255,0.06), 0 1px 0 0 rgba(0,0,0,0.5), 0 8px 16px -12px rgba(0,0,0,0.6);
+
+        /* WIT dark variants — brighter to read against dark canvas */
+        --color-wit-struct:   #818cf8;
+        --color-wit-enum:     #2dd4bf;
+        --color-wit-resource: #fbbf24;
+        --color-wit-func:     #4ade80;
+        --color-wit-world:    #c084fc;
+        --color-wit-iface:    #38bdf8;
+        --color-wit-import:   #f87171;
+        --color-wit-module:   #f472b6;
+      }}
+    }}
+
+    :root[data-theme="dark"] {{
+      --c-canvas:        #1C1C20;
+      --c-surface:       #26262B;
+      --c-surface-muted: #2F2F35;
+      --c-ink-900:       #ECECEE;
+      --c-ink-700:       #B5B5BB;
+      --c-ink-500:       #8B8B92;
+      --c-ink-400:       #76767D;
+      --c-ink-300:       #4A4A50;
+      --c-line:          #3A3A40;
+      --c-line-soft:     #323238;
+      --c-positive:      #5EC787;
+      --c-negative:      #EE7B8E;
+      --c-accent:        #8FB1F5;
+
+      --c-cat-blue:      #B8D0FF;  --c-cat-blue-ink:   #1F3F8C;
+      --c-cat-pink:      #FFB8B0;  --c-cat-pink-ink:   #9E2823;
+      --c-cat-green:     #B5E8C0;  --c-cat-green-ink:  #1F6738;
+      --c-cat-peach:     #FBD3A0;  --c-cat-peach-ink:  #7A4E10;
+      --c-cat-lilac:     #C6B1F0;  --c-cat-lilac-ink:  #422684;
+      --c-cat-cream:     #F5E696;  --c-cat-cream-ink:  #6B5610;
+      --c-cat-teal:      #A6DDF0;  --c-cat-teal-ink:   #0F5C7A;
+      --c-cat-rust:      #F5BFA0;  --c-cat-rust-ink:   #87401C;
+      --c-cat-plum:      #DDB2EF;  --c-cat-plum-ink:   #571485;
+      --c-cat-slate:     #C6CDD8;  --c-cat-slate-ink:  #424B5C;
+
+      --c-rule:          #6B6B72;
+      --c-scrollbar:     #4A4A50;
+
+      --shadow-tooltip:  0 10px 28px -10px rgba(0,0,0,0.7);
+      --shadow-card:     inset 0 1px 0 0 rgba(255,255,255,0.06), 0 1px 0 0 rgba(0,0,0,0.5), 0 8px 16px -12px rgba(0,0,0,0.6);
+
+      --color-wit-struct:   #818cf8;
+      --color-wit-enum:     #2dd4bf;
+      --color-wit-resource: #fbbf24;
+      --color-wit-func:     #4ade80;
+      --color-wit-world:    #c084fc;
+      --color-wit-iface:    #38bdf8;
+      --color-wit-import:   #f87171;
+      --color-wit-module:   #f472b6;
+    }}
+
     html, body {{
-      background-color: var(--color-bg);
-      color: var(--color-fg);
+      background-color: var(--c-canvas);
+      color: var(--c-ink-900);
+      -webkit-font-smoothing: antialiased;
     }}
     /* Consistent focus ring for keyboard navigation */
     :focus-visible {{
-      outline: 2px solid var(--color-accent);
+      outline: 2px solid var(--c-accent);
       outline-offset: 2px;
     }}
-    /* Remove default outline when not keyboard-navigating */
     :focus:not(:focus-visible) {{
       outline: none;
+    }}
+    ::selection {{
+      background: color-mix(in oklab, var(--c-accent) 35%, transparent);
+      color: var(--c-ink-900);
     }}
     @view-transition {{
       navigation: auto;
@@ -200,7 +331,7 @@ fn document_inner(
     }}
     /* Card hover — pop out with scale, shadow, and strong border */
     .card-lift {{
-      transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+      transition: transform 120ms cubic-bezier(0.2, 0, 0, 1), box-shadow 120ms cubic-bezier(0.2, 0, 0, 1);
       transform-origin: center center;
     }}
     /* Prose styling for rendered markdown documentation */
@@ -211,17 +342,17 @@ fn document_inner(
       margin-bottom: 0;
     }}
     .prose-doc code {{
-      background: var(--color-surface);
+      background: var(--c-surface-muted);
       padding: 0.1em 0.3em;
       font-size: 0.9em;
     }}
     .prose-doc a {{
-      color: var(--color-accent);
+      color: var(--c-accent);
       text-decoration: underline;
       text-underline-offset: 2px;
     }}
     .prose-doc a:hover {{
-      color: var(--color-accent-hover);
+      opacity: 0.8;
     }}
     .prose-doc ul, .prose-doc ol {{
       margin: 0.5em 0;
@@ -231,7 +362,7 @@ fn document_inner(
       margin-bottom: 0.25em;
     }}
     .prose-doc pre {{
-      background: var(--color-surface);
+      background: var(--c-surface-muted);
       padding: 0.75em 1em;
       overflow-x: auto;
       margin: 0.75em 0;
@@ -239,10 +370,10 @@ fn document_inner(
     }}
     .card-lift:hover {{
       transform: scale(1.03);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-card);
       z-index: 1;
       position: relative;
-      outline: 2px solid var(--color-fg);
+      outline: 2px solid var(--c-ink-900);
       outline-offset: -2px;
     }}
     @media (prefers-reduced-motion: reduce) {{
@@ -254,7 +385,7 @@ fn document_inner(
       border-left: 2px solid var(--color-wit-iface);
     }}
     .card-component {{
-      border-left: 2px solid var(--color-accent);
+      border-left: 2px solid var(--c-accent);
     }}
     /* Copy hint */
     .copy-hint {{
@@ -268,7 +399,7 @@ fn document_inner(
       top: 50%;
       transform: translateX(100%) translateY(-50%);
       font-size: 0.65rem;
-      color: var(--color-fg-faint);
+      color: var(--c-ink-400);
       opacity: 0;
       transition: opacity 0.15s;
       white-space: nowrap;
@@ -279,7 +410,7 @@ fn document_inner(
     }}
     .copy-hint.copied::after {{
       content: 'copied!';
-      color: var(--color-accent);
+      color: var(--c-accent);
       opacity: 1;
     }}
     @media (prefers-reduced-motion: reduce) {{
@@ -296,12 +427,12 @@ fn document_inner(
       justify-content: center;
       width: 1.5rem;
       height: 1.5rem;
-      border: 2px solid var(--color-border);
+      border: 2px solid var(--c-line);
       border-radius: 0;
       font-size: 0.8125rem;
       font-family: inherit;
-      color: var(--color-fg-muted);
-      background: var(--color-surface-muted);
+      color: var(--c-ink-500);
+      background: var(--c-surface-muted);
       line-height: 1;
       pointer-events: none;
       transition: opacity 0.1s;
@@ -317,7 +448,7 @@ fn document_inner(
       top: 50%;
       transform: translateY(-50%);
       font-size: 1rem;
-      color: var(--color-fg-faint);
+      color: var(--c-ink-400);
       pointer-events: none;
       white-space: nowrap;
       overflow: hidden;
@@ -331,50 +462,41 @@ fn document_inner(
         transition: none;
       }}
     }}
-    /* Tab buttons — square, bordered, Charcuterie style */
+    /* Tab buttons — pill style, managed via Tailwind classes.
+       The .tab-btn class is only used as a JS selector. */
     .tab-btn {{
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
-      color: var(--color-fg);
-      background: var(--color-bg);
-      border: 2px solid var(--color-fg);
-      border-bottom: none;
-      margin-left: -2px;
       cursor: pointer;
-      transition: color 0.15s, background-color 0.15s;
-      flex: 1;
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }}
-    .tab-btn:first-child {{
-      margin-left: 0;
-    }}
-    .tab-btn:hover {{
-      background: var(--color-fg);
-      color: var(--color-bg);
-    }}
-    .tab-btn:hover > * {{
-      opacity: 1;
-    }}
-    .tab-btn[aria-selected="true"] {{
-      background: var(--color-fg);
-      color: var(--color-bg);
-    }}
-    .tab-btn[aria-selected="true"] > * {{
-      opacity: 1;
+      transition: background-color 0.15s, color 0.15s;
     }}
     @media (prefers-reduced-motion: reduce) {{
       .tab-btn {{ transition: none; }}
     }}
+    /* Theme toggle icon visibility */
+    .theme-icon-sun  {{ display: none; }}
+    .theme-icon-moon {{ display: inline-block; }}
+    @media (prefers-color-scheme: dark) {{
+      :root:not([data-theme="light"]) .theme-icon-sun  {{ display: inline-block; }}
+      :root:not([data-theme="light"]) .theme-icon-moon {{ display: none; }}
+    }}
+    :root[data-theme="dark"] .theme-icon-sun  {{ display: inline-block; }}
+    :root[data-theme="dark"] .theme-icon-moon {{ display: none; }}
+    :root[data-theme="light"] .theme-icon-sun  {{ display: none; }}
+    :root[data-theme="light"] .theme-icon-moon {{ display: inline-block; }}
   </style>
 </head>
-<body class="bg-page text-fg min-h-screen flex flex-col leading-relaxed font-sans">
+<body class="bg-canvas text-ink-900 min-h-screen flex flex-col leading-relaxed font-sans antialiased">
   {nav}
   <main class="{main_class}">
     {body_content}
   </main>
   {footer}
+  <!-- Theme toggle button (fixed, bottom-right) -->
+  <button id="theme-toggle" type="button" aria-label="Toggle dark mode"
+    class="fixed bottom-4 right-4 z-50 w-9 h-9 flex items-center justify-center rounded-md bg-surface border border-line text-ink-500 hover:text-ink-900 transition-colors cursor-pointer"
+    style="box-shadow:var(--shadow-card)">
+    <svg class="theme-icon-moon w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    <svg class="theme-icon-sun w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+  </button>
   <script>
     // Focus search on / key (developer convention)
     document.addEventListener('keydown', function(e) {{
@@ -406,9 +528,18 @@ fn document_inner(
       var group = btn.closest('.tab-group');
       if (!group) return;
       var tab = btn.getAttribute('data-tab');
+      var activeClass = 'bg-ink-900 text-canvas font-medium';
+      var inactiveClass = 'bg-surfaceMuted text-ink-700 hover:bg-ink-300';
       // Update tab buttons
       group.querySelectorAll('.tab-btn').forEach(function(b) {{
-        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+        var isActive = b === btn;
+        b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        activeClass.split(' ').forEach(function(c) {{
+          if (isActive) b.classList.add(c); else b.classList.remove(c);
+        }});
+        inactiveClass.split(' ').forEach(function(c) {{
+          if (isActive) b.classList.remove(c); else b.classList.add(c);
+        }});
       }});
       // Show/hide panels
       group.querySelectorAll('.tab-panel').forEach(function(p) {{
@@ -532,6 +663,26 @@ fn document_inner(
       setInterval(cycle, 5000);
     }})();
   </script>
+  <script>
+    /* Theme toggle */
+    (function() {{
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      var root = document.documentElement;
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      function currentMode() {{
+        var t = root.getAttribute('data-theme');
+        if (t === 'dark' || t === 'light') return t;
+        return mq.matches ? 'dark' : 'light';
+      }}
+      btn.addEventListener('click', function() {{
+        var next = currentMode() === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+        root.style.background = next === 'dark' ? '#1C1C20' : '#F4F4F5';
+        localStorage.setItem('ds-theme', next);
+      }});
+    }})();
+  </script>
 </body>
 </html>"#,
         escaped_title = escaped_title,
@@ -576,9 +727,13 @@ mod tests {
         assert!(html.contains("https://cdn.tailwindcss.com"));
         assert!(html.contains(ACCENT_COLOR));
         assert!(html.contains("<meta name=\"viewport\""));
-        assert!(html.contains("bg-page text-fg"));
+        assert!(html.contains("bg-canvas text-ink-900"));
         assert!(html.contains("html, body"));
-        assert!(html.contains("background-color: var(--color-bg);"));
-        assert!(html.contains("color: var(--color-fg);"));
+        assert!(html.contains("background-color: var(--c-canvas);"));
+        assert!(html.contains("color: var(--c-ink-900);"));
+        // Dark mode infrastructure
+        assert!(html.contains("prefers-color-scheme: dark"));
+        assert!(html.contains("data-theme"));
+        assert!(html.contains("theme-toggle"));
     }
 }

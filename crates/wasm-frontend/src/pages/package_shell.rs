@@ -8,6 +8,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
+use crate::components::{search_bar, section_heading};
 use crate::layout;
 
 /// Context for rendering the package page sidebar.
@@ -63,7 +64,7 @@ fn render_page_inner(
     let trailing_slash = if is_root {
         ""
     } else {
-        r#" <span class="text-fg-faint mx-0.5">/</span>"#
+        r#" <span class="text-ink-400 mx-0.5">/</span>"#
     };
 
     // Build sidebar metadata
@@ -78,31 +79,48 @@ fn render_page_inner(
     let pkg_name_html = match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) if !is_root => {
             format!(
-                r#"<a href="/{ns}" class="text-fg-muted hover:text-fg transition-colors">{ns}</a><span class="text-fg-faint">:</span><a href="{pkg_url}" class="text-fg-muted hover:text-fg transition-colors">{name}</a>"#
+                r#"<a href="/{ns}" class="text-ink-500 hover:text-ink-900 transition-colors">{ns}</a><span class="text-ink-400">:</span><a href="{pkg_url}" class="text-ink-500 hover:text-ink-900 transition-colors">{name}</a>"#
             )
         }
         (Some(ns), Some(_)) => {
             format!(
-                r#"<a href="/{ns}" class="text-fg-muted hover:text-fg transition-colors">{ns}</a><span class="text-fg-faint">:</span>"#
+                r#"<a href="/{ns}" class="text-ink-500 hover:text-ink-900 transition-colors">{ns}</a><span class="text-ink-400">:</span>"#
             )
         }
         _ => {
             format!(
-                r#"<a href="{pkg_url}" class="text-fg-muted hover:text-fg transition-colors">{display_name}</a>"#
+                r#"<a href="{pkg_url}" class="text-ink-500 hover:text-ink-900 transition-colors">{display_name}</a>"#
             )
         }
     };
+    let topbar_search = search_bar::compact("search-input");
+    let rightbar_search = search_bar::compact("search-input-lg");
     let body = format!(
         r#"<style>
   .page-grid {{
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-      "sidebar topbar"
-      "sidebar main";
-    gap: 0 2.5rem;
+    display: flex;
+    flex-direction: column;
     min-height: 100vh;
+  }}
+  .page-grid .sidebar {{
+    display: none;
+  }}
+  .page-grid .topbar {{
+    display: flex;
+  }}
+  @media (min-width: 768px) {{
+    .page-grid {{
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      grid-template-rows: auto 1fr;
+      grid-template-areas:
+        "sidebar topbar"
+        "sidebar main";
+      gap: 0 2.5rem;
+    }}
+    .page-grid .sidebar {{
+      display: flex;
+    }}
   }}
   @media (min-width: 1280px) {{
     .page-grid {{
@@ -126,35 +144,39 @@ fn render_page_inner(
   }}
 </style>
 <div class="page-grid pt-3 xl:pt-6">
-  <aside class="space-y-5 sidebar-scroll font-mono" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
+  <!-- Mobile header: visible < md -->
+  <div class="flex md:hidden items-center justify-between px-4 pt-4 pb-3 gap-4">
+    <a href="/" class="text-lg font-mono font-medium text-ink-900 hover:text-accent transition-colors shrink-0">(๑╹ᆺ╹)</a>
+    <div class="flex items-center gap-3">
+      <a href="/docs" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Docs</a>
+      <form action="/search" method="get" class="relative flex search-form">
+        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-32 h-8 px-3 rounded-md border border-line bg-surface text-[13px] text-ink-900 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-accent">
+      </form>
+    </div>
+  </div>
+  <aside class="sidebar space-y-5 sidebar-scroll font-mono" style="grid-area:sidebar;position:sticky;top:1.5rem;align-self:start;display:flex;flex-direction:column;height:calc(100vh - 3rem);overflow-y:auto;padding-right:0.75rem;padding-left:0.75rem">
     <div class="space-y-5 flex-1">
-    <div class="flex justify-center mb-4"><a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-mono font-medium text-fg hover:text-accent transition-colors" style="cursor:pointer;display:inline-block;width:12ch;text-align:left">(๑╹ᆺ╹)</a></div>
+    <div class="flex justify-center mb-4"><a href="/" id="bunny" aria-label="Home" role="link" class="text-lg font-mono font-medium text-ink-900 hover:text-accent transition-colors" style="cursor:pointer;display:inline-block;width:12ch;text-align:left">(๑╹ᆺ╹)</a></div>
     {sidebar_meta}
     </div>
-    <p class="text-sm text-fg-faint pb-6">Made by <a href="https://yosh.is" class="hover:text-fg transition-colors">Yosh Wuyts</a><br>Intended to be donated to the <a href="https://bytecodealliance.org" class="hover:text-fg transition-colors">Bytecode Alliance</a></p>
+    <p class="text-[13px] text-ink-400 pb-6">Made by <a href="https://yosh.is" class="hover:text-ink-900 transition-colors">Yosh Wuyts</a><br>Intended to be donated to the <a href="https://bytecodealliance.org" class="hover:text-ink-900 transition-colors">Bytecode Alliance</a></p>
   </aside>
   <div class="topbar flex items-center justify-end gap-4 pb-2 pr-4" style="grid-area:topbar;align-self:start">
-    <a href="/docs" class="text-sm text-fg-muted hover:text-fg transition-colors">Docs</a>
-    <a href="/downloads" class="text-sm text-fg-muted hover:text-fg transition-colors">Downloads</a>
-    <form action="/search" method="get" class="relative flex">
-      <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-48 px-3 pr-12 py-1.5 text-sm border-2 border-fg bg-page text-fg focus:outline-none" id="search-input">
-      <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-mono pointer-events-none opacity-30" aria-hidden="true">[ / ]</span>
-    </form>
+    <a href="/docs" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Docs</a>
+    <a href="/downloads" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Downloads</a>
+    {topbar_search}
   </div>
-  <div style="grid-area:main;min-width:0" class="pr-4">
-    <div class="flex flex-wrap items-baseline text-lg font-light tracking-display font-display font-display mb-2">
+  <div style="grid-area:main;min-width:0" class="px-4 md:pr-4 md:pl-0">
+    <div class="flex flex-wrap items-baseline text-lg font-semibold tracking-tight font-mono mb-2">
       {pkg_name_html}{breadcrumb_html}{trailing_slash}
     </div>
     {content}
   </div>
   <aside class="rightbar hidden pr-4" style="grid-area:rightbar;position:sticky;top:1.5rem;align-self:start">
     <div class="flex items-center gap-4">
-      <a href="/docs" class="text-sm text-fg-muted hover:text-fg transition-colors">Docs</a>
-      <a href="/downloads" class="text-sm text-fg-muted hover:text-fg transition-colors">Downloads</a>
-      <form action="/search" method="get" class="relative flex">
-        <input type="search" name="q" placeholder="Search…" aria-label="Search" class="w-36 px-3 pr-10 py-1.5 text-sm border-2 border-fg bg-page text-fg focus:outline-none" id="search-input-lg">
-        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-mono pointer-events-none opacity-30" aria-hidden="true">[ / ]</span>
-      </form>
+      <a href="/docs" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Docs</a>
+      <a href="/downloads" class="text-[13px] text-ink-500 hover:text-ink-900 transition-colors">Downloads</a>
+      {rightbar_search}
     </div>
   </aside>
 </div>
@@ -192,18 +214,18 @@ fn render_breadcrumb_path(crumbs: &[crate::nav::Crumb]) -> String {
     use std::fmt::Write;
     let mut html = String::new();
     for crumb in crumbs {
-        html.push_str(r#" <span class="text-fg-faint mx-0.5">/</span> "#);
+        html.push_str(r#" <span class="text-ink-400 mx-0.5">/</span> "#);
         if let Some(href) = &crumb.href {
             write!(
                 html,
-                r#"<a href="{href}" class="text-fg-muted hover:text-fg transition-colors">{label}</a>"#,
+                r#"<a href="{href}" class="text-ink-500 hover:text-ink-900 transition-colors">{label}</a>"#,
                 label = crumb.label
             )
             .unwrap();
         } else {
             write!(
                 html,
-                r#"<span class="text-fg">{label}</span>"#,
+                r#"<span class="text-ink-900">{label}</span>"#,
                 label = crumb.label
             )
             .unwrap();
@@ -228,7 +250,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     sidebar.division(|wrapper| {
         wrapper.class("");
         let mut meta = Division::builder();
-        meta.class("space-y-3 border-2 border-fg p-3");
+        meta.class("space-y-3 border border-line p-3");
 
         // Version selector inside metadata
         if !pkg.tags.is_empty() {
@@ -310,7 +332,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
             .class("")
             .division(|label| {
                 label
-                    .class("text-sm font-medium text-fg-muted mb-1")
+                    .class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
                     .text("Install")
             })
             .push(install_cmd)
@@ -331,16 +353,16 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     if !pkg.dependencies.is_empty() {
         sidebar.division(|wrapper| {
             wrapper.class("").heading_3(|h3| {
-                h3.class("text-sm font-medium text-fg-muted mb-1")
+                h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
                     .text("Dependencies")
             });
             wrapper.division(|div| {
-                div.class("border-2 border-fg p-3");
+                div.class("border border-line p-3");
                 let mut ul = html::text_content::UnorderedList::builder();
                 ul.class("space-y-1");
                 for dep in &pkg.dependencies {
                     ul.list_item(|li| {
-                        li.class("font-mono text-sm");
+                        li.class("font-mono text-[13px]");
                         match dep.package.split_once(':') {
                             Some((ns, name)) => {
                                 li.anchor(|a| {
@@ -350,11 +372,11 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
                                 });
                             }
                             None => {
-                                li.span(|s| s.class("text-fg").text(dep.package.clone()));
+                                li.span(|s| s.class("text-ink-900").text(dep.package.clone()));
                             }
                         }
                         if let Some(v) = &dep.version {
-                            li.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                            li.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
                         }
                         li
                     });
@@ -371,11 +393,11 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
     if total_dependents > 0 {
         sidebar.division(|wrapper| {
             wrapper.class("").heading_3(|h3| {
-                h3.class("text-sm font-medium text-fg-muted mb-1")
+                h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
                     .text(format!("Dependents ({total_dependents})"))
             });
             wrapper.division(|div| {
-                div.class("border-2 border-fg p-3");
+                div.class("border border-line p-3");
 
                 let mut all: Vec<&KnownPackage> =
                     ctx.importers.iter().chain(ctx.exporters.iter()).collect();
@@ -390,7 +412,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
                         _ => dep_pkg.repository.clone(),
                     };
                     ul.list_item(|li| {
-                        li.class("text-sm");
+                        li.class("text-[13px]");
                         match (&dep_pkg.wit_namespace, &dep_pkg.wit_name) {
                             (Some(ns), Some(n)) => {
                                 li.anchor(|a| {
@@ -400,7 +422,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
                                 });
                             }
                             _ => {
-                                li.span(|s| s.class("text-fg font-mono").text(name.clone()));
+                                li.span(|s| s.class("text-ink-900 font-mono").text(name.clone()));
                             }
                         }
                         li
@@ -410,7 +432,7 @@ fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
 
                 if all.len() > 10 {
                     div.paragraph(|p| {
-                        p.class("text-sm text-fg-faint mt-1")
+                        p.class("text-[13px] text-ink-400 mt-1")
                             .text(format!("and {} more", all.len() - 10))
                     });
                 }
@@ -574,22 +596,22 @@ fn build_iface_sidebar_section(heading: &str, items: &[SidebarIfaceItem]) -> Div
 
     let mut wrapper = Division::builder();
     wrapper.class("").heading_3(|h3| {
-        h3.class("text-sm font-medium text-fg-muted mb-1")
+        h3.class("text-[12px] font-mono uppercase tracking-wider text-ink-500 mb-2")
             .text(heading)
     });
     wrapper.division(|div| {
-        div.class("border-2 border-fg p-3");
+        div.class("border border-line p-3");
         let mut ul = html::text_content::UnorderedList::builder();
         ul.class("space-y-1");
         for item in &sorted {
             ul.list_item(|li| {
-                li.class("font-mono text-sm");
+                li.class("font-mono text-[13px]");
                 li.anchor(|a| {
                     a.href(item.href.clone())
                         .class("text-accent hover:underline");
                     a.span(|s| s.text(item.label.clone()));
                     if let Some(v) = &item.version {
-                        a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                        a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
                     }
                     a
                 });
@@ -598,7 +620,7 @@ fn build_iface_sidebar_section(heading: &str, items: &[SidebarIfaceItem]) -> Div
                         let prefix = if i == 0 { " " } else { ", " };
                         li.anchor(|a| {
                             a.href(w_href.clone())
-                                .class("text-fg-faint hover:underline ml-1");
+                                .class("text-ink-400 hover:underline ml-1");
                             if i == 0 {
                                 a.text(format!("({w}"));
                             } else {
@@ -607,7 +629,7 @@ fn build_iface_sidebar_section(heading: &str, items: &[SidebarIfaceItem]) -> Div
                             a
                         });
                     }
-                    li.span(|s| s.class("text-fg-faint").text(")"));
+                    li.span(|s| s.class("text-ink-400").text(")"));
                 }
                 li
             });
@@ -698,7 +720,7 @@ fn build_iface_href(iface: &wasm_meta_registry_client::WitInterfaceRef) -> Optio
 pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportEntry]) -> Division {
     let mut div = Division::builder();
     div.heading_2(|h2| {
-        h2.class("text-lg font-medium text-fg-muted mb-3 pb-2 border-b border-border")
+        h2.class(section_heading::BORDERED_CLASS)
             .text(heading.to_owned())
     });
 
@@ -739,26 +761,26 @@ pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportE
                     Some(url) => {
                         left.anchor(|a| {
                             a.href(url.clone())
-                                .class("block font-mono hover:underline text-base");
+                                .class("block font-mono hover:underline text-[15px]");
                             if let Some(pfx) = &prefix {
-                                a.span(|s| s.class("text-fg-muted").text(pfx.clone()));
+                                a.span(|s| s.class("text-ink-500").text(pfx.clone()));
                             }
                             a.span(|s| s.class(link_class).text(highlight.clone()));
                             if show_version && let Some(v) = &ver_part {
-                                a.span(|s| s.class("text-fg-faint ml-1").text(format!("@{v}")));
+                                a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{v}")));
                             }
                             a
                         });
                     }
                     None => {
                         left.span(|s| {
-                            s.class("block font-mono text-base");
+                            s.class("block font-mono text-[14px]");
                             if let Some(pfx) = &prefix {
-                                s.span(|ps| ps.class("text-fg-muted").text(pfx.clone()));
+                                s.span(|ps| ps.class("text-ink-500").text(pfx.clone()));
                             }
-                            s.span(|hs| hs.class("text-fg").text(highlight.clone()));
+                            s.span(|hs| hs.class("text-ink-900").text(highlight.clone()));
                             if show_version && let Some(v) = &ver_part {
-                                s.span(|vs| vs.class("text-fg-faint ml-1").text(format!("@{v}")));
+                                s.span(|vs| vs.class("text-ink-400 ml-1").text(format!("@{v}")));
                             }
                             s
                         });
@@ -769,7 +791,7 @@ pub(crate) fn render_import_export_section(heading: &str, items: &[ImportExportE
             if let Some(docs) = &item.docs {
                 li.division(|right| {
                     right
-                        .class("text-base leading-relaxed text-fg-secondary min-w-0")
+                        .class("text-[15px] leading-relaxed text-ink-700 min-w-0")
                         .text(crate::markdown::render_inline(docs))
                 });
             }
@@ -795,11 +817,11 @@ fn render_version_select(pkg: &KnownPackage, current_version: &str, url_name: &s
 
     Division::builder()
         .class("flex items-center justify-between gap-3")
-        .span(|s| s.class("text-fg-muted text-sm").text("Version"))
+        .span(|s| s.class("text-ink-500 text-[13px]").text("Version"))
         .push({
             let mut s = html::forms::Select::builder();
             s.id("version-select").name("version").class(
-                "bg-transparent text-fg text-sm cursor-pointer border-0 outline-none text-right",
+                "bg-transparent text-ink-900 text-[13px] cursor-pointer border-0 outline-none text-right",
             );
             for tag in &pkg.tags {
                 let is_current = tag == current_version;
@@ -838,16 +860,17 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
     Division::builder()
         .division(|div| {
             div.class(
-                "flex items-center gap-2 border-2 border-fg \
-                 px-3 py-2 font-mono text-sm text-fg",
+                "flex items-center gap-2 border border-line \
+                 px-3 py-2 font-mono text-[13px] text-ink-900",
             )
             .code(|code| {
                 code.class("flex-1 select-all overflow-hidden whitespace-nowrap text-ellipsis")
                     .text(command)
             })
             .button(|btn| {
-                btn.id("copy-install-btn")
-                    .class("shrink-0 text-fg-muted hover:text-fg transition-opacity cursor-pointer")
+                btn.id("copy-install-btn").class(
+                    "shrink-0 text-ink-500 hover:text-ink-900 transition-opacity cursor-pointer",
+                )
             })
             .script(|s| s.text(script))
         })
@@ -856,33 +879,21 @@ fn render_install_command(display_name: &str, version: &str) -> Division {
 
 /// Render a label: value metadata row.
 fn meta_row(label: &str, value: &str) -> Division {
-    Division::builder()
-        .class("flex items-baseline justify-between gap-3")
-        .span(|s| {
-            s.class("text-fg-muted text-sm shrink-0")
-                .text(label.to_owned())
-        })
-        .span(|s| {
-            s.class("text-fg text-sm font-mono text-right")
-                .text(value.to_owned())
-        })
-        .build()
+    crate::components::detail_row::row(
+        label,
+        crate::components::detail_row::Value::Text(value.to_owned()),
+    )
 }
 
 /// Render a label: linked-value metadata row.
 fn meta_link_row(label: &str, text: &str, href: &str) -> Division {
-    Division::builder()
-        .class("flex items-baseline justify-between gap-3")
-        .span(|s| {
-            s.class("text-fg-muted text-sm shrink-0")
-                .text(label.to_owned())
-        })
-        .anchor(|a| {
-            a.href(href.to_owned())
-                .class("text-accent hover:underline font-mono text-sm text-right truncate")
-                .text(text.to_owned())
-        })
-        .build()
+    crate::components::detail_row::row(
+        label,
+        crate::components::detail_row::Value::Link {
+            text: text.to_owned(),
+            href: href.to_owned(),
+        },
+    )
 }
 
 /// Format a byte count as a human-readable size string.
