@@ -335,20 +335,36 @@
     .tag.global{background:var(--c-cat-blue);color:var(--c-cat-blueInk);}
     .tag.danger{background:var(--c-cat-pink);color:var(--c-cat-pinkInk);}
 
-    /* Subcommand row card */
-    .sub-card{
-      display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:baseline;
-      padding:12px 0;
+    /* Item list — sigil + name/description + trailing meta.
+       Adopted from the design system (C04). */
+    .item-list{margin:0;}
+    .item-row{
+      display:grid;grid-template-columns:auto 1fr auto;
+      gap:12px;align-items:baseline;
+      padding:12px 14px;
       border-top:1px solid var(--c-line-soft);
+      border-radius:4px;
+      color:inherit;text-decoration:none;
     }
-    .sub-card:first-of-type{border-top:none;}
-    .sub-card .name{
+    .item-row:first-child{border-top:none;}
+    .item-row:hover{background:var(--c-surface-muted);}
+    .item-row .name{
       font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
       font-size:13.5px;color:var(--c-ink-900);font-weight:500;
+      text-decoration:none;
     }
-    .sub-card .desc{color:var(--c-ink-700);font-size:13px;line-height:1.55;}
-    .sub-card .meta{font-size:11px;color:var(--c-ink-500);
-      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+    .item-row:hover .name{color:var(--c-ink-900);}
+    .item-row .desc{
+      color:var(--c-ink-700);font-size:13px;line-height:1.55;margin-top:2px;
+    }
+    .item-row .meta{
+      font-size:11px;color:var(--c-ink-500);
+      font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;
+    }
+    .item-row.deprecated .name,
+    .item-row.deprecated .desc{color:var(--c-ink-400);}
+    .item-row.deprecated .name{text-decoration:line-through;text-decoration-thickness:1px;}
+    .item-row.deprecated .sigil{opacity:.5;}
 
     /* Note callout */
     .callout{
@@ -714,21 +730,50 @@
         <span class="text-ink-700">registry</span>
       </nav>
 
-      <!-- Title block -->
-      <div class="mt-1 flex items-start justify-between gap-4 flex-wrap">
-        <h1 class="flex items-baseline gap-3 text-[26px] font-semibold tracking-tight">
-          <span class="text-ink-500 mono text-[15px] font-normal">Command group</span>
-          <span class="mono">wasm registry</span>
-          <a href="#cmd-registry" class="anchor text-[16px]">§</a>
-        </h1>
-        <div class="flex items-center gap-2 pt-1">
-          <span class="since-tag">since 1.2.0</span>
-          <a href="#" class="src-link">source</a>
-          <a href="#" class="src-link">man page</a>
+      <!-- ============================== -->
+      <!-- PAGE HEADER (DS C03)           -->
+      <!-- Kicker · Title · Tagline · Metadata strip                     -->
+      <!-- ============================== -->
+      <header class="pt-4 pb-8 md:pb-12">
+        <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
+          <span>v2.4.0</span>
+          <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+          <span>CLI Reference</span>
+          <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+          <span>Command group</span>
         </div>
-      </div>
+        <h1 class="mt-3 flex items-baseline gap-2 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight mono">
+          wasm registry
+          <a href="#cmd-registry" class="anchor text-[18px]">§</a>
+        </h1>
+        <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
+          Manage the registries the toolchain publishes to and resolves dependencies
+          from — add, remove, authenticate, and publish.
+        </p>
+        <!-- Metadata strip -->
+        <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
+          <div class="inline-flex items-center gap-2">
+            <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Since</span>
+            <span class="inline-flex items-center h-7 px-2.5 rounded-md bg-surfaceMuted text-ink-900 mono text-[12.5px]">1.2.0</span>
+          </div>
+          <div class="inline-flex items-center gap-2">
+            <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Source</span>
+            <a href="#" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 mono text-[12.5px]">cli/registry.rs</a>
+          </div>
+          <div class="inline-flex items-center gap-2">
+            <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Reference</span>
+            <a href="#" class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 mono text-[12.5px]">man wasm-registry(1)</a>
+          </div>
+          <div class="inline-flex items-center gap-2">
+            <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Status</span>
+            <span class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-green text-cat-greenInk text-[12px] font-medium">
+              <span class="h-1.5 w-1.5 rounded-full bg-cat-greenInk"></span>Stable
+            </span>
+          </div>
+        </div>
+      </header>
 
-      <div class="mt-5 border-t rule"></div>
+      <div class="border-t rule"></div>
 
       <!-- Overview -->
       <section id="cmd-registry" class="pt-6 prose max-w-[72ch]">
@@ -775,55 +820,55 @@
             <a href="#subcommands" class="anchor text-[12px]">§</a>
           </h2>
         </div>
-        <div class="mt-2">
-          <div class="sub-card">
+        <div class="mt-2 item-list">
+          <a href="#cmd-registry-add" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-add" class="name hover:underline">add</a>
-              <div class="desc mt-0.5">Register a new namespace and point it at an OCI registry URL.</div>
+              <span class="name">add</span>
+              <div class="desc">Register a new namespace and point it at an OCI registry URL.</div>
             </div>
             <span class="meta">1.2.0</span>
-          </div>
-          <div class="sub-card">
+          </a>
+          <a href="#cmd-registry-remove" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-remove" class="name hover:underline">remove</a>
-              <div class="desc mt-0.5">Forget a registered namespace. Locally cached artifacts are kept.</div>
+              <span class="name">remove</span>
+              <div class="desc">Forget a registered namespace. Locally cached artifacts are kept.</div>
             </div>
             <span class="meta">1.2.0</span>
-          </div>
-          <div class="sub-card">
+          </a>
+          <a href="#cmd-registry-list" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-list" class="name hover:underline">list</a>
-              <div class="desc mt-0.5">Print the effective set of registries, with the source of each entry.</div>
+              <span class="name">list</span>
+              <div class="desc">Print the effective set of registries, with the source of each entry.</div>
             </div>
             <span class="meta">1.2.0</span>
-          </div>
-          <div class="sub-card">
+          </a>
+          <a href="#cmd-registry-login" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-login" class="name hover:underline">login</a>
-              <div class="desc mt-0.5">Store credentials for a registry in the OS keychain.</div>
+              <span class="name">login</span>
+              <div class="desc">Store credentials for a registry in the OS keychain.</div>
             </div>
             <span class="meta">1.4.0</span>
-          </div>
-          <div class="sub-card">
+          </a>
+          <a href="#cmd-registry-logout" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-logout" class="name hover:underline">logout</a>
-              <div class="desc mt-0.5">Remove credentials for a registry from the OS keychain.</div>
+              <span class="name">logout</span>
+              <div class="desc">Remove credentials for a registry from the OS keychain.</div>
             </div>
             <span class="meta">1.4.0</span>
-          </div>
-          <div class="sub-card">
+          </a>
+          <a href="#cmd-registry-publish" class="item-row">
             <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
             <div>
-              <a href="#cmd-registry-publish" class="name hover:underline">publish</a>
-              <div class="desc mt-0.5">Build and upload the current package to a registry.</div>
+              <span class="name">publish</span>
+              <div class="desc">Build and upload the current package to a registry.</div>
             </div>
             <span class="meta">1.3.0</span>
-          </div>
+          </a>
         </div>
       </section>
 

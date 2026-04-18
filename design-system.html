@@ -536,6 +536,51 @@
       border-left-color: var(--c-ink-900);
     }
     .toc-link.indent { padding-left: 22px; }
+
+    /* Item list — sigil + name/description + trailing meta. Used to
+       index a group's children (e.g. subcommands, endpoints, schemas). */
+    .item-list { margin: 0; }
+    .item-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 12px;
+      align-items: baseline;
+      padding: 12px 14px;
+      border-top: 1px solid var(--c-line-soft);
+      border-radius: 4px;
+      color: inherit;
+      text-decoration: none;
+    }
+    .item-row:first-child { border-top: none; }
+    .item-row:hover { background: var(--c-surface-muted); }
+    .item-row.deprecated .name,
+    .item-row.deprecated .desc {
+      color: var(--c-ink-400);
+    }
+    .item-row.deprecated .name {
+      text-decoration: line-through;
+      text-decoration-thickness: 1px;
+    }
+    .item-row.deprecated .sigil { opacity: .5; }
+    .item-row .name {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 13.5px;
+      color: var(--c-ink-900);
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .item-row:hover .name { color: var(--c-ink-900); }
+    .item-row .desc {
+      color: var(--c-ink-700);
+      font-size: 13px;
+      line-height: 1.55;
+      margin-top: 2px;
+    }
+    .item-row .meta {
+      font-size: 11px;
+      color: var(--c-ink-500);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
   </style>
 </head>
 
@@ -611,6 +656,7 @@
       <a href="#c-sidebar" class="text-ink-700 hover:text-ink-900">C01 — Nested Sidebar</a>
       <a href="#c-toc" class="text-ink-700 hover:text-ink-900">C02 — On This Page</a>
       <a href="#c-page-header" class="text-ink-700 hover:text-ink-900">C03 — Page Header</a>
+      <a href="#c-item-list" class="text-ink-700 hover:text-ink-900">C04 — Item List</a>
     </nav>
 
     <div class="border-t rule"></div>
@@ -2794,8 +2840,43 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
         <div class="space-y-6">
           <!-- Live demo -->
           <div class="border border-line rounded-lg bg-canvas p-4 max-w-[300px]">
+
+            <!-- Tool summary -->
+            <div class="pb-4 border-b hairline">
+              <div class="flex items-center gap-2">
+                <span class="inline-grid place-items-center h-8 w-8 rounded-md bg-cat-teal text-cat-tealInk mono text-[14px] font-semibold">$</span>
+                <div class="min-w-0">
+                  <div class="mono text-[14px] font-semibold leading-tight truncate">wasm</div>
+                  <div class="mono text-[11px] text-ink-500">v2.4.0 · darwin/arm64</div>
+                </div>
+              </div>
+              <p class="mt-3 text-[12.5px] text-ink-700 leading-relaxed">
+                Build, publish, and run WebAssembly components from a single workflow.
+              </p>
+            </div>
+
+            <!-- Version / scope -->
+            <div class="py-4 border-b hairline space-y-2.5">
+              <div>
+                <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Version</div>
+                <button class="w-full h-7 px-2 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
+                  <span class="mono">v2.4.0 (latest)</span>
+                  <svg class="h-3 w-3 text-ink-500" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                    stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
+                </button>
+              </div>
+              <div>
+                <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1">Shell</div>
+                <button class="w-full h-7 px-2 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]">
+                  <span class="mono">bash · zsh · fish · pwsh</span>
+                  <svg class="h-3 w-3 text-ink-500 flex-shrink-0" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+                    stroke-width="1.5"><path d="m3 4.5 3 3 3-3" /></svg>
+                </button>
+              </div>
+            </div>
+
             <!-- Section label -->
-            <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2">Commands</div>
+            <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 mt-4">Commands</div>
 
             <nav class="space-y-0.5 text-[13px]">
               <a href="#" class="tree-link">
@@ -3058,6 +3139,248 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                 doesn't shift the label.</li>
               <li>End the rail with a quiet <strong>Back to top</strong> button — 11px mono, ink-500, no border;
                 hover reveals the surface-muted background.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="border-t rule mt-16"></div>
+
+    <!-- ============================== -->
+    <!-- C03 PAGE HEADER                -->
+    <!-- ============================== -->
+    <section id="c-page-header" class="pt-12 md:pt-16">
+      <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+        <div>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">C03</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Page Header</h2>
+          <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
+            Top-of-page identification block: a kicker, a large title, an optional
+            tagline, and an optional metadata strip. Used to anchor reference and
+            documentation pages.
+          </p>
+        </div>
+        <div class="space-y-10">
+          <!-- Live demo: full variant with metadata strip -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Full · with metadata strip</div>
+            <div class="border border-line rounded-lg bg-canvas px-6 py-8">
+              <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
+                <span>v1</span>
+                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+                <span>HTTP · JSON · OpenAPI 3.1</span>
+              </div>
+              <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
+                Registry API
+              </h1>
+              <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
+                A read-only HTTP interface over the WebAssembly component registry.
+                Resolve packages, inspect versions, and search by imported or exported
+                WIT interface. All endpoints return
+                <span class="mono text-[13px]">application/json</span>.
+              </p>
+              <!-- Metadata strip -->
+              <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]">
+                <div class="inline-flex items-center gap-2">
+                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Base URL</span>
+                  <span
+                    class="inline-flex items-center h-7 px-2.5 rounded-md bg-surfaceMuted text-ink-900 mono text-[12.5px]">https://registry.example.com</span>
+                </div>
+                <div class="inline-flex items-center gap-2">
+                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Schema</span>
+                  <a href="#"
+                    class="text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900 mono text-[12.5px]">openapi.yaml</a>
+                </div>
+                <div class="inline-flex items-center gap-2">
+                  <span class="text-[11px] mono uppercase tracking-wider text-ink-500">Status</span>
+                  <span
+                    class="inline-flex items-center gap-1.5 px-2 h-6 rounded-pill bg-cat-green text-cat-greenInk text-[12px] font-medium">
+                    <span class="h-1.5 w-1.5 rounded-full bg-cat-greenInk"></span>Operational
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Compact variant: kicker + title + tagline only -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Compact · no metadata strip</div>
+            <div class="border border-line rounded-lg bg-canvas px-6 py-8">
+              <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
+                <span>v2.4.0</span>
+                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+                <span>CLI Reference</span>
+              </div>
+              <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
+                wasm registry
+              </h1>
+              <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
+                Manage the set of registries the toolchain knows about — add,
+                remove, authenticate, and publish.
+              </p>
+            </div>
+          </div>
+
+          <!-- Anatomy / rules -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
+            <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
+              <li><strong>Kicker</strong> — 12px ink-500 mono uppercase, dot-separated tokens (version,
+                category, format). Sets context before the title.</li>
+              <li><strong>Title</strong> — 36/44px semibold, tight tracking, leading 1.05. The page's anchor.</li>
+              <li><strong>Tagline</strong> — 15px ink-700, max-w-2xl, single paragraph. One sentence
+                describing what the page <em>is</em>, not what it does.</li>
+              <li><strong>Metadata strip</strong> (optional) — labelled key/value pairs separated by
+                horizontal gap, wrapping to a new row at narrow widths. Each label is 11px ink-500 mono
+                uppercase; each value uses the appropriate token (mono pill, link, or status badge).</li>
+              <li>Vertical rhythm: <code class="mono text-[12px]">pt-8 md:pt-12 pb-8 md:pb-12</code>, with
+                a strong <code class="mono text-[12px]">.rule</code> divider beneath separating the header from
+                page content.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <div class="border-t rule mt-16"></div>
+
+    <!-- ============================== -->
+    <!-- C04 ITEM LIST                  -->
+    <!-- ============================== -->
+    <section id="c-item-list" class="pt-12 md:pt-16">
+      <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+        <div>
+          <div class="text-[12px] mono uppercase tracking-wider text-ink-500">C04</div>
+          <h2 class="mt-2 text-[24px] font-semibold tracking-tight">Item List</h2>
+          <p class="mt-2 text-[13px] text-ink-500 leading-relaxed">
+            Compact index of a group's children — subcommands, endpoints, schemas.
+            Each row is a sigil, a name + one-line description, and trailing meta.
+            Rows separate with hairline rules, no card chrome.
+          </p>
+        </div>
+        <div class="space-y-8">
+          <!-- Live demo -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Subcommands of <span class="mono">wasm registry</span></div>
+            <div class="item-list">
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">add</span>
+                  <div class="desc">Register a new namespace and point it at an OCI registry URL.</div>
+                </div>
+                <span class="meta">1.2.0</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">remove</span>
+                  <div class="desc">Forget a registered namespace. Locally cached artifacts are kept.</div>
+                </div>
+                <span class="meta">1.2.0</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">list</span>
+                  <div class="desc">Print the effective set of registries, with the source of each entry.</div>
+                </div>
+                <span class="meta">1.2.0</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">login</span>
+                  <div class="desc">Store credentials for a registry in the OS keychain.</div>
+                </div>
+                <span class="meta">1.4.0</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">publish</span>
+                  <div class="desc">Build and upload the current package to a registry.</div>
+                </div>
+                <span class="meta">1.3.0</span>
+              </a>
+              <a href="#c-item-list" class="item-row deprecated">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
+                <div>
+                  <span class="name">login-token</span>
+                  <div class="desc">Legacy token-only login. Removed in 2.0 — use
+                    <span class="mono text-[12px]">login --password-stdin</span> instead.</div>
+                </div>
+                <span class="meta">deprecated</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Variant: HTTP endpoints with method sigils -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Endpoints under <span class="mono">/v1/packages</span></div>
+            <div class="item-list">
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">G</span>
+                <div>
+                  <span class="name">/v1/packages/{name}</span>
+                  <div class="desc">Resolve a package by canonical name. Returns the latest version metadata.</div>
+                </div>
+                <span class="meta">v1</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">G</span>
+                <div>
+                  <span class="name">/v1/packages/{name}/versions</span>
+                  <div class="desc">List every published version of a package, newest first.</div>
+                </div>
+                <span class="meta">v1</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">P</span>
+                <div>
+                  <span class="name">/v1/packages/{name}</span>
+                  <div class="desc">Publish a new version. Body is a streaming OCI image manifest.</div>
+                </div>
+                <span class="meta">v1</span>
+              </a>
+              <a href="#c-item-list" class="item-row">
+                <span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pinkInk);">D</span>
+                <div>
+                  <span class="name">/v1/packages/{name}/versions/{ver}</span>
+                  <div class="desc">Yank a version. The artifact remains, but it stops resolving by default.</div>
+                </div>
+                <span class="meta">v1</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Anatomy / rules -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
+            <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
+              <li>The whole row is the link —
+                <code class="mono text-[12px]">&lt;a class="item-row"&gt;</code> — so the entire chip
+                is the click target. The inner <code class="mono text-[12px]">.name</code> stays a
+                <code class="mono text-[12px]">&lt;span&gt;</code>.</li>
+              <li>Three-column grid: <code class="mono text-[12px]">sigil · name+desc · meta</code>; the
+                middle column is the only flexible one.</li>
+              <li>Rows separate with a 1px <code class="mono text-[12px]">--c-line-soft</code> hairline; the
+                first row drops it. No background fill, no cards.</li>
+              <li>Name is 13.5px mono ink-900 medium; underlines on hover only. Description is 13px ink-700,
+                one line, no wrapping pressure.</li>
+              <li>Trailing <code class="mono text-[12px]">.meta</code> stays mono ink-500 — version, status,
+                or count. Drop it entirely if there's nothing to show.</li>
+              <li>Sigil colour follows the C01 convention so the same kind reads consistently across
+                sidebar and item list.</li>
+              <li><strong>Hover</strong> tints the entire row to <code class="mono text-[12px]">--c-surface-muted</code>
+                — the only affordance that the row is interactive. No border or accent change.</li>
+              <li><strong>Deprecated</strong> rows fade name + description to ink-400, strike through the
+                name with a 1px line, and drop the sigil opacity to 50%. Set the trailing
+                <code class="mono text-[12px]">.meta</code> to a one-word state
+                (“deprecated”, “removed”) instead of a version.</li>
             </ul>
           </div>
         </div>

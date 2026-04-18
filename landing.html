@@ -378,7 +378,7 @@
         <!-- ============================== -->
         <!-- HERO                           -->
         <!-- ============================== -->
-        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-20 pb-12 md:pb-16">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-20 pb-10 md:pb-14">
             <div class="grid md:grid-cols-[1fr_440px] gap-10 md:gap-16 items-end">
                 <div>
                     <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
@@ -467,29 +467,29 @@
         <!-- METRICS STRIP                  -->
         <!-- ============================== -->
         <section
-            class="mx-auto max-w-[1280px] px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 md:divide-x divide-lineSoft border-y border-lineSoft">
-            <div class="bg-canvas p-6">
+            class="mx-auto max-w-[1280px] px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-lineSoft border-y border-lineSoft">
+            <div class="p-6">
                 <div class="text-[12px] text-ink-500 mono uppercase tracking-wider">Packages</div>
                 <div class="mt-2 flex items-baseline gap-2">
                     <span class="text-[28px] font-semibold tracking-tight tabular-nums">12 480</span>
                     <span class="text-[12px] font-medium text-positive">+184 this week</span>
                 </div>
             </div>
-            <div class="bg-canvas p-6">
+            <div class="p-6">
                 <div class="text-[12px] text-ink-500 mono uppercase tracking-wider">Authors</div>
                 <div class="mt-2 flex items-baseline gap-2">
                     <span class="text-[28px] font-semibold tracking-tight tabular-nums">2 314</span>
                     <span class="text-[12px] font-medium text-positive">+27</span>
                 </div>
             </div>
-            <div class="bg-canvas p-6">
+            <div class="p-6">
                 <div class="text-[12px] text-ink-500 mono uppercase tracking-wider">Versions published</div>
                 <div class="mt-2 flex items-baseline gap-2">
                     <span class="text-[28px] font-semibold tracking-tight tabular-nums">48 290</span>
                     <span class="text-[12px] font-medium text-positive">+312 this week</span>
                 </div>
             </div>
-            <div class="bg-canvas p-6">
+            <div class="p-6">
                 <div class="text-[12px] text-ink-500 mono uppercase tracking-wider">Index integrity</div>
                 <div class="mt-2 flex items-baseline gap-2">
                     <span class="text-[28px] font-semibold tracking-tight tabular-nums">100<span
@@ -501,10 +501,16 @@
             </div>
         </section>
 
+        <!-- ============================================================ -->
+        <!-- SECONDARY REGION · surface                                    -->
+        <!-- Browse, featured packages, registry index, why, publish CTA   -->
+        <!-- ============================================================ -->
+        <div class="bg-surface pt-12 md:pt-16 pb-14 md:pb-20">
+
         <!-- ============================== -->
         <!-- CATEGORIES                     -->
         <!-- ============================== -->
-        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-14 md:pt-20">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8">
             <div class="flex items-end justify-between gap-4 flex-wrap">
                 <div>
                     <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Browse</div>
@@ -548,7 +554,7 @@
         <!-- ============================== -->
         <!-- FEATURED PACKAGES              -->
         <!-- ============================== -->
-        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-16 pb-16 md:pb-24">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-14 pb-2">
             <div class="flex items-end justify-between gap-4 flex-wrap">
                 <div>
                     <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Curated</div>
@@ -569,7 +575,7 @@
             <div class="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 
                 <!-- Card 1 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-blue text-cat-blueInk">HTTP</div>
                         <span class="text-[12px] text-ink-500 mono">0.2.3</span>
@@ -589,7 +595,7 @@
                 </a>
 
                 <!-- Card 2 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-green text-cat-greenInk">CLI</div>
                         <span class="text-[12px] text-ink-500 mono">0.2.3</span>
@@ -609,7 +615,7 @@
                 </a>
 
                 <!-- Card 3 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-peach text-cat-peachInk">Storage</div>
                         <span class="text-[12px] text-ink-500 mono">3.1.0</span>
@@ -629,7 +635,7 @@
                 </a>
 
                 <!-- Card 4 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-lilac text-cat-lilacInk">Cryptography</div>
                         <span class="text-[12px] text-ink-500 mono">1.0.4</span>
@@ -649,7 +655,7 @@
                 </a>
 
                 <!-- Card 5 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-teal text-cat-tealInk">Tooling</div>
                         <span class="text-[12px] text-ink-500 mono">0.36.0</span>
@@ -669,7 +675,7 @@
                 </a>
 
                 <!-- Card 6 -->
-                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-lineSoft bg-canvas">
+                <a href="#" class="pkg-card flex flex-col p-5 rounded-lg border border-line bg-canvas">
                     <div class="flex items-center justify-between gap-3">
                         <div class="bar bg-cat-rust text-cat-rustInk">Messaging</div>
                         <span class="text-[12px] text-ink-500 mono">2.4.1</span>
@@ -694,7 +700,7 @@
         <!-- ============================== -->
         <!-- TWO-COLUMN: Recently updated + Top authors -->
         <!-- ============================== -->
-        <section class="pt-14 md:pt-20 grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-12">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-16 grid lg:grid-cols-[1fr_360px] gap-10 lg:gap-12">
 
             <!-- Recently updated table -->
             <div>
@@ -891,7 +897,7 @@
         <!-- ============================== -->
         <!-- WHY / PRINCIPLES               -->
         <!-- ============================== -->
-        <section class="pt-14 md:pt-20">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8 pt-12 md:pt-16">
             <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
                 <div>
                     <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Why wasm</div>
@@ -968,9 +974,8 @@
         <!-- ============================== -->
         <!-- CTA STRIP                      -->
         <!-- ============================== -->
-        <section
-            class="mt-16 md:mt-24 mb-16 md:mb-24 rounded-lg border border-line bg-surface shadow-card overflow-hidden">
-            <div class="grid md:grid-cols-[1fr_auto] gap-6 p-8 md:p-10 items-center">
+        <section class="mx-auto max-w-[1280px] px-4 md:px-8 mt-12 md:mt-16">
+            <div class="grid md:grid-cols-[1fr_auto] gap-6 items-center border-t border-lineSoft pt-10 md:pt-12">
                 <div>
                     <div class="text-[12px] mono uppercase tracking-wider text-ink-500">For maintainers</div>
                     <h3 class="mt-2 text-[24px] font-semibold tracking-tight">Publish your component.</h3>
@@ -992,12 +997,15 @@
                         </svg>
                     </a>
                     <a href="#"
-                        class="h-9 px-4 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted">
+                        class="h-9 px-4 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-canvas text-ink-900 text-[13px] hover:bg-surfaceMuted">
                         Read the spec
                     </a>
                 </div>
             </div>
         </section>
+
+        </div>
+        <!-- /SECONDARY REGION -->
     </main>
 
     <!-- ============================== -->
