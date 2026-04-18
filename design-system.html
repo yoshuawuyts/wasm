@@ -1801,6 +1801,74 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
               visible at a glance, parallel to the kind-meta on other rows. The default value (when
               there is one) is called out in the description.</p>
           </div>
+
+          <!-- Definition · three-column with labeled Type — for CLI flag/env-var reference tables -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Definition · three columns with labeled type</div>
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[560px] text-[13px] border-t-[1.5px] border-lineSoft">
+                <thead>
+                  <tr class="border-b border-line text-left text-[11px] mono uppercase tracking-wider text-ink-500">
+                    <th class="py-2 pr-6 font-normal w-[200px]">Flag</th>
+                    <th class="py-2 pr-6 font-normal w-[180px]">Type</th>
+                    <th class="py-2 font-normal">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="text-ink-900">
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-baseline whitespace-nowrap mono">-h, --help</td>
+                    <td class="py-3 pr-6 align-baseline text-[12px] text-ink-500">flag</td>
+                    <td class="py-3 align-baseline text-ink-700">Print help for the current command.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-baseline whitespace-nowrap mono">-v, --verbose</td>
+                    <td class="py-3 pr-6 align-baseline text-[12px] text-ink-500">
+                      <span>flag</span>
+                      <span class="ml-1 inline-flex items-baseline align-baseline text-[10px] mono uppercase tracking-wider px-1.5 py-0.5 rounded-sm bg-surfaceMuted text-ink-700">repeatable</span>
+                    </td>
+                    <td class="py-3 align-baseline text-ink-700">Increase log verbosity. Repeat up to three times (<span class="mono">-vvv</span> = trace).</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-baseline whitespace-nowrap">
+                      <span class="mono">--color</span>
+                      <span class="mono text-ink-400">&lt;when&gt;</span>
+                    </td>
+                    <td class="py-3 pr-6 align-baseline">
+                      <span class="inline-flex items-baseline gap-1">
+                        <code class="mono text-[11px] text-ink-700 bg-surfaceMuted px-1 py-0.5 rounded-sm">auto</code>
+                        <code class="mono text-[11px] text-ink-700 bg-surfaceMuted px-1 py-0.5 rounded-sm">always</code>
+                        <code class="mono text-[11px] text-ink-700 bg-surfaceMuted px-1 py-0.5 rounded-sm">never</code>
+                      </span>
+                    </td>
+                    <td class="py-3 align-baseline text-ink-700">When to emit ANSI color. Defaults to <span class="mono">auto</span>.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-baseline whitespace-nowrap">
+                      <span class="mono">--config</span>
+                      <span class="mono text-ink-400">&lt;path&gt;</span>
+                    </td>
+                    <td class="py-3 pr-6 align-baseline text-[12px] text-ink-500">path</td>
+                    <td class="py-3 align-baseline text-ink-700">Override the project config file location.</td>
+                  </tr>
+                  <tr class="border-b border-lineSoft">
+                    <td class="py-3 pr-6 align-baseline whitespace-nowrap mono">--no-network</td>
+                    <td class="py-3 pr-6 align-baseline text-[12px] text-ink-500">flag</td>
+                    <td class="py-3 align-baseline text-ink-700">Refuse to make any outbound request. Resolution falls back to the local cache.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="mt-3 text-[12px] text-ink-500">Used for CLI flag references, environment variables,
+              and similar dense reference tables where the type vocabulary is small and worth scanning as
+              its own column. Three columns: <strong>name</strong> (mono ink-900, with optional
+              <span class="mono text-ink-400">&lt;placeholder&gt;</span> in ink-400),
+              <strong>type</strong> (single token in 12px ink-500, or enum chips, or
+              <code class="mono text-[12px]">flag</code> + a <code class="mono text-[12px]">repeatable</code>
+              tag), and <strong>description</strong> in reading-flow ink-700. Headers are
+              <code class="mono text-[12px]">11px mono uppercase ink-500</code> — same recipe as the
+              labeled-section caption used elsewhere — separated from the rows by a thin
+              <code class="mono text-[12px]">border-line</code> rule.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -3932,25 +4000,25 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                   <table class="w-full min-w-[560px] text-[13px]">
                     <tbody class="text-ink-900">
                       <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-top w-[180px]">
-                          <div class="mono">version</div>
-                          <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
+                          <span class="mono">version</span>
+                          <span class="ml-2 text-[11px] text-ink-500">string · required</span>
                         </td>
-                        <td class="py-3 text-ink-700">SemVer tag, e.g. <span class="mono">0.2.4</span>.</td>
+                        <td class="py-3 align-baseline text-ink-700">SemVer tag, e.g. <span class="mono">0.2.4</span>.</td>
                       </tr>
                       <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-top">
-                          <div class="mono">digest</div>
-                          <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · required</div>
+                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
+                          <span class="mono">digest</span>
+                          <span class="ml-2 text-[11px] text-ink-500">string · required</span>
                         </td>
-                        <td class="py-3 text-ink-700">Manifest digest, prefixed with <span class="mono">sha256:</span>.</td>
+                        <td class="py-3 align-baseline text-ink-700">Manifest digest, prefixed with <span class="mono">sha256:</span>.</td>
                       </tr>
                       <tr class="border-b border-lineSoft">
-                        <td class="py-3 pr-6 align-top">
-                          <div class="mono">signature</div>
-                          <div class="text-[11.5px] text-ink-500 mono mt-0.5">string · optional</div>
+                        <td class="py-3 pr-6 align-baseline whitespace-nowrap">
+                          <span class="mono">signature</span>
+                          <span class="ml-2 text-[11px] text-ink-500">string · optional</span>
                         </td>
-                        <td class="py-3 text-ink-700">Detached cosign-compatible signature, base64 encoded.</td>
+                        <td class="py-3 align-baseline text-ink-700">Detached cosign-compatible signature, base64 encoded.</td>
                       </tr>
                     </tbody>
                   </table>
