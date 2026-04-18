@@ -265,24 +265,71 @@
     .rpc-path .sl   { color: var(--c-ink-400); }
     .rpc-path .meth { color: var(--c-cat-plum-ink); font-weight: 600; }
 
-    /* Sticky sidebar */
-    .sidebar { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; }
-    .sidebar .group-label { font-size: 11px; }
-    .sidebar a.endpoint {
-      display: flex; align-items: center; gap: 8px;
-      padding: 5px 8px; border-radius: 4px;
-      color: var(--c-ink-700); font-size: 12.5px;
-    }
-    .sidebar a.endpoint:hover { background: var(--c-surface-muted); }
-    .sidebar a.endpoint .m {
+    /* Sticky sidebar (left) + sticky TOC (right) */
+    .sidebar { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; padding-right: 4px; }
+    .sidebar .group-label { font-size: 10px; }
+    .toc { position: sticky; top: 64px; align-self: start; max-height: calc(100vh - 80px); overflow-y: auto; padding-left: 4px; }
+    .hairline { border-color: var(--c-line-soft); }
+
+    /* Sigil — small kind chip used in the tree (port from DS C01). */
+    .sigil {
+      display: inline-grid;
+      place-items: center;
+      height: 18px; width: 18px;
+      border-radius: 3px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-      font-size: 9.5px; font-weight: 600; letter-spacing: 0.04em;
-      width: 44px; flex: none; text-align: center;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
+      flex-shrink: 0;
     }
-    .sidebar .m-unary  { color: var(--c-cat-blue-ink); }
-    .sidebar .m-server { color: var(--c-cat-peach-ink); }
-    .sidebar .m-client { color: var(--c-cat-lilac-ink); }
-    .sidebar .m-bidi   { color: var(--c-cat-pink-ink); }
+
+    /* Tree-link — sidebar row used in nested RPC navigation. */
+    .tree-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+      color: var(--c-ink-700);
+      text-decoration: none;
+      line-height: 1.4;
+    }
+    .tree-link .mono { font-size: 12.5px; }
+    .tree-link:hover { background: var(--c-surface-muted); color: var(--c-ink-900); }
+    .tree-link.active { background: var(--c-surface-muted); color: var(--c-ink-900); font-weight: 500; }
+    .tree-link .chev {
+      width: 10px; height: 10px;
+      flex-shrink: 0;
+      color: var(--c-ink-400);
+      transition: transform 120ms cubic-bezier(.2, 0, 0, 1);
+    }
+    details[open] > summary .chev { transform: rotate(90deg); }
+    details > summary { list-style: none; cursor: pointer; }
+    details > summary::-webkit-details-marker { display: none; }
+    .tree-children {
+      margin-left: 14px;
+      padding-left: 8px;
+      border-left: 1px solid var(--c-line-soft);
+      margin-top: 1px;
+    }
+    /* When a search filter forces all groups open, soften the chev rotation cue. */
+    .sidebar.search-active details > summary .chev { opacity: 0.35; }
+
+    /* Right-rail "On this page" — 1.5px left border lights up on hover/active. */
+    .toc-link {
+      display: block;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: var(--c-ink-500);
+      border-left: 1.5px solid transparent;
+      line-height: 1.5;
+      text-decoration: none;
+    }
+    .toc-link:hover { color: var(--c-ink-900); border-left-color: var(--c-line); }
+    .toc-link.active { color: var(--c-ink-900); border-left-color: var(--c-ink-900); }
+    .toc-link.indent { padding-left: 22px; }
 
     .theme-icon-sun { display: none; }
     .theme-icon-moon { display: inline-block; }
@@ -491,6 +538,114 @@
     </header>
 
     <div class="border-t rule"></div>
+
+    <!-- ============================== -->
+    <!-- LAYOUT GRID                    -->
+    <!-- ============================== -->
+    <div class="grid lg:grid-cols-[220px_minmax(0,1fr)_200px] md:grid-cols-[220px_minmax(0,1fr)] gap-6 md:gap-12 pt-10">
+
+      <!-- ============================== -->
+      <!-- SIDEBAR                        -->
+      <!-- ============================== -->
+      <aside class="sidebar" id="sidebar">
+        <nav class="text-[13px]">
+          <div class="nav-empty">No matches.</div>
+
+          <!-- ============== Guide ============== -->
+          <div class="nav-group" data-group="Guide">
+            <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Guide</div>
+            <div class="space-y-0.5 mb-5">
+              <a href="#status"    class="tree-link"><span class="sigil" style="background:var(--c-cat-slate);color:var(--c-cat-slate-ink);">i</span><span>Status codes</span></a>
+              <a href="#deadlines" class="tree-link"><span class="sigil" style="background:var(--c-cat-slate);color:var(--c-cat-slate-ink);">i</span><span>Deadlines &amp; cancellation</span></a>
+            </div>
+          </div>
+
+          <div class="my-4 border-t-[1.5px] border-rule group-divider"></div>
+
+          <!-- ============== Services ============== -->
+          <div class="nav-group" data-group="Services">
+            <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Services</div>
+            <div class="space-y-0.5">
+
+              <details open>
+                <summary class="tree-link">
+                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m4 2 3 3-3 3" /></svg>
+                  <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">S</span>
+                  <span class="mono">Health</span>
+                  <span class="ml-auto mono text-[10.5px] text-ink-400">2</span>
+                </summary>
+                <div class="tree-children space-y-0.5">
+                  <a href="#rpc-check" class="tree-link"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span><span>Check</span></a>
+                  <a href="#rpc-watch" class="tree-link"><span class="sigil" style="background:var(--c-cat-peach);color:var(--c-cat-peach-ink);">→</span><span>Watch</span></a>
+                </div>
+              </details>
+
+              <details open>
+                <summary class="tree-link">
+                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m4 2 3 3-3 3" /></svg>
+                  <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">S</span>
+                  <span class="mono">Packages</span>
+                  <span class="ml-auto mono text-[10.5px] text-ink-400">5</span>
+                </summary>
+                <div class="tree-children space-y-0.5">
+                  <a href="#rpc-getpackage"   class="tree-link"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span><span>GetPackage</span></a>
+                  <a href="#rpc-listversions" class="tree-link"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span><span>ListVersions</span></a>
+                  <a href="#rpc-getversion"   class="tree-link"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span><span>GetVersion</span></a>
+                  <a href="#rpc-publish"      class="tree-link"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">←</span><span>Publish</span></a>
+                  <a href="#rpc-yank"         class="tree-link"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span><span>YankVersion</span></a>
+                </div>
+              </details>
+
+              <details open>
+                <summary class="tree-link">
+                  <svg class="chev" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m4 2 3 3-3 3" /></svg>
+                  <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">S</span>
+                  <span class="mono">Search</span>
+                  <span class="ml-auto mono text-[10.5px] text-ink-400">2</span>
+                </summary>
+                <div class="tree-children space-y-0.5">
+                  <a href="#rpc-search"  class="tree-link"><span class="sigil" style="background:var(--c-cat-peach);color:var(--c-cat-peach-ink);">→</span><span>SearchByInterface</span></a>
+                  <a href="#rpc-resolve" class="tree-link"><span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pink-ink);">↔</span><span>ResolveGraph</span></a>
+                </div>
+              </details>
+
+            </div>
+          </div>
+
+          <div class="my-4 border-t-[1.5px] border-rule group-divider"></div>
+
+          <!-- ============== Messages ============== -->
+          <div class="nav-group" data-group="Messages">
+            <div class="group-label mono uppercase tracking-wider text-ink-500 mb-2">Messages</div>
+            <div class="space-y-0.5">
+              <a href="#msg-package"         class="tree-link"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span><span class="mono">Package</span></a>
+              <a href="#msg-packageversion"  class="tree-link"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span><span class="mono">PackageVersion</span></a>
+              <a href="#msg-publishchunk"    class="tree-link"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span><span class="mono">PublishChunk</span></a>
+              <a href="#msg-resolverequest"  class="tree-link"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span><span class="mono">ResolveRequest</span></a>
+              <a href="#msg-resolveresponse" class="tree-link"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span><span class="mono">ResolveResponse</span></a>
+            </div>
+          </div>
+
+          <!-- ============== Sigil legend ============== -->
+          <div class="mt-5 pt-4 border-t hairline">
+            <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2">Legend</div>
+            <div class="grid grid-cols-2 gap-y-1.5 gap-x-2 text-[11px] text-ink-700">
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">S</span>Service</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">U</span>Unary</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-peach);color:var(--c-cat-peach-ink);">→</span>Server-stream</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">←</span>Client-stream</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pink-ink);">↔</span>Bidi</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-teal);color:var(--c-cat-teal-ink);">{}</span>Message</div>
+              <div class="flex items-center gap-2"><span class="sigil" style="background:var(--c-cat-slate);color:var(--c-cat-slate-ink);">i</span>Guide</div>
+            </div>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- ============================== -->
+      <!-- CONTENT                        -->
+      <!-- ============================== -->
+      <div class="min-w-0 space-y-16">
 
         <!-- ============================== -->
         <!-- STATUS CODES                   -->
@@ -1174,6 +1329,38 @@ fmt.<span class="fn">Println</span>(resp.<span class="fn">GetPackage</span>().<s
         </div><!-- /region-surface -->
 
       </div><!-- /content -->
+
+      <!-- ============================== -->
+      <!-- ON THIS PAGE                   -->
+      <!-- ============================== -->
+      <aside class="toc hidden lg:block" id="toc" aria-label="On this page">
+        <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5">On this page</div>
+        <nav class="space-y-px">
+          <a href="#status"      class="toc-link">Status codes</a>
+          <a href="#deadlines"   class="toc-link">Deadlines</a>
+          <a href="#rpc-check"   class="toc-link">Health</a>
+          <a href="#rpc-check"   class="toc-link indent">Check</a>
+          <a href="#rpc-watch"   class="toc-link indent">Watch</a>
+          <a href="#rpc-getpackage" class="toc-link">Packages</a>
+          <a href="#rpc-getpackage"   class="toc-link indent">GetPackage</a>
+          <a href="#rpc-listversions" class="toc-link indent">ListVersions</a>
+          <a href="#rpc-getversion"   class="toc-link indent">GetVersion</a>
+          <a href="#rpc-publish"      class="toc-link indent">Publish</a>
+          <a href="#rpc-yank"         class="toc-link indent">YankVersion</a>
+          <a href="#rpc-search"  class="toc-link">Search</a>
+          <a href="#rpc-search"  class="toc-link indent">SearchByInterface</a>
+          <a href="#rpc-resolve" class="toc-link indent">ResolveGraph</a>
+          <a href="#msg-package" class="toc-link">Messages</a>
+        </nav>
+        <div class="px-2.5 mt-4">
+          <a href="#top"
+             class="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] mono text-ink-500 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
+            <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m3 7.5 3-3 3 3" /></svg>
+            Back to top
+          </a>
+        </div>
+      </aside>
+
     </div><!-- /grid -->
   </main>
 

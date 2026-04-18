@@ -427,7 +427,7 @@
       gap:16px;flex-wrap:wrap;margin-bottom:8px;
     }
     .cmd-entry-head h2{
-      font-size:22px;font-weight:600;letter-spacing:-0.01em;
+      font-size:24px;font-weight:600;letter-spacing:-0.02em;
       display:flex;align-items:baseline;gap:6px;
     }
     .cmd-entry-head .aux{
@@ -721,15 +721,6 @@
     <!-- ============================== -->
     <article class="min-w-0">
 
-      <!-- Breadcrumb -->
-      <nav class="flex items-center gap-1.5 text-[12px] text-ink-500 mono">
-        <a href="#" class="hover:text-ink-900">wasm</a>
-        <span class="text-ink-400">›</span>
-        <a href="#" class="hover:text-ink-900">commands</a>
-        <span class="text-ink-400">›</span>
-        <span class="text-ink-700">registry</span>
-      </nav>
-
       <!-- ============================== -->
       <!-- PAGE HEADER (DS C03)           -->
       <!-- Kicker · Title · Tagline · Metadata strip                     -->
@@ -742,9 +733,8 @@
           <span class="h-1 w-1 rounded-full bg-ink-300"></span>
           <span>Command group</span>
         </div>
-        <h1 class="mt-3 flex items-baseline gap-2 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight mono">
+        <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight mono">
           wasm registry
-          <a href="#cmd-registry" class="anchor text-[18px]">§</a>
         </h1>
         <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
           Manage the registries the toolchain publishes to and resolves dependencies
@@ -814,10 +804,9 @@
       <!-- Subcommand index -->
       <section class="mt-12">
         <div class="section-head">
-          <h2 class="text-[18px] font-semibold tracking-tight flex items-baseline gap-2">
+          <h2 class="text-[24px] font-semibold tracking-tight flex items-baseline gap-2">
             Subcommands
             <span class="mono text-[11px] text-ink-500 font-normal">6</span>
-            <a href="#subcommands" class="anchor text-[12px]">§</a>
           </h2>
         </div>
         <div class="mt-2 item-list">
@@ -1229,7 +1218,7 @@ Token (input hidden): <span class="dim">****</span>
       <!-- ============================== -->
       <section id="global-flags" class="mt-16">
         <div class="section-head">
-          <h2 class="text-[18px] font-semibold tracking-tight flex items-baseline gap-2">
+          <h2 class="text-[24px] font-semibold tracking-tight flex items-baseline gap-2">
             Global flags
             <span class="mono text-[11px] text-ink-500 font-normal">9</span>
             <a href="#global-flags" class="anchor text-[12px]">§</a>
@@ -1293,7 +1282,7 @@ Token (input hidden): <span class="dim">****</span>
       <!-- ============================== -->
       <section id="env-vars" class="mt-16">
         <div class="section-head">
-          <h2 class="text-[18px] font-semibold tracking-tight flex items-baseline gap-2">
+          <h2 class="text-[24px] font-semibold tracking-tight flex items-baseline gap-2">
             Environment
             <span class="mono text-[11px] text-ink-500 font-normal">12</span>
             <a href="#env-vars" class="anchor text-[12px]">§</a>
@@ -1351,7 +1340,7 @@ Token (input hidden): <span class="dim">****</span>
       <!-- ============================== -->
       <section id="exit-codes" class="mt-16">
         <div class="section-head">
-          <h2 class="text-[18px] font-semibold tracking-tight flex items-baseline gap-2">
+          <h2 class="text-[24px] font-semibold tracking-tight flex items-baseline gap-2">
             Exit codes
             <a href="#exit-codes" class="anchor text-[12px]">§</a>
           </h2>
@@ -1377,7 +1366,7 @@ Token (input hidden): <span class="dim">****</span>
       <!-- ============================== -->
       <section id="config-files" class="mt-16">
         <div class="section-head">
-          <h2 class="text-[18px] font-semibold tracking-tight flex items-baseline gap-2">
+          <h2 class="text-[24px] font-semibold tracking-tight flex items-baseline gap-2">
             Config files
             <a href="#config-files" class="anchor text-[12px]">§</a>
           </h2>
@@ -1437,21 +1426,30 @@ Token (input hidden): <span class="dim">****</span>
     <!-- RIGHT TOC                      -->
     <!-- ============================== -->
     <aside class="hidden lg:block lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">
-      <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5">On this page</div>
-      <nav class="space-y-px">
-        <a href="#cmd-registry" class="toc-link active">Overview</a>
-        <a href="#subcommands" class="toc-link">Subcommands</a>
-        <a href="#cmd-registry-add" class="toc-link indent">add</a>
-        <a href="#cmd-registry-remove" class="toc-link indent">remove</a>
-        <a href="#cmd-registry-list" class="toc-link indent">list</a>
-        <a href="#cmd-registry-login" class="toc-link indent">login</a>
-        <a href="#cmd-registry-logout" class="toc-link indent">logout</a>
-        <a href="#cmd-registry-publish" class="toc-link indent">publish</a>
-        <a href="#global-flags" class="toc-link">Global flags</a>
-        <a href="#env-vars" class="toc-link">Environment</a>
-        <a href="#exit-codes" class="toc-link">Exit codes</a>
-        <a href="#config-files" class="toc-link">Config files</a>
-      </nav>
+      <div class="border border-line rounded-lg bg-canvas p-4">
+        <div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 px-2.5">On this page</div>
+        <nav id="toc" class="space-y-px">
+          <a href="#cmd-registry" class="toc-link active">Overview</a>
+          <a href="#subcommands" class="toc-link">Subcommands</a>
+          <a href="#cmd-registry-add" class="toc-link indent">add</a>
+          <a href="#cmd-registry-remove" class="toc-link indent">remove</a>
+          <a href="#cmd-registry-list" class="toc-link indent">list</a>
+          <a href="#cmd-registry-login" class="toc-link indent">login</a>
+          <a href="#cmd-registry-logout" class="toc-link indent">logout</a>
+          <a href="#cmd-registry-publish" class="toc-link indent">publish</a>
+          <a href="#global-flags" class="toc-link">Global flags</a>
+          <a href="#env-vars" class="toc-link">Environment</a>
+          <a href="#exit-codes" class="toc-link">Exit codes</a>
+          <a href="#config-files" class="toc-link">Config files</a>
+        </nav>
+        <div class="px-2.5 mt-4">
+          <button type="button" id="back-to-top"
+            class="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] mono text-ink-500 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
+            <svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m3 7.5 3-3 3 3"/></svg>
+            Back to top
+          </button>
+        </div>
+      </div>
     </aside>
   </div>
 
@@ -1494,6 +1492,15 @@ Token (input hidden): <span class="dim">****</span>
       }, { rootMargin: "-72px 0px -65% 0px", threshold: 0 });
       Object.keys(byId).forEach(function (id) {
         io.observe(document.getElementById(id));
+      });
+    })();
+
+    // Back to top
+    (function () {
+      var btn = document.getElementById("back-to-top");
+      if (!btn) return;
+      btn.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: "smooth" });
       });
     })();
   </script>

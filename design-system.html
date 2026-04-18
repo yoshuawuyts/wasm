@@ -1810,6 +1810,28 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
               </button>
             </div>
           </label>
+          <!-- Input group: command (readonly + copy) -->
+          <label class="block">
+            <span class="text-[12px] text-ink-500">Input group · command</span>
+            <div class="mt-1 flex">
+              <span
+                class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
+              <input type="text" value="wasm install wasi:http-handler" readonly
+                class="block w-full h-9 px-3 border border-line bg-surface mono text-[13px] text-ink-900 focus:outline-none focus:border-ink-900" />
+              <button type="button"
+                class="inline-flex items-center gap-1 px-3 h-9 rounded-r-md border border-l-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900"
+                aria-label="Copy command">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+                  aria-hidden="true">
+                  <rect x="4" y="4" width="9" height="9" rx="1.2" />
+                  <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
+                </svg>
+                Copy
+              </button>
+            </div>
+            <span class="mt-1 block text-[11px] text-ink-500">Readonly mono field with shell prompt prefix and copy
+              affordance — for install snippets and shareable command examples.</span>
+          </label>
           <!-- Number stepper -->
           <label class="block">
             <span class="text-[12px] text-ink-500">Number stepper</span>
@@ -2907,11 +2929,6 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                   <span class="ml-auto mono text-[10.5px] text-ink-400">7</span>
                 </summary>
                 <div class="tree-children space-y-0.5">
-                  <a href="#" class="tree-link active">
-                    <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span>
-                    <span class="mono">registry</span>
-                    <span class="ml-auto mono text-[10.5px] text-ink-400">overview</span>
-                  </a>
                   <a href="#" class="tree-link">
                     <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
                     <span class="mono">add</span>
@@ -3220,6 +3237,49 @@ authors = ["Lorem Ipsum &lt;lorem@example.com&gt;"]
                 Manage the set of registries the toolchain knows about — add,
                 remove, authenticate, and publish.
               </p>
+            </div>
+          </div>
+
+          <!-- Install variant: kicker + title + tagline + copyable install command -->
+          <div>
+            <div class="text-[12px] text-ink-500 mb-3">Package · with install command</div>
+            <div class="border border-line rounded-lg bg-canvas px-6 py-8">
+              <div class="flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider">
+                <span>v0.4.2</span>
+                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+                <span>wasi:http</span>
+                <span class="h-1 w-1 rounded-full bg-ink-300"></span>
+                <span>Apache-2.0</span>
+              </div>
+              <h1 class="mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight">
+                wasi-http-handler
+              </h1>
+              <p class="mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed">
+                A composable HTTP request handler component implementing the
+                <span class="mono text-[13px]">wasi:http/incoming-handler</span>
+                interface. Drop-in compatible with any wasi:http host.
+              </p>
+              <!-- Install command -->
+              <div class="mt-6">
+                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Install</div>
+                <div class="flex max-w-lg">
+                  <span
+                    class="inline-flex items-center px-3 h-9 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[13px] text-ink-400 mono select-none">$</span>
+                  <input type="text" value="wasm install wasi:http-handler" readonly
+                    class="block w-full h-9 px-3 border border-line bg-surface mono text-[13px] text-ink-900 focus:outline-none focus:border-ink-900" />
+                  <button type="button"
+                    class="inline-flex items-center gap-1 px-3 h-9 rounded-r-md border border-l-0 border-line bg-surfaceMuted text-ink-700 text-[13px] hover:bg-ink-300 hover:text-ink-900"
+                    aria-label="Copy install command">
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"
+                      aria-hidden="true">
+                      <rect x="4" y="4" width="9" height="9" rx="1.2" />
+                      <path
+                        d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" />
+                    </svg>
+                    Copy
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
