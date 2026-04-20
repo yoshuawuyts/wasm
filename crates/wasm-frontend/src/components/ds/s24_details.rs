@@ -1,199 +1,238 @@
 //! 24 — Details.
 
+use html::text_content::{DescriptionDetails, DescriptionList, DescriptionTerm, Division};
+
+/// An inline detail row: (label, value, value_class).
+struct DetailEntry {
+    label: &'static str,
+    value: &'static str,
+    value_class: &'static str,
+}
+
+impl DetailEntry {
+    const fn new(label: &'static str, value: &'static str) -> Self {
+        Self {
+            label,
+            value,
+            value_class: "",
+        }
+    }
+    const fn mono(label: &'static str, value: &'static str) -> Self {
+        Self {
+            label,
+            value,
+            value_class: "mono tabular-nums",
+        }
+    }
+}
+
+fn inline_dl(class: &'static str, entries: &[DetailEntry]) -> DescriptionList {
+    let mut dl = DescriptionList::builder();
+    dl.class(class);
+    for e in entries {
+        let label = e.label.to_owned();
+        let value = e.value.to_owned();
+        let vcls = e.value_class.to_owned();
+        let dt = DescriptionTerm::builder()
+            .class("text-ink-500")
+            .text(label)
+            .build();
+        let dd = if vcls.is_empty() {
+            DescriptionDetails::builder().text(value).build()
+        } else {
+            DescriptionDetails::builder()
+                .class(vcls)
+                .text(value)
+                .build()
+        };
+        let row = Division::builder()
+            .class("flex items-baseline justify-between gap-4 py-1.5")
+            .push(dt)
+            .push(dd)
+            .build();
+        dl.push(row);
+    }
+    dl.build()
+}
+
+fn stacked_dl(entries: &[DetailEntry]) -> DescriptionList {
+    let mut dl = DescriptionList::builder();
+    dl.class("space-y-3 max-w-[220px]");
+    for e in entries {
+        let label = e.label.to_owned();
+        let value = e.value.to_owned();
+        let vcls = if e.value_class.is_empty() {
+            "text-[14px] mt-0.5".to_owned()
+        } else {
+            format!("text-[14px] mt-0.5 {}", e.value_class)
+        };
+        let dt = DescriptionTerm::builder()
+            .class("text-[11px] text-ink-500 uppercase tracking-wider")
+            .text(label)
+            .build();
+        let dd = DescriptionDetails::builder()
+            .class(vcls)
+            .text(value)
+            .build();
+        let row = Division::builder().push(dt).push(dd).build();
+        dl.push(row);
+    }
+    dl.build()
+}
+
+const STACKED: &[DetailEntry] = &[
+    DetailEntry::new("Status", "Active"),
+    DetailEntry::new("Owner", "Aenean Lectus"),
+    DetailEntry::mono("Created", "2026-04-02"),
+    DetailEntry::new("Region", "eu-west-1"),
+];
+
+const INLINE: &[DetailEntry] = &[
+    DetailEntry::new("Status", "Active"),
+    DetailEntry::new("Owner", "Aenean Lectus"),
+    DetailEntry::mono("Created", "2026-04-02"),
+    DetailEntry::new("Region", "eu-west-1"),
+    DetailEntry::mono("Replicas", "3"),
+];
+
+const SECTIONED_A: &[DetailEntry] = &[
+    DetailEntry::new("Status", "Active"),
+    DetailEntry::new("Owner", "Aenean Lectus"),
+];
+const SECTIONED_B: &[DetailEntry] = &[
+    DetailEntry::new("Region", "eu-west-1"),
+    DetailEntry::mono("Replicas", "3"),
+    DetailEntry::mono("Uptime", "99.94%"),
+];
+
+const CARD_DETAILS: &[DetailEntry] = &[
+    DetailEntry::new("Region", "eu-west-1"),
+    DetailEntry::mono("Replicas", "3"),
+    DetailEntry::mono("Created", "2026-04-02"),
+    DetailEntry::mono("Uptime", "99.94%"),
+];
+
+const SIDEBAR_PRIMARY: &[DetailEntry] = &[
+    DetailEntry::new("Status", "Active"),
+    DetailEntry::new("Owner", "A. Lectus"),
+    DetailEntry::new("Region", "eu-west-1"),
+    DetailEntry::mono("Replicas", "3"),
+];
+
+const SIDEBAR_SECONDARY: &[DetailEntry] = &[
+    DetailEntry::mono("Created", "2026-04-02"),
+    DetailEntry::mono("Uptime", "99.94%"),
+    DetailEntry {
+        label: "Build",
+        value: "v2.18.3",
+        value_class: "mono",
+    },
+    DetailEntry::new("Tier", "Standard"),
+];
+
+fn sub(text: &'static str) -> html::content::Heading3 {
+    html::content::Heading3::builder()
+        .class("text-[13px] mono uppercase tracking-wider text-ink-500 mb-3")
+        .text(text)
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let inner = r#"
-          <!-- Stacked -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Stacked</h3>
-            <dl class="space-y-3 max-w-[220px]">
-              <div>
-                <dt class="text-[11px] text-ink-500 uppercase tracking-wider">Status</dt>
-                <dd class="text-[14px] mt-0.5">Active</dd>
-              </div>
-              <div>
-                <dt class="text-[11px] text-ink-500 uppercase tracking-wider">Owner</dt>
-                <dd class="text-[14px] mt-0.5">Aenean Lectus</dd>
-              </div>
-              <div>
-                <dt class="text-[11px] text-ink-500 uppercase tracking-wider">Created</dt>
-                <dd class="text-[14px] mt-0.5 mono">2026-04-02</dd>
-              </div>
-              <div>
-                <dt class="text-[11px] text-ink-500 uppercase tracking-wider">Region</dt>
-                <dd class="text-[14px] mt-0.5">eu-west-1</dd>
-              </div>
-            </dl>
-          </div>
-
-          <!-- Inline -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Inline</h3>
-            <dl class="text-[13px] max-w-[260px]">
-              <div class="flex items-baseline justify-between gap-4 py-1.5">
-                <dt class="text-ink-500">Status</dt>
-                <dd>Active</dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-4 py-1.5">
-                <dt class="text-ink-500">Owner</dt>
-                <dd>Aenean Lectus</dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-4 py-1.5">
-                <dt class="text-ink-500">Created</dt>
-                <dd class="mono tabular-nums">2026-04-02</dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-4 py-1.5">
-                <dt class="text-ink-500">Region</dt>
-                <dd>eu-west-1</dd>
-              </div>
-              <div class="flex items-baseline justify-between gap-4 py-1.5">
-                <dt class="text-ink-500">Replicas</dt>
-                <dd class="mono tabular-nums">3</dd>
-              </div>
-            </dl>
-          </div>
-
-          <!-- Sectioned -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">Sectioned</h3>
-            <div class="max-w-[260px] text-[13px]">
-              <dl>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Status</dt>
-                  <dd>Active</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Owner</dt>
-                  <dd>Aenean Lectus</dd>
-                </div>
-              </dl>
-              <div class="my-3 border-t-[1.5px] border-rule"></div>
-              <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-1.5">Infrastructure</div>
-              <dl>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Region</dt>
-                  <dd>eu-west-1</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Replicas</dt>
-                  <dd class="mono tabular-nums">3</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Uptime</dt>
-                  <dd class="mono tabular-nums">99.94%</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        <!-- Combined examples -->
-        <div class="mt-10 space-y-8">
-          <!-- In a card -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">In a card</h3>
-            <div class="p-5 bg-surface rounded-lg shadow-card max-w-[320px]">
-              <div class="flex items-baseline justify-between gap-3">
-                <div class="text-[14px] font-medium tracking-tight">Aenean Lectus</div>
-                <span
-                  class="inline-flex items-center px-2 h-5 rounded-pill bg-cat-green text-cat-greenInk text-[11px] font-medium">Active</span>
-              </div>
-              <div class="text-[11px] text-ink-500 mono mt-0.5">id_8a4f29c1</div>
-              <div class="my-4 border-t-[1.5px] border-rule"></div>
-              <dl class="text-[13px]">
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Region</dt>
-                  <dd>eu-west-1</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Replicas</dt>
-                  <dd class="mono tabular-nums">3</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Created</dt>
-                  <dd class="mono tabular-nums">2026-04-02</dd>
-                </div>
-                <div class="flex items-baseline justify-between gap-4 py-1.5">
-                  <dt class="text-ink-500">Uptime</dt>
-                  <dd class="mono tabular-nums">99.94%</dd>
-                </div>
-              </dl>
-            </div>
-          </div>
-
-          <!-- As a sidebar in a region -->
-          <div>
-            <h3 class="text-[13px] mono uppercase tracking-wider text-ink-500 mb-3">As a sidebar across regions</h3>
-            <div class="border border-line rounded-lg overflow-hidden">
-              <!-- Primary region: canvas -->
-              <div class="bg-canvas p-5 space-y-5">
-                <div>
-                  <div class="text-[11px] mono uppercase tracking-wider text-ink-500">Primary · canvas</div>
-                  <div class="mt-2 text-[16px] font-semibold tracking-tight">Lorem ipsum dolor</div>
-                  <div class="mt-3 grid grid-cols-3 gap-2 max-w-[320px]">
-                    <div class="h-10 rounded bg-surfaceMuted"></div>
-                    <div class="h-10 rounded bg-surfaceMuted"></div>
-                    <div class="h-10 rounded bg-surfaceMuted"></div>
-                  </div>
-                </div>
-                <aside class="max-w-[260px]">
-                  <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Details</div>
-                  <dl class="text-[12px]">
-                    <div class="flex items-baseline justify-between gap-2 py-1">
-                      <dt class="text-ink-500">Status</dt>
-                      <dd>Active</dd>
-                    </div>
-                    <div class="flex items-baseline justify-between gap-2 py-1">
-                      <dt class="text-ink-500">Owner</dt>
-                      <dd>A. Lectus</dd>
-                    </div>
-                    <div class="flex items-baseline justify-between gap-2 py-1">
-                      <dt class="text-ink-500">Region</dt>
-                      <dd>eu-west-1</dd>
-                    </div>
-                    <div class="flex items-baseline justify-between gap-2 py-1">
-                      <dt class="text-ink-500">Replicas</dt>
-                      <dd class="mono tabular-nums">3</dd>
-                    </div>
-                  </dl>
-                </aside>
-              </div>
-              <!-- Secondary region: surface -->
-              <div class="bg-surface p-5">
-                <div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Secondary · surface</div>
-                <dl class="text-[12px] max-w-[320px]">
-                  <div class="flex items-baseline justify-between gap-4 py-1">
-                    <dt class="text-ink-500">Created</dt>
-                    <dd class="mono tabular-nums">2026-04-02</dd>
-                  </div>
-                  <div class="flex items-baseline justify-between gap-4 py-1">
-                    <dt class="text-ink-500">Uptime</dt>
-                    <dd class="mono tabular-nums">99.94%</dd>
-                  </div>
-                  <div class="flex items-baseline justify-between gap-4 py-1">
-                    <dt class="text-ink-500">Build</dt>
-                    <dd class="mono">v2.18.3</dd>
-                  </div>
-                  <div class="flex items-baseline justify-between gap-4 py-1">
-                    <dt class="text-ink-500">Tier</dt>
-                    <dd>Standard</dd>
-                  </div>
-                </dl>
-              </div>
-            </div>
-          </div>
-        "#;
-    let content = html::text_content::Division::builder()
+    let content = Division::builder()
         .class("grid grid-cols-1 md:grid-cols-3 gap-8")
-        .text(inner)
+        // Stacked
+        .division(|d| d.push(sub("Stacked")).push(stacked_dl(STACKED)))
+        // Inline
+        .division(|d| {
+            d.push(sub("Inline"))
+                .push(inline_dl("text-[13px] max-w-[260px]", INLINE))
+        })
+        // Sectioned
+        .division(|d| {
+            d.push(sub("Sectioned")).division(|s| {
+                s.class("max-w-[260px] text-[13px]")
+                    .push(inline_dl("", SECTIONED_A))
+                    .division(|rule| rule.class("my-3 border-t-[1.5px] border-rule"))
+                    .division(|lbl| {
+                        lbl.class("text-[11px] mono uppercase tracking-wider text-ink-500 mb-1.5")
+                            .text("Infrastructure")
+                    })
+                    .push(inline_dl("", SECTIONED_B))
+            })
+        })
         .build()
         .to_string();
+
+    // Combined examples (second row)
+    let combined = Division::builder()
+        .class("mt-10 space-y-8")
+        // In a card
+        .division(|d| {
+            d.push(sub("In a card"))
+                .division(|card| {
+                    card.class("p-5 bg-surface rounded-lg shadow-card max-w-[320px]")
+                        .division(|hdr| {
+                            hdr.class("flex items-baseline justify-between gap-3")
+                                .division(|n| {
+                                    n.class("text-[14px] font-medium tracking-tight")
+                                        .text("Aenean Lectus")
+                                })
+                                .span(|s| {
+                                    s.class("inline-flex items-center px-2 h-5 rounded-pill bg-cat-green text-cat-greenInk text-[11px] font-medium")
+                                        .text("Active")
+                                })
+                        })
+                        .division(|id| id.class("text-[11px] text-ink-500 mono mt-0.5").text("id_8a4f29c1"))
+                        .division(|rule| rule.class("my-4 border-t-[1.5px] border-rule"))
+                        .push(inline_dl("text-[13px]", CARD_DETAILS))
+                })
+        })
+        // Sidebar across regions
+        .division(|d| {
+            d.push(sub("As a sidebar across regions"))
+                .division(|demo| {
+                    demo.class("border border-line rounded-lg overflow-hidden")
+                        // Primary region
+                        .division(|primary| {
+                            primary.class("bg-canvas p-5 space-y-5")
+                                .division(|content| {
+                                    content
+                                        .division(|lbl| lbl.class("text-[11px] mono uppercase tracking-wider text-ink-500").text("Primary \u{00b7} canvas"))
+                                        .division(|h| h.class("mt-2 text-[16px] font-semibold tracking-tight").text("Lorem ipsum dolor"))
+                                        .division(|grid| {
+                                            grid.class("mt-3 grid grid-cols-3 gap-2 max-w-[320px]")
+                                                .division(|b| b.class("h-10 rounded bg-surfaceMuted"))
+                                                .division(|b| b.class("h-10 rounded bg-surfaceMuted"))
+                                                .division(|b| b.class("h-10 rounded bg-surfaceMuted"))
+                                        })
+                                })
+                                .text({
+                                    let mut aside = String::from(r#"<aside class="max-w-[260px]"><div class="text-[11px] mono uppercase tracking-wider text-ink-500 mb-2">Details</div>"#);
+                                    aside.push_str(&inline_dl("text-[12px]", SIDEBAR_PRIMARY).to_string());
+                                    aside.push_str("</aside>");
+                                    aside
+                                })
+                        })
+                        // Secondary region
+                        .division(|secondary| {
+                            secondary.class("bg-surface p-5")
+                                .division(|lbl| lbl.class("text-[11px] mono uppercase tracking-wider text-ink-500 mb-2").text("Secondary \u{00b7} surface"))
+                                .push(inline_dl("text-[12px] max-w-[320px]", SIDEBAR_SECONDARY))
+                        })
+                })
+        })
+        .build()
+        .to_string();
+
+    let full_content = format!("{content}{combined}");
+
     super::section(
         "details",
         "24",
         "Details",
         "Compact key/value lists for sidebars and inspector panels. Three variants: stacked for spacious layouts, inline for narrow rails, and sectioned when groups need separation.",
-        &content,
+        &full_content,
     )
 }
 

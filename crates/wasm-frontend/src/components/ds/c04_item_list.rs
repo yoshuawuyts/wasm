@@ -1,163 +1,197 @@
 //! C04 — Item List.
 
+use html::inline_text::Anchor;
+use html::text_content::Division;
+
+struct ItemRow {
+    sigil_bg: &'static str,
+    sigil_color: &'static str,
+    sigil_text: &'static str,
+    name: &'static str,
+    desc: &'static str,
+    meta: &'static str,
+    deprecated: bool,
+}
+
+fn render_item_row(item: &ItemRow) -> Anchor {
+    let row_class = if item.deprecated {
+        "item-row deprecated"
+    } else {
+        "item-row"
+    };
+    let sigil_style = format!("background:{};color:{};", item.sigil_bg, item.sigil_color);
+    Anchor::builder()
+        .href("#c-item-list".to_owned())
+        .class(row_class)
+        .span(|s| s.class("sigil").style(sigil_style).text(item.sigil_text))
+        .division(|d| {
+            d.span(|s| s.class("name").text(item.name))
+                .division(|desc| desc.class("desc").text(item.desc))
+        })
+        .span(|s| s.class("meta").text(item.meta))
+        .build()
+}
+
+fn render_item_list(items: &[ItemRow]) -> Division {
+    let mut list = Division::builder();
+    list.class("item-list");
+    for item in items {
+        list.push(render_item_row(item));
+    }
+    list.build()
+}
+
+const CMD_ROWS: &[ItemRow] = &[
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "add",
+        desc: "Register a new namespace and point it at an OCI registry URL.",
+        meta: "1.2.0",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "remove",
+        desc: "Forget a registered namespace. Locally cached artifacts are kept.",
+        meta: "1.2.0",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "list",
+        desc: "Print the effective set of registries, with the source of each entry.",
+        meta: "1.2.0",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "login",
+        desc: "Store credentials for a registry in the OS keychain.",
+        meta: "1.4.0",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "publish",
+        desc: "Build and upload the current package to a registry.",
+        meta: "1.3.0",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "c",
+        name: "login-token",
+        desc: "Legacy token-only login. Removed in 2.0 \u{2014} use <span class=\"mono text-[12px]\">login --password-stdin</span> instead.",
+        meta: "deprecated",
+        deprecated: true,
+    },
+];
+
+const ENDPOINT_ROWS: &[ItemRow] = &[
+    ItemRow {
+        sigil_bg: "var(--c-cat-blue)",
+        sigil_color: "var(--c-cat-blueInk)",
+        sigil_text: "G",
+        name: "/v1/packages/{name}",
+        desc: "Resolve a package by canonical name. Returns the latest version metadata.",
+        meta: "v1",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-blue)",
+        sigil_color: "var(--c-cat-blueInk)",
+        sigil_text: "G",
+        name: "/v1/packages/{name}/versions",
+        desc: "List every published version of a package, newest first.",
+        meta: "v1",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-green)",
+        sigil_color: "var(--c-cat-greenInk)",
+        sigil_text: "P",
+        name: "/v1/packages/{name}",
+        desc: "Publish a new version. Body is a streaming OCI image manifest.",
+        meta: "v1",
+        deprecated: false,
+    },
+    ItemRow {
+        sigil_bg: "var(--c-cat-pink)",
+        sigil_color: "var(--c-cat-pinkInk)",
+        sigil_text: "D",
+        name: "/v1/packages/{name}/versions/{ver}",
+        desc: "Yank a version. The artifact remains, but it stops resolving by default.",
+        meta: "v1",
+        deprecated: false,
+    },
+];
+
+const ANATOMY_ITEMS: &[&str] = &[
+    r#"The whole row is the link — <code class="mono text-[12px]">&lt;a class="item-row"&gt;</code> — so the entire chip is the click target. The inner <code class="mono text-[12px]">.name</code> stays a <code class="mono text-[12px]">&lt;span&gt;</code>."#,
+    r#"Three-column grid: <code class="mono text-[12px]">sigil · name+desc · meta</code>; the middle column is the only flexible one."#,
+    r#"The whole list sits in a <code class="mono text-[12px]">rounded-lg border border-line bg-canvas</code> card — same surface treatment as the search trigger and Item Details. Rows separate with a 1px <code class="mono text-[12px]">--c-line-soft</code> hairline inside the card; the first row drops it."#,
+    "Name is 13.5px mono ink-900 medium; underlines on hover only. Description is 13px ink-700, one line, no wrapping pressure.",
+    r#"Trailing <code class="mono text-[12px]">.meta</code> stays mono ink-500 — version, status, or count. Drop it entirely if there's nothing to show."#,
+    "Sigil colour follows the C01 convention so the same kind reads consistently across sidebar and item list.",
+    r#"<strong>Hover</strong> tints the entire row to <code class="mono text-[12px]">--c-surface-muted</code> — the only affordance that the row is interactive. No border or accent change."#,
+    r#"<strong>Deprecated</strong> rows fade name + description to ink-400, strike through the name with a 1px line, and drop the sigil opacity to 50%. Set the trailing <code class="mono text-[12px]">.meta</code> to a one-word state ("deprecated", "removed") instead of a version."#,
+];
+
 /// Render this section.
 pub(crate) fn render() -> String {
-    let inner = r##"
-          <!-- Live demo -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-3">Subcommands of <span class="mono">wasm registry</span></div>
-            <div class="item-list">
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">add</span>
-                  <div class="desc">Register a new namespace and point it at an OCI registry URL.</div>
-                </div>
-                <span class="meta">1.2.0</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">remove</span>
-                  <div class="desc">Forget a registered namespace. Locally cached artifacts are kept.</div>
-                </div>
-                <span class="meta">1.2.0</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">list</span>
-                  <div class="desc">Print the effective set of registries, with the source of each entry.</div>
-                </div>
-                <span class="meta">1.2.0</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">login</span>
-                  <div class="desc">Store credentials for a registry in the OS keychain.</div>
-                </div>
-                <span class="meta">1.4.0</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">publish</span>
-                  <div class="desc">Build and upload the current package to a registry.</div>
-                </div>
-                <span class="meta">1.3.0</span>
-              </a>
-              <a href="#c-item-list" class="item-row deprecated">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span>
-                <div>
-                  <span class="name">login-token</span>
-                  <div class="desc">Legacy token-only login. Removed in 2.0 — use
-                    <span class="mono text-[12px]">login --password-stdin</span> instead.
-                  </div>
-                </div>
-                <span class="meta">deprecated</span>
-              </a>
-            </div>
-          </div>
+    let mut anatomy_ul = html::text_content::UnorderedList::builder();
+    anatomy_ul.class(
+        "text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400",
+    );
+    for item in ANATOMY_ITEMS {
+        let item = (*item).to_owned();
+        anatomy_ul.list_item(|li| li.paragraph(|p| p.text(item)));
+    }
 
-          <!-- Variant: HTTP endpoints with method sigils -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-3">Endpoints under <span class="mono">/v1/packages</span></div>
-            <div class="item-list">
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">G</span>
-                <div>
-                  <span class="name">/v1/packages/{name}</span>
-                  <div class="desc">Resolve a package by canonical name. Returns the latest version metadata.</div>
-                </div>
-                <span class="meta">v1</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">G</span>
-                <div>
-                  <span class="name">/v1/packages/{name}/versions</span>
-                  <div class="desc">List every published version of a package, newest first.</div>
-                </div>
-                <span class="meta">v1</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">P</span>
-                <div>
-                  <span class="name">/v1/packages/{name}</span>
-                  <div class="desc">Publish a new version. Body is a streaming OCI image manifest.</div>
-                </div>
-                <span class="meta">v1</span>
-              </a>
-              <a href="#c-item-list" class="item-row">
-                <span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pinkInk);">D</span>
-                <div>
-                  <span class="name">/v1/packages/{name}/versions/{ver}</span>
-                  <div class="desc">Yank a version. The artifact remains, but it stops resolving by default.</div>
-                </div>
-                <span class="meta">v1</span>
-              </a>
-            </div>
-          </div>
-
-          <!-- Anatomy / rules -->
-          <div>
-            <div class="text-[12px] text-ink-500 mb-3">Anatomy</div>
-            <ul class="text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400">
-              <li>
-                <p>The whole row is the link —
-                  <code class="mono text-[12px]">&lt;a class="item-row"&gt;</code> — so the entire chip
-                  is the click target. The inner <code class="mono text-[12px]">.name</code> stays a
-                  <code class="mono text-[12px]">&lt;span&gt;</code>.
-                </p>
-              </li>
-              <li>
-                <p>Three-column grid: <code class="mono text-[12px]">sigil · name+desc · meta</code>; the
-                  middle column is the only flexible one.</p>
-              </li>
-              <li>
-                <p>The whole list sits in a
-                  <code class="mono text-[12px]">rounded-lg border border-line bg-canvas</code> card —
-                  same surface treatment as the search trigger and Item Details. Rows separate with a
-                  1px <code class="mono text-[12px]">--c-line-soft</code> hairline inside the card; the
-                  first row drops it.</p>
-              </li>
-              <li>
-                <p>Name is 13.5px mono ink-900 medium; underlines on hover only. Description is 13px ink-700,
-                  one line, no wrapping pressure.</p>
-              </li>
-              <li>
-                <p>Trailing <code class="mono text-[12px]">.meta</code> stays mono ink-500 — version, status,
-                  or count. Drop it entirely if there's nothing to show.</p>
-              </li>
-              <li>
-                <p>Sigil colour follows the C01 convention so the same kind reads consistently across
-                  sidebar and item list.</p>
-              </li>
-              <li>
-                <p><strong>Hover</strong> tints the entire row to <code
-                    class="mono text-[12px]">--c-surface-muted</code>
-                  — the only affordance that the row is interactive. No border or accent change.</p>
-              </li>
-              <li>
-                <p><strong>Deprecated</strong> rows fade name + description to ink-400, strike through the
-                  name with a 1px line, and drop the sigil opacity to 50%. Set the trailing
-                  <code class="mono text-[12px]">.meta</code> to a one-word state
-                  (“deprecated”, “removed”) instead of a version.
-                </p>
-              </li>
-            </ul>
-          </div>
-        "##;
-    let content = html::text_content::Division::builder()
+    let content = Division::builder()
         .class("space-y-8")
-        .text(inner)
+        // Subcommands demo
+        .division(|d| {
+            d.division(|l| {
+                l.class("text-[12px] text-ink-500 mb-3")
+                    .text("Subcommands of ")
+                    .span(|s| s.class("mono").text("wasm registry"))
+            })
+            .push(render_item_list(CMD_ROWS))
+        })
+        // Endpoints demo
+        .division(|d| {
+            d.division(|l| {
+                l.class("text-[12px] text-ink-500 mb-3")
+                    .text("Endpoints under ")
+                    .span(|s| s.class("mono").text("/v1/packages"))
+            })
+            .push(render_item_list(ENDPOINT_ROWS))
+        })
+        // Anatomy
+        .division(|d| {
+            d.division(|l| l.class("text-[12px] text-ink-500 mb-3").text("Anatomy"))
+                .push(anatomy_ul.build())
+        })
         .build()
         .to_string();
+
     super::section(
         "c-item-list",
         "C04",
         "Item List",
-        "Compact index of a group's children \u{2014} subcommands, endpoints, schemas. Each row is a sigil, a name + one-line description, and trailing meta. Rows separate with hairline rules, no card chrome.",
+        "Compact index of a group\u{2019}s children \u{2014} subcommands, endpoints, schemas. Each row is a sigil, a name + one-line description, and trailing meta. Rows separate with hairline rules, no card chrome.",
         &content,
     )
 }
