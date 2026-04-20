@@ -3,9 +3,21 @@
 use html::content::Navigation;
 use html::text_content::Division;
 
-const SVG_CHEV_RIGHT: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300"><path d="m9 18 6-6-6-6" /></svg>"#;
-const SVG_CHEV_LEFT: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>"#;
-const SVG_CHEV_RIGHT_LG: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>"#;
+const SVG_CHEV_RIGHT: &str = concat!(
+    r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300">"#,
+    include_str!("../../../../../vendor/lucide/chevron-right.svg"),
+    "</svg>"
+);
+const SVG_CHEV_LEFT: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-left.svg"),
+    "</svg>"
+);
+const SVG_CHEV_RIGHT_LG: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-right.svg"),
+    "</svg>"
+);
 
 const PAGE_BTN: &str = "h-8 w-8 grid place-items-center rounded-md border border-line bg-surface hover:bg-surfaceMuted";
 const PAGE_BTN_NAV: &str = "h-8 w-8 grid place-items-center rounded-md border border-line bg-surface text-ink-500 hover:bg-surfaceMuted";

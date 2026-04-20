@@ -2,7 +2,11 @@
 
 use html::text_content::Division;
 
-const SVG_COPY: &str = r#"<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="4" y="4" width="9" height="9" rx="1.2" /><path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /></svg>"#;
+const SVG_COPY: &str = concat!(
+    r#"<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    "</svg>"
+);
 
 const ANATOMY_ITEMS: &[&str] = &[
     "<strong>Kicker</strong> \u{2014} 12px ink-500 mono uppercase, dot-separated tokens (version, category, format). Sets context before the title.",

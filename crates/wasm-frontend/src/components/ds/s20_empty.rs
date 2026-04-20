@@ -2,8 +2,16 @@
 
 use html::text_content::Division;
 
-const SVG_CHAT: &str = r#"<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>"#;
-const SVG_PLUS: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14" /><path d="M12 5v14" /></svg>"#;
+const SVG_CHAT: &str = concat!(
+    r#"<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/message-square.svg"),
+    "</svg>"
+);
+const SVG_PLUS: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/plus.svg"),
+    "</svg>"
+);
 
 /// Render this section.
 pub(crate) fn render() -> String {

@@ -2,7 +2,11 @@
 
 use html::text_content::Division;
 
-const SVG_CLOSE: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>"#;
+const SVG_CLOSE: &str = concat!(
+    r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/x.svg"),
+    "</svg>"
+);
 
 /// Render this section.
 pub(crate) fn render() -> String {

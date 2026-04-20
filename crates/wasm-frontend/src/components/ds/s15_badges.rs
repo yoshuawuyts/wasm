@@ -2,7 +2,11 @@
 
 use html::text_content::Division;
 
-const SVG_CLOSE: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>"#;
+const SVG_CLOSE: &str = concat!(
+    r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/x.svg"),
+    "</svg>"
+);
 
 /// Status badge entries: (bg, ink, dot_class, label).
 const STATUSES: &[(&str, &str, &str)] = &[

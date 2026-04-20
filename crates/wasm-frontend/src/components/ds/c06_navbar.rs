@@ -2,20 +2,76 @@
 
 use html::text_content::Division;
 
-const SVG_HOME: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" /> </svg>"#;
-const SVG_CHEV_RIGHT: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true"> <path d="m9 18 6-6-6-6" /> </svg>"#;
-const SVG_SEARCH_SM: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
-const SVG_MOON_SM: &str = r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> <path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z" /> </svg>"#;
-const SVG_HAMBURGER: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" /> </svg>"#;
-const SVG_SEARCH_LG: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
-const SVG_CLOSE: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <path d="m3.5 3.5 9 9M12.5 3.5l-9 9" /> </svg>"#;
-const SVG_HOME_NAV: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2h-4a1 1 0 0 1-1-1v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5a1 1 0 0 1-1 1H5a2 2 0 0 1-2-2z" /> </svg>"#;
-const SVG_DOCS: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" /> <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" /> </svg>"#;
-const SVG_TERMINAL_ICON: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <polyline points="4 17 10 11 4 5" /> <line x1="12" x2="20" y1="19" y2="19" /> </svg>"#;
-const SVG_CLOCK: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
-const SVG_MOON_NAV: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /> </svg>"#;
-const SVG_BACK: &str = r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"> <path d="m11 3.5-5 5 5 5" /> </svg>"#;
-const SVG_SEARCH_NAV: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"> <circle cx="7" cy="7" r="4.5" /> <path d="m10.5 10.5 3 3" /> </svg>"#;
+const SVG_HOME: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/house.svg"),
+    "</svg>"
+);
+const SVG_CHEV_RIGHT: &str = concat!(
+    r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-ink-300 flex-shrink-0" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/chevron-right.svg"),
+    "</svg>"
+);
+const SVG_SEARCH_SM: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    "</svg>"
+);
+const SVG_MOON_SM: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/moon-16x16.svg"),
+    "</svg>"
+);
+const SVG_HAMBURGER: &str = concat!(
+    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/menu-16x16.svg"),
+    "</svg>"
+);
+const SVG_SEARCH_LG: &str = concat!(
+    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    "</svg>"
+);
+const SVG_CLOSE: &str = concat!(
+    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/x-16x16.svg"),
+    "</svg>"
+);
+const SVG_HOME_NAV: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/house.svg"),
+    "</svg>"
+);
+const SVG_DOCS: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/book-open.svg"),
+    "</svg>"
+);
+const SVG_TERMINAL_ICON: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/square-terminal.svg"),
+    "</svg>"
+);
+const SVG_CLOCK: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/clock.svg"),
+    "</svg>"
+);
+const SVG_MOON_NAV: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/moon.svg"),
+    "</svg>"
+);
+const SVG_BACK: &str = concat!(
+    r#"<svg class="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-left-sm-16x16.svg"),
+    "</svg>"
+);
+const SVG_SEARCH_NAV: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/search-16x16.svg"),
+    "</svg>"
+);
 
 /// Nav link entry for the drawer menu.
 struct DrawerLink {

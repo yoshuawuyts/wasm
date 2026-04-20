@@ -2,9 +2,21 @@
 
 use html::text_content::Division;
 
-const SVG_SPIN_SM: &str = r#"<svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
-const SVG_SPIN_MD: &str = r#"<svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
-const SVG_SPIN_LG: &str = r#"<svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.55" /></svg>"#;
+const SVG_SPIN_SM: &str = concat!(
+    r#"<svg class="ds-spinner text-ink-900" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/loader.svg"),
+    "</svg>"
+);
+const SVG_SPIN_MD: &str = concat!(
+    r#"<svg class="ds-spinner text-ink-500" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/loader.svg"),
+    "</svg>"
+);
+const SVG_SPIN_LG: &str = concat!(
+    r#"<svg class="ds-spinner text-ink-300" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/loader.svg"),
+    "</svg>"
+);
 
 fn progress_bar(label: &'static str, pct: &'static str, fill_class: &'static str) -> Division {
     Division::builder()

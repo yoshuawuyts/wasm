@@ -2,7 +2,11 @@
 
 use html::text_content::Division;
 
-const SVG_CHECK: &str = r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>"#;
+const SVG_CHECK: &str = concat!(
+    r#"<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/check.svg"),
+    "</svg>"
+);
 
 /// Render this section.
 pub(crate) fn render() -> String {

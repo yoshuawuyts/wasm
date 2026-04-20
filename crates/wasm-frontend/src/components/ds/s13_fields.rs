@@ -2,21 +2,81 @@
 
 use html::text_content::Division;
 
-const SVG_SEARCH_SM: &str = r#"<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
-const SVG_SEARCH_LG: &str = r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /> </svg>"#;
-const SVG_CHEV_SELECT: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_CHEV_DROPDOWN: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_CHEV_SPLIT: &str = r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="m6 9 6 6 6-6" /> </svg>"#;
-const SVG_COPY: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_CHECK: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="m3 8 3.5 3.5L13 5" /> </svg>"#;
-const SVG_COPY_LONG: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_FAIL: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"> <path d="M4 4l8 8M12 4l-8 8" /> </svg>"#;
-const SVG_COPY_DISABLED: &str = r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"> <rect x="4" y="4" width="9" height="9" rx="1.2" /> <path d="M4 11H3.2A1.2 1.2 0 0 1 2 9.8V3.2A1.2 1.2 0 0 1 3.2 2h6.6A1.2 1.2 0 0 1 11 3.2V4" /> </svg>"#;
-const SVG_MINUS: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> </svg>"#;
-const SVG_PLUS: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"> <path d="M5 12h14" /> <path d="M12 5v14" /> </svg>"#;
-const SVG_ATTACH: &str = r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <path d="M21.44 11.05 12.25 20.24a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 17.99 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /> </svg>"#;
-const SVG_CALENDAR: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <rect width="18" height="18" x="3" y="4" rx="2" /> <path d="M16 2v4" /> <path d="M8 2v4" /> <path d="M3 10h18" /> </svg>"#;
-const SVG_CLOCK: &str = r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"> <circle cx="12" cy="12" r="10" /> <polyline points="12 6 12 12 16 14" /> </svg>"#;
+const SVG_SEARCH_SM: &str = concat!(
+    r#"<svg class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-400" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
+    "</svg>"
+);
+const SVG_SEARCH_LG: &str = concat!(
+    r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
+    "</svg>"
+);
+const SVG_CHEV_SELECT: &str = concat!(
+    r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-down.svg"),
+    "</svg>"
+);
+const SVG_CHEV_DROPDOWN: &str = concat!(
+    r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-down.svg"),
+    "</svg>"
+);
+const SVG_CHEV_SPLIT: &str = concat!(
+    r#"<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-down.svg"),
+    "</svg>"
+);
+const SVG_COPY: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    "</svg>"
+);
+const SVG_CHECK: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/check-16x16.svg"),
+    "</svg>"
+);
+const SVG_COPY_LONG: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    "</svg>"
+);
+const SVG_FAIL: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/x-sharp-16x16.svg"),
+    "</svg>"
+);
+const SVG_COPY_DISABLED: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">"#,
+    include_str!("../../../../../vendor/lucide/copy-16x16.svg"),
+    "</svg>"
+);
+const SVG_MINUS: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/minus.svg"),
+    "</svg>"
+);
+const SVG_PLUS: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/plus.svg"),
+    "</svg>"
+);
+const SVG_ATTACH: &str = concat!(
+    r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/paperclip.svg"),
+    "</svg>"
+);
+const SVG_CALENDAR: &str = concat!(
+    r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/calendar.svg"),
+    "</svg>"
+);
+const SVG_CLOCK: &str = concat!(
+    r#"<svg class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/clock.svg"),
+    "</svg>"
+);
 
 /// Input size variant.
 #[derive(Clone, Copy)]

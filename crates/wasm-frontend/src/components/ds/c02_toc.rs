@@ -3,7 +3,11 @@
 use html::content::Navigation;
 use html::text_content::Division;
 
-const SVG_UP: &str = r#"<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m3 7.5 3-3 3 3" /></svg>"#;
+const SVG_UP: &str = concat!(
+    r#"<svg class="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">"#,
+    include_str!("../../../../../vendor/lucide/chevron-up-12x12.svg"),
+    "</svg>"
+);
 
 /// TOC link entries: (label, class_suffix).
 const TOC_LINKS: &[(&str, &str)] = &[
