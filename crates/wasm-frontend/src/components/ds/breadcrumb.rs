@@ -37,7 +37,7 @@ pub(crate) struct Crumb {
 pub(crate) fn render_breadcrumb(crumbs: &[Crumb]) -> String {
     let mut nav = Navigation::builder();
     nav.aria_label("Breadcrumb");
-    nav.class("flex items-center gap-1.5 text-[13px] text-ink-500 min-w-0");
+    nav.class("flex items-center gap-1.5 text-[13px] text-ink-500 min-w-0 overflow-x-auto whitespace-nowrap");
     for (i, crumb) in crumbs.iter().enumerate() {
         if i > 0 {
             nav.text(SVG_CHEV_RIGHT);

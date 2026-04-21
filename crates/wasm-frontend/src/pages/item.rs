@@ -85,6 +85,11 @@ pub(crate) fn render_type(
         doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &ty.name),
         annotations: version_detail.and_then(|d| d.annotations.as_ref()),
+        kind_label: package_shell::kind_label_for(pkg),
+        description: pkg.description.as_deref(),
+        registry: &pkg.registry,
+        repository: &pkg.repository,
+        digest: version_detail.map(|d| d.digest.as_str()),
     });
 
     let ctx = package_shell::SidebarContext {
@@ -141,6 +146,11 @@ pub(crate) fn render_function(
         doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &func.name),
         annotations: version_detail.and_then(|d| d.annotations.as_ref()),
+        kind_label: package_shell::kind_label_for(pkg),
+        description: pkg.description.as_deref(),
+        registry: &pkg.registry,
+        repository: &pkg.repository,
+        digest: version_detail.map(|d| d.digest.as_str()),
     });
 
     let ctx = package_shell::SidebarContext {

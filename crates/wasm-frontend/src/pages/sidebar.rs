@@ -32,6 +32,20 @@ const SVG_SCALE: &str = concat!(
     "</svg>"
 );
 
+/// Lucide calendar icon (14px, ink-500).
+const SVG_CALENDAR: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../vendor/lucide/calendar.svg"),
+    "</svg>"
+);
+
+/// Lucide git-fork icon (14px, ink-500) — generic VCS icon.
+const SVG_GIT_FORK: &str = concat!(
+    r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">"#,
+    include_str!("../../../../vendor/lucide/git-fork.svg"),
+    "</svg>"
+);
+
 /// Context needed to render the detail page sidebar.
 pub(crate) struct SidebarContext<'a> {
     /// The package display name (e.g. `"wasi:cli"`).
@@ -46,6 +60,16 @@ pub(crate) struct SidebarContext<'a> {
     pub active: SidebarActive<'a>,
     /// OCI annotations for the current version (optional).
     pub annotations: Option<&'a OciAnnotations>,
+    /// Package kind label (e.g. "Interface Types", "Component").
+    pub kind_label: &'a str,
+    /// Package description.
+    pub description: Option<&'a str>,
+    /// OCI registry hostname (e.g. "ghcr.io").
+    pub registry: &'a str,
+    /// OCI repository path (e.g. "wasi/http").
+    pub repository: &'a str,
+    /// OCI image digest (e.g. "sha256:abc123...").
+    pub digest: Option<&'a str>,
 }
 
 /// Which item in the sidebar is currently active.
@@ -60,20 +84,7 @@ pub(crate) enum SidebarActive<'a> {
 
 /// Render the sidebar for a detail page using the DS nested sidebar.
 pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
-    let pkg_url = format!("/{}/{}", ctx.display_name.replace(':', "/"), ctx.version);
-
     let mut items: Vec<SidebarItem> = Vec::new();
-
-    // Package root entry
-    items.push(SidebarItem::Entry(SidebarEntry {
-        sigil_bg: "var(--c-cat-slate)",
-        sigil_color: "var(--c-cat-slate-ink)",
-        sigil_text: "\u{00b7}",
-        name: ctx.display_name.to_owned(),
-        href: pkg_url,
-        meta: String::new(),
-        active: false,
-    }));
 
     // Worlds — each world is a group with its imports/exports as children
     for world in &ctx.doc.worlds {
@@ -161,15 +172,36 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
 
     let version_strs: Vec<&str> = ctx.versions.iter().map(String::as_str).collect();
     let base_url = format!("/{}/", ctx.display_name.replace(':', "/"));
-    let project_html = build_project_section(ctx.annotations);
+    let header_html = build_sidebar_header(ctx);
+    let project_html = build_project_section(ctx);
     let version_html = sidebar::render_version_selector(ctx.version, &version_strs, &base_url);
     let items_html = sidebar::render_items_nav(Some("Items"), &items);
 
     let mut aside = Aside::builder();
     aside.class("space-y-4");
-    if let Some(version) = &version_html {
-        aside.text(version.clone());
+    aside.text(header_html);
+
+    // Version + Digest + Revision block (single bordered section)
+    let revision = ctx.annotations.and_then(|a| a.revision.as_deref());
+    let has_version = version_html.is_some();
+    let has_digest = ctx.digest.is_some();
+    let has_revision = revision.is_some();
+    if has_version || has_digest || has_revision {
+        let mut block =
+            String::from(r#"<div class="pb-4 border-b-[1.5px] border-rule space-y-3">"#);
+        if let Some(version) = &version_html {
+            block.push_str(version);
+        }
+        if let Some(digest) = ctx.digest {
+            block.push_str(&build_digest_row(digest));
+        }
+        if let Some(rev) = revision {
+            block.push_str(&build_revision_row(rev));
+        }
+        block.push_str("</div>");
+        aside.text(block);
     }
+
     if let Some(project) = &project_html {
         aside.text(project.clone());
     }
@@ -177,45 +209,60 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
     aside.build()
 }
 
-/// Build a "Project" footer section from OCI annotations.
+/// Build the sidebar header with icon, title, version subtitle, and description.
+fn build_sidebar_header(ctx: &SidebarContext<'_>) -> String {
+    let ns = ctx.display_name.replace(':', "/");
+    let desc = ctx.description.unwrap_or("No description available.");
+
+    format!(
+        r#"<div class="pb-4 border-b-[1.5px] border-rule"><div class="flex items-center gap-2.5"><span class="sigil" style="background:var(--c-cat-slate);color:var(--c-cat-slate-ink);width:28px;height:28px;font-size:14px;">{}</span><div><a href="/{ns}/{}" class="text-[15px] font-semibold text-ink-900 hover:underline no-underline">{}</a><div class="text-[11px] text-ink-500 mono">v{} · {}</div></div></div><p class="mt-2 text-[12px] text-ink-700 leading-relaxed">{desc}</p></div>"#,
+        "\u{00b7}", ctx.version, ctx.display_name, ctx.version, ctx.kind_label,
+    )
+}
+
+/// Build a "Project" section from OCI annotations and registry info.
 ///
 /// Uses tree-link rows with icons matching the DS C01 "Project" section:
 /// GitHub logo for github.com/ghcr.io URLs, book for docs, house for homepage.
-fn build_project_section(annotations: Option<&OciAnnotations>) -> Option<String> {
-    let ann = annotations?;
-
+fn build_project_section(ctx: &SidebarContext<'_>) -> Option<String> {
     let mut rows = Vec::new();
 
-    // Link rows — use icons matching the DS demo pattern
-    if let Some(source) = &ann.source {
-        let (icon, label) = icon_and_label_for_url(source, "Source");
-        rows.push(project_link(source, icon, label));
-    }
-    if let Some(docs) = &ann.documentation {
-        let (icon, label) = icon_and_label_for_url(docs, "Documentation");
-        // Default to book icon unless it's a GitHub URL
-        let icon = if is_github_url(docs) { icon } else { SVG_BOOK };
-        rows.push(project_link(docs, icon, label));
-    }
-    if let Some(url) = &ann.url {
-        // Only show if different from source
-        if ann.source.as_deref() != Some(url) {
-            let (icon, label) = icon_and_label_for_url(url, "Homepage");
-            let icon = if is_github_url(url) { icon } else { SVG_HOUSE };
-            rows.push(project_link(url, icon, label));
-        }
-    }
+    // Registry link
+    let registry_url = format!("https://{}/{}", ctx.registry, ctx.repository);
+    let (registry_icon, _) = icon_and_label_for_url(&registry_url, "Registry");
+    rows.push(project_link(&registry_url, registry_icon, "Registry"));
 
-    // Metadata rows
-    if let Some(license) = &ann.licenses {
-        let base = strip_with_clause(license);
-        rows.push(project_icon_row(SVG_SCALE, &base));
-    }
-    if let Some(authors) = &ann.authors {
-        rows.push(detail_row("Authors", authors));
-    }
-    if let Some(vendor) = &ann.vendor {
-        rows.push(detail_row("Vendor", vendor));
+    if let Some(ann) = ctx.annotations {
+        // Link rows
+        if let Some(url) = &ann.url
+            && ann.source.as_deref() != Some(url)
+        {
+            let icon = if is_github_url(url) { SVG_GITHUB } else { SVG_HOUSE };
+            rows.push(project_link(url, icon, "Homepage"));
+        }
+        if let Some(source) = &ann.source {
+            rows.push(project_link(source, SVG_GIT_FORK, "Repository"));
+        }
+        if let Some(docs) = &ann.documentation {
+            let icon = if is_github_url(docs) { SVG_GITHUB } else { SVG_BOOK };
+            rows.push(project_link(docs, icon, "Documentation"));
+        }
+
+        // Metadata rows
+        if let Some(license) = &ann.licenses {
+            let base = strip_with_clause(license);
+            rows.push(project_icon_row(SVG_SCALE, &base));
+        }
+        if let Some(created) = &ann.created {
+            let date = format_date(created);
+            rows.push(project_icon_row(SVG_CALENDAR, &date));
+        }
+        if let Some(authors) = &ann.authors {
+            rows.push(detail_row("Authors", authors));
+        }
+        if let Some(vendor) = &ann.vendor {
+            rows.push(detail_row("Vendor", vendor));
+        }
     }
 
     if rows.is_empty() {
@@ -285,5 +332,97 @@ fn strip_with_clause(license: &str) -> String {
     match license.find(" WITH ") {
         Some(pos) => license[..pos].to_owned(),
         None => license.to_owned(),
+    }
+}
+
+/// Lucide copy icon (13px, for digest copy button).
+const SVG_COPY_SM: &str = concat!(
+    r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../vendor/lucide/copy.svg"),
+    "</svg>"
+);
+
+/// Build the digest row matching the install command copy button pattern.
+fn build_digest_row(digest: &str) -> String {
+    // Split "sha256:abcdef..." into prefix "sha256" and full hash
+    let (prefix, hash) = digest.split_once(':').unwrap_or(("", digest));
+
+    // Strip newlines from SVGs for JS embedding
+    let copy_svg: String = SVG_COPY_SM.chars().filter(|c| *c != '\n').collect();
+    let check_svg_raw = concat!(
+        r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-positive">"#,
+        include_str!("../../../../vendor/lucide/check.svg"),
+        "</svg>"
+    );
+    let check_svg: String = check_svg_raw.chars().filter(|c| *c != '\n').collect();
+
+    let prefix_box = if prefix.is_empty() {
+        String::new()
+    } else {
+        format!(
+            r#"<span class="inline-flex items-center px-2.5 h-7 rounded-l-md border border-r-0 border-line bg-surfaceMuted text-[11px] text-ink-500 mono select-none">{prefix}</span>"#
+        )
+    };
+    let code_rounding = if prefix.is_empty() {
+        "rounded-l-md"
+    } else {
+        ""
+    };
+
+    format!(
+        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Image Digest {info}</div><div class="flex">{prefix_box}<code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate {code_rounding}" title="{digest}">{hash}</code><button type="button" id="copy-digest-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy digest">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-digest-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{digest}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
+        info = sidebar::INFO_BUBBLE_DIGEST,
+    )
+}
+
+/// Build the revision row matching the digest copy button pattern.
+fn build_revision_row(revision: &str) -> String {
+    let short = if revision.len() > 12 {
+        format!("{}…", &revision[..12])
+    } else {
+        revision.to_owned()
+    };
+    let copy_svg: String = SVG_COPY_SM.chars().filter(|c| *c != '\n').collect();
+    let check_svg_raw = concat!(
+        r#"<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-positive">"#,
+        include_str!("../../../../vendor/lucide/check.svg"),
+        "</svg>"
+    );
+    let check_svg: String = check_svg_raw.chars().filter(|c| *c != '\n').collect();
+
+    format!(
+        r#"<div><div class="mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1">Revision {info}</div><div class="flex"><code class="inline-flex items-center px-2.5 h-7 flex-1 min-w-0 border border-line bg-surface mono text-[11px] text-ink-700 truncate rounded-l-md" title="{revision}">{short}</code><button type="button" id="copy-revision-btn" class="inline-flex items-center justify-center w-7 h-7 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted" aria-label="Copy revision">{copy_svg}</button></div></div><script>(function(){{var b=document.getElementById('copy-revision-btn');var ci='{copy_svg}';var ch='{check_svg}';b.addEventListener('click',function(){{navigator.clipboard.writeText('{revision}').then(function(){{b.innerHTML=ch;setTimeout(function(){{b.innerHTML=ci}},2000)}})}})}})()</script>"#,
+        info = sidebar::INFO_BUBBLE_REVISION,
+    )
+}
+
+/// Format an ISO 8601 date string to a human-friendly form.
+///
+/// `"2025-03-15T10:30:00Z"` → `"Mar 15, 2025"`
+/// Falls back to the first 10 characters if parsing fails.
+fn format_date(iso: &str) -> String {
+    // Extract YYYY-MM-DD
+    let date_part = if iso.len() >= 10 { &iso[..10] } else { iso };
+    let parts: Vec<&str> = date_part.split('-').collect();
+    if let [year, mm, dd] = parts.as_slice() {
+        let month = match *mm {
+            "01" => "Jan",
+            "02" => "Feb",
+            "03" => "Mar",
+            "04" => "Apr",
+            "05" => "May",
+            "06" => "Jun",
+            "07" => "Jul",
+            "08" => "Aug",
+            "09" => "Sep",
+            "10" => "Oct",
+            "11" => "Nov",
+            "12" => "Dec",
+            _ => return date_part.to_owned(),
+        };
+        let day = dd.trim_start_matches('0');
+        format!("{month} {day}, {year}")
+    } else {
+        date_part.to_owned()
     }
 }

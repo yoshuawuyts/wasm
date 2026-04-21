@@ -122,26 +122,23 @@ fn render_page_inner(
 
     let toc_column = match toc_html {
         Some(toc) => format!(
-            r#"<aside class="hidden lg:block" style="position:sticky;top:80px;align-self:start;max-height:calc(100vh - 6rem);overflow-y:auto">{toc}</aside>"#
+            r#"<aside class="hidden lg:block lg:sticky lg:top-16 lg:self-start lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto">{toc}</aside>"#
         ),
         None => String::new(),
     };
 
     let grid_class = if toc_html.is_some() {
-        "mt-8 md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_200px] md:gap-8"
+        "max-w-[1440px] px-4 md:px-6 grid grid-cols-1 lg:grid-cols-[240px_1fr_200px] gap-8 lg:gap-10 pt-8 pb-24"
     } else {
-        "mt-8 md:grid md:grid-cols-[240px_1fr] md:gap-8"
+        "max-w-[1440px] px-4 md:px-6 grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8 lg:gap-10 pt-8 pb-24"
     };
 
     let body = format!(
         r#"{nav}
-<div class="flex-1 w-full max-w-6xl px-4 sm:px-6 md:px-8 py-8">
-  {header}
-  <div class="{grid_class}">
-    <aside class="hidden md:block" style="position:sticky;top:80px;align-self:start;max-height:calc(100vh - 6rem);overflow-y:auto">{sidebar_html}</aside>
-    <main style="min-width:0">{body_content}</main>
-    {toc_column}
-  </div>
+<div class="{grid_class}">
+  <aside class="hidden md:block md:sticky md:top-16 md:self-start md:max-h-[calc(100vh-5rem)] md:overflow-y-auto -mx-2 px-2">{sidebar_html}</aside>
+  <article class="min-w-0">{header}{body_content}</article>
+  {toc_column}
 </div>"#,
     );
 
@@ -322,6 +319,15 @@ pub(crate) fn display_name_for(pkg: &KnownPackage) -> String {
     match (&pkg.wit_namespace, &pkg.wit_name) {
         (Some(ns), Some(name)) => format!("{ns}:{name}"),
         _ => pkg.repository.clone(),
+    }
+}
+
+/// Get a human-readable kind label for a package.
+pub(crate) fn kind_label_for(pkg: &KnownPackage) -> &'static str {
+    match pkg.kind {
+        Some(wasm_meta_registry_client::PackageKind::Interface) => "Interface Types",
+        Some(wasm_meta_registry_client::PackageKind::Component) => "Component",
+        _ => "Package",
     }
 }
 

@@ -31,14 +31,8 @@ pub(crate) fn render(
     };
     let _pkg_name = pkg.wit_name.as_deref().unwrap_or(&display_name);
 
-    // Build kicker: "version 0.2.11 · Interface Types · Apache-2.0"
-    let license = version_detail
-        .and_then(|d| d.annotations.as_ref())
-        .and_then(|a| a.licenses.as_deref());
-    let kicker = match license {
-        Some(lic) => format!("{kind_label} \u{00b7} version {version} \u{00b7} {lic}"),
-        None => format!("{kind_label} \u{00b7} version {version}"),
-    };
+    // Build kicker: "Interface Types · version 0.2.11"
+    let kicker = format!("{kind_label} \u{00b7} version {version}");
 
     let tagline = pkg
         .description
@@ -134,6 +128,11 @@ pub(crate) fn render(
             doc,
             active: super::sidebar::SidebarActive::Interface(""),
             annotations: version_detail.and_then(|d| d.annotations.as_ref()),
+            kind_label: package_shell::kind_label_for(pkg),
+            description: pkg.description.as_deref(),
+            registry: &pkg.registry,
+            repository: &pkg.repository,
+            digest: version_detail.map(|d| d.digest.as_str()),
         };
         super::sidebar::render_sidebar(&nav_ctx).to_string()
     });

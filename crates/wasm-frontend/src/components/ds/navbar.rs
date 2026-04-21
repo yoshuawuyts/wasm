@@ -156,7 +156,7 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
         .class("sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
         .division(|inner| {
             inner
-                .class("px-4 md:px-6 h-12 max-w-6xl grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] items-center gap-4")
+                .class("px-4 md:px-6 h-12 max-w-[1440px] grid grid-cols-[240px_1fr_auto] items-center gap-8 lg:gap-10")
                 .text(left)
                 .division(|center| center.class("hidden sm:block").text(search))
                 .text(right)

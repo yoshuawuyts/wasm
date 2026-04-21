@@ -59,6 +59,11 @@ pub(crate) fn render(
         doc,
         active: super::sidebar::SidebarActive::World(&world.name),
         annotations: version_detail.and_then(|d| d.annotations.as_ref()),
+        kind_label: package_shell::kind_label_for(pkg),
+        description: pkg.description.as_deref(),
+        registry: &pkg.registry,
+        repository: &pkg.repository,
+        digest: version_detail.map(|d| d.digest.as_str()),
     });
 
     let ctx = package_shell::SidebarContext {

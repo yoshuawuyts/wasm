@@ -4,6 +4,15 @@ use html::content::Navigation;
 use html::interactive::Details;
 use html::text_content::Division;
 
+/// Info bubble: a small (i) icon with a tooltip.
+pub(crate) const INFO_BUBBLE: &str = r#"<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-ink-400 text-[8px] text-ink-400 font-semibold cursor-help" title="The OCI tag for this release">i</span>"#;
+
+/// Info bubble for the digest field.
+pub(crate) const INFO_BUBBLE_DIGEST: &str = r#"<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-ink-400 text-[8px] text-ink-400 font-semibold cursor-help" title="Content-addressable SHA-256 digest of the OCI manifest. We use this to pin an exact image for reproducible builds.">i</span>"#;
+
+/// Info bubble for the revision field.
+pub(crate) const INFO_BUBBLE_REVISION: &str = r#"<span class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full border border-ink-400 text-[8px] text-ink-400 font-semibold cursor-help" title="Source control revision (e.g. the git commit) this image was built from.">i</span>"#;
+
 #[allow(dead_code)]
 const SVG_CHEV_DOWN: &str = concat!(
     r#"<svg class="h-3 w-3 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">"#,
@@ -127,10 +136,10 @@ pub(crate) fn render_version_selector(
         );
     }
     let html = Division::builder()
-        .class("pb-4 border-b-[1.5px] border-rule")
         .division(|l| {
-            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1")
+            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1 flex items-center gap-1")
                 .text("Version")
+                .text(INFO_BUBBLE)
         })
         .text(format!(
             r#"<select class="w-full h-7 px-2.5 rounded-md border border-line bg-surface text-ink-900 hover:bg-surfaceMuted text-[12px] mono cursor-pointer" onchange="window.location.href=this.value">{options}</select>"#
