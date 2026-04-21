@@ -8,6 +8,41 @@ const SVG_CLOSE: &str = concat!(
     "</svg>"
 );
 
+#[allow(dead_code)]
+/// Render a modal dialog with title, body content, and footer buttons.
+pub(crate) fn modal_dialog(
+    title: &str,
+    subtitle: &str,
+    body_html: &str,
+    cancel_label: &str,
+    confirm_label: &str,
+) -> Division {
+    let title = title.to_owned();
+    let subtitle = subtitle.to_owned();
+    let body_html = body_html.to_owned();
+    let cancel_label = cancel_label.to_owned();
+    let confirm_label = confirm_label.to_owned();
+    Division::builder()
+        .class("w-full max-w-md bg-surface rounded-lg border border-line shadow-tooltip overflow-hidden")
+        // Header
+        .division(|hdr| {
+            hdr.class("px-6 pt-5 pb-4 flex items-start justify-between")
+                .division(|d| {
+                    d.heading_3(|h| h.class("text-[16px] font-semibold tracking-tight").text(title))
+                        .paragraph(|p| p.class("mt-1 text-[13px] text-ink-500").text(subtitle))
+                })
+        })
+        // Body
+        .division(|body| body.class("px-6 pb-4").text(body_html))
+        // Footer
+        .division(|footer| {
+            footer.class("px-6 py-4 border-t hairline flex justify-end gap-2")
+                .button(|b| b.class("h-8 px-3 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300").text(cancel_label))
+                .button(|b| b.class("h-8 px-3 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted").text(confirm_label))
+        })
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()

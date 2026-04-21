@@ -80,13 +80,14 @@ const SVG_CLOCK: &str = concat!(
 
 /// Input size variant.
 #[derive(Clone, Copy)]
-enum Size {
+pub(crate) enum Size {
     Md,
     Sm,
 }
 
+#[allow(dead_code)]
 /// Build an `<input>` element with standard field classes.
-fn field_input(
+pub(crate) fn field_input(
     type_: &str,
     size: Size,
     class_extra: &str,
@@ -122,8 +123,9 @@ fn field_input(
     input.build().to_string()
 }
 
+#[allow(dead_code)]
 /// Build a labeled field (label + span + input).
-fn labeled_field(label_text: &str, label_class: &str, inner: &str) -> String {
+pub(crate) fn labeled_field(label_text: &str, label_class: &str, inner: &str) -> String {
     let label_text = label_text.to_owned();
     let label_class = label_class.to_owned();
     let inner = inner.to_owned();
@@ -362,8 +364,9 @@ fn input_disabled() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the Search subsection.
-fn search() -> String {
+pub(crate) fn search() -> String {
     let input = html::forms::Input::builder()
         .type_("search")
         .placeholder("Search\u{2026}")
@@ -386,8 +389,9 @@ fn search() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the prominent Search subsection.
-fn search_prominent() -> String {
+pub(crate) fn search_prominent() -> String {
     let input = html::forms::Input::builder()
         .type_("search")
         .placeholder("Search 12\u{00a0}480 packages\u{2026}")
@@ -439,8 +443,9 @@ fn search_prominent() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the Select subsection.
-fn select() -> String {
+pub(crate) fn select() -> String {
     let select_el = html::forms::Select::builder()
         .class("appearance-none block w-full h-9 pl-3 pr-8 rounded-md border border-line bg-surface text-[14px] focus:outline-none focus:border-ink-900")
         .option(|o| o.text("Tellus"))
@@ -464,8 +469,9 @@ fn select() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the Textarea subsection.
-fn textarea() -> String {
+pub(crate) fn textarea() -> String {
     html::forms::Label::builder()
         .class("block")
         .span(|s| s.class("text-[12px] text-ink-500").text("Textarea"))
@@ -478,8 +484,9 @@ fn textarea() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the prefix addon subsection.
-fn input_prefix() -> String {
+pub(crate) fn input_prefix() -> String {
     let inner = Division::builder()
         .class("mt-1 flex")
         .span(|s| {
@@ -502,8 +509,9 @@ fn input_prefix() -> String {
     )
 }
 
+#[allow(dead_code)]
 /// Build the suffix addon subsection.
-fn input_suffix() -> String {
+pub(crate) fn input_suffix() -> String {
     let inner = Division::builder()
         .class("mt-1 flex")
         .text(html::forms::Input::builder()
@@ -526,8 +534,9 @@ fn input_suffix() -> String {
     )
 }
 
+#[allow(dead_code)]
 /// Build the button group subsection.
-fn input_button() -> String {
+pub(crate) fn input_button() -> String {
     let inner = Division::builder()
         .class("mt-1 flex")
         .text(html::forms::Input::builder()
@@ -693,8 +702,9 @@ pub(crate) const COMMANDS: &[CommandEntry] = &[
     },
 ];
 
+#[allow(dead_code)]
 /// Build a command demo.
-fn command(entry: &CommandEntry) -> String {
+pub(crate) fn command(entry: &CommandEntry) -> String {
     let label = entry.label.to_owned();
     let wrapper_class = entry.wrapper_class.to_owned();
     let dollar_class = entry.dollar_class.to_owned();
@@ -732,8 +742,9 @@ fn command(entry: &CommandEntry) -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the number stepper subsection.
-fn stepper() -> String {
+pub(crate) fn stepper() -> String {
     let input = html::forms::Input::builder()
         .type_("text")
         .value("12")
@@ -762,8 +773,9 @@ fn stepper() -> String {
     labeled_field("Number stepper", "text-[12px] text-ink-500", &inner)
 }
 
+#[allow(dead_code)]
 /// Build the file input subsection.
-fn file_input() -> String {
+pub(crate) fn file_input() -> String {
     let inner = Division::builder()
         .class("mt-1 flex")
         .button(|b| {
@@ -782,8 +794,9 @@ fn file_input() -> String {
     labeled_field("File input", "text-[12px] text-ink-500", &inner)
 }
 
+#[allow(dead_code)]
 /// Build the range slider subsection.
-fn range_slider() -> String {
+pub(crate) fn range_slider() -> String {
     html::forms::Label::builder()
         .class("block")
         .span(|s| {
@@ -802,8 +815,9 @@ fn range_slider() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the color input subsection.
-fn color_input() -> String {
+pub(crate) fn color_input() -> String {
     let inner = Division::builder()
         .class("mt-1 flex")
         .span(|s| {
@@ -824,8 +838,9 @@ fn color_input() -> String {
     labeled_field("Color", "text-[12px] text-ink-500", &inner)
 }
 
+#[allow(dead_code)]
 /// Build the date/time subsection.
-fn date_time() -> String {
+pub(crate) fn date_time() -> String {
     let date_label = html::forms::Label::builder()
         .class("block")
         .span(|s| s.class("text-[12px] text-ink-500").text("Date"))
@@ -868,8 +883,9 @@ fn date_time() -> String {
         .to_string()
 }
 
+#[allow(dead_code)]
 /// Build the combobox subsection.
-fn combobox() -> String {
+pub(crate) fn combobox() -> String {
     let dropdown = Division::builder()
         .class("absolute left-0 right-0 mt-1 rounded-md border border-line bg-surface shadow-tooltip overflow-hidden text-[14px] z-10")
         .division(|d| {

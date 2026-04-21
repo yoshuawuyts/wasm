@@ -33,6 +33,23 @@ pub(crate) const ANATOMY_ITEMS: &[&str] = &[
     "End the rail with a quiet <strong>Back to top</strong> button \u{2014} 11px mono, ink-500, no border; hover reveals the surface-muted background.",
 ];
 
+#[allow(dead_code)]
+/// Render a "On this page" sidebar ToC from a list of links.
+pub(crate) fn on_this_page_nav(links: &[(&str, &str)]) -> String {
+    let mut nav = Navigation::builder();
+    nav.class("space-y-1 text-[13px]");
+    nav.division(|d| {
+        d.class("text-[11px] mono uppercase tracking-wider text-ink-500 mb-2")
+            .text("On this page")
+    });
+    for (href, label) in links {
+        let href = (*href).to_owned();
+        let label = (*label).to_owned();
+        nav.anchor(|a| a.href(href).class("toc-link").text(label));
+    }
+    nav.build().to_string()
+}
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

@@ -8,6 +8,28 @@ const SVG_CHECK: &str = concat!(
     "</svg>"
 );
 
+#[allow(dead_code)]
+/// Render a checkbox input with label.
+pub(crate) fn checkbox(label: &str, checked: bool, disabled: bool) -> html::forms::Label {
+    let label = label.to_owned();
+    let mut input = html::forms::Input::builder();
+    input.type_("checkbox");
+    input.class("sr-only peer");
+    if checked {
+        input.checked("");
+    }
+    if disabled {
+        input.disabled("");
+    }
+    let input = input.build().to_string();
+    html::forms::Label::builder()
+        .class("inline-flex items-center gap-2 cursor-pointer text-[14px]")
+        .text(input)
+        .span(|s| s.class("h-4 w-4 rounded border border-line bg-surface peer-checked:bg-ink-900 peer-checked:border-ink-900 grid place-items-center"))
+        .span(|s| s.text(label))
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()

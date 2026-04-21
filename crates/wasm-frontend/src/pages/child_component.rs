@@ -1,6 +1,6 @@
 //! Detail page for a child module or component inside a Wasm component.
 
-use crate::components::section_group;
+use crate::components::ds::section_group;
 use html::text_content::{Division, UnorderedList};
 use wasm_meta_registry_client::{ComponentSummary, KnownPackage, PackageVersion};
 

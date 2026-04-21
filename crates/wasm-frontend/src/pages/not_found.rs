@@ -4,7 +4,7 @@
 
 use html::text_content::Division;
 
-use crate::components::link_button;
+use crate::components::ds::link_button;
 use crate::layout;
 
 /// Render a user-friendly 404 page.

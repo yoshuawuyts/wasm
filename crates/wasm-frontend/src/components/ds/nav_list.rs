@@ -33,7 +33,7 @@ pub(crate) fn item(label: &str, href: &str, state: &NavState) -> ListItem {
 pub(crate) fn section(label: &str) -> Division {
     Division::builder()
         .division(|lbl| {
-            lbl.class(super::detail_row::SECTION_LABEL_CLASS)
+            lbl.class(super::typography::SECTION_LABEL_CLASS)
                 .text(label.to_owned())
         })
         .build()

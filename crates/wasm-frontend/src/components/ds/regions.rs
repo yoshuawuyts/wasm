@@ -25,6 +25,17 @@ pub(crate) const RULES: &[(&str, &str)] = &[
     ),
 ];
 
+#[allow(dead_code)]
+/// Render a page region with the given surface class and content.
+pub(crate) fn region(surface_class: &str, content: &str) -> Division {
+    let surface_class = format!("py-8 md:py-12 {surface_class}");
+    let content = content.to_owned();
+    Division::builder()
+        .class(surface_class)
+        .text(content)
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

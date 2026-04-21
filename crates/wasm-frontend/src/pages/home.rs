@@ -6,8 +6,8 @@ use html::text_content::Division;
 use html::text_content::builders::DivisionBuilder;
 use wasm_meta_registry_client::KnownPackage;
 
-use crate::components::package_card;
-use crate::components::search_bar::{self, SearchBar};
+use crate::components::ds::package_card;
+use crate::components::ds::search_bar::{self, SearchBar};
 use crate::layout;
 use wasm_meta_registry_client::{ApiError, RegistryClient};
 

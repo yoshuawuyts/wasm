@@ -54,7 +54,8 @@ pub(crate) const SAMPLES: &[(&str, &str, &str, &str)] = &[
     ),
 ];
 
-fn type_row(label: &str, text_class: &str, sample: &str, spec: &str) -> Division {
+#[allow(dead_code)]
+pub(crate) fn type_row(label: &str, text_class: &str, sample: &str, spec: &str) -> Division {
     let label = label.to_owned();
     let text_class = text_class.to_owned();
     let sample = sample.to_owned();
@@ -68,6 +69,38 @@ fn type_row(label: &str, text_class: &str, sample: &str, spec: &str) -> Division
         })
         .build()
 }
+
+/// Class string for the display-sized page heading.
+#[allow(dead_code)]
+pub(crate) const DISPLAY_CLASS: &str =
+    "text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight";
+
+/// Class string for the primary page heading (h1).
+pub(crate) const H1_CLASS: &str = "text-[28px] leading-[1.15] font-semibold tracking-tight";
+
+/// Class string for a page sub-heading (h2).
+pub(crate) const H2_CLASS: &str = "text-[22px] font-semibold tracking-tight mt-10 mb-4";
+
+/// Class string for a subtitle line below the heading.
+pub(crate) const SUBTITLE_CLASS: &str = "text-[13px] text-ink-500 mt-2";
+
+/// Class string for body text paragraphs.
+pub(crate) const BODY_CLASS: &str = "text-ink-700 leading-relaxed";
+
+/// Class string for a section heading.
+pub(crate) const SECTION_CLASS: &str = "text-[16px] font-semibold tracking-tight mb-3";
+
+/// Class string for a section heading with bottom border.
+pub(crate) const SECTION_BORDERED_CLASS: &str =
+    "text-[16px] font-semibold tracking-tight mb-3 pb-2 border-b border-lineSoft";
+
+/// Class string for a section label (eyebrow heading).
+pub(crate) const SECTION_LABEL_CLASS: &str =
+    "text-[11px] uppercase tracking-wider text-ink-500 mb-2";
+
+/// Class string for a rule divider between detail sections.
+#[allow(dead_code)]
+pub(crate) const SECTION_RULE_CLASS: &str = "my-3 border-t-[1.5px] border-rule";
 
 /// Render this section.
 pub(crate) fn render(

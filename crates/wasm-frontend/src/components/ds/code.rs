@@ -100,6 +100,20 @@ const TAB_DESC: &str = r#"Tab strip uses <code class="mono text-[12px]">.id-lang
 /// Token palette description.
 const TOKEN_DESC: &str = r#"Each token references the same <code class="mono text-[12px]">--color-wit-*</code> variables we use for WIT diagrams — module pink, world purple, interface sky, function green, struct indigo, resource amber. Both light and dark themes carry calibrated hex pairs so the panel never feels over-saturated on paper or muddy on graphite."#;
 
+#[allow(dead_code)]
+/// Render a `<pre>` code block with the given content.
+pub(crate) fn code_block(content: &str) -> String {
+    let content = content.to_owned();
+    html::text_content::PreformattedText::builder()
+        .class("id-code")
+        .text(content)
+        .build()
+        .to_string()
+}
+
+/// Class string for a standard code block.
+pub(crate) const CODE_BLOCK_CLASS: &str = "id-code";
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

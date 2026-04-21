@@ -2,7 +2,6 @@
 
 use html::text_content::Division;
 
-use crate::components::page_heading;
 use crate::layout;
 
 /// Render a simple about page.
@@ -10,13 +9,13 @@ use crate::layout;
 pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("pt-8 max-w-[65ch]")
-        .heading_1(|h1| h1.class(format!("{} mb-6", page_heading::H1_CLASS)).text("About"))
+        .heading_1(|h1| h1.class(format!("{} mb-6", crate::components::ds::typography::H1_CLASS)).text("About"))
         .paragraph(|p| {
-            p.class(page_heading::BODY_CLASS)
+            p.class(crate::components::ds::typography::BODY_CLASS)
                 .text("The WebAssembly Package Registry is a discovery service for WebAssembly components and interfaces. It indexes packages from OCI registries and provides a browsable frontend for exploring the ecosystem.")
         })
         .paragraph(|p| {
-            p.class(format!("{} mt-4", page_heading::BODY_CLASS))
+            p.class(format!("{} mt-4", crate::components::ds::typography::BODY_CLASS))
                 .text("This frontend is itself a WebAssembly component, compiled to ")
                 .code(|c| {
                     c.class("bg-surfaceMuted px-1.5 py-0.5 text-[14px]")

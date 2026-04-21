@@ -30,6 +30,7 @@ pub(crate) struct Crumb {
     pub href: Option<String>,
 }
 
+#[allow(dead_code)]
 /// Render a breadcrumb `<nav>` from a list of segments.
 ///
 /// Each segment is a link except the last, which renders as a bold span.
@@ -56,6 +57,14 @@ pub(crate) fn render_breadcrumb(crumbs: &[Crumb]) -> String {
     }
     nav.build().to_string()
 }
+
+/// Class string for an enabled pagination button.
+pub(crate) const PAGINATION_BUTTON_CLASS: &str =
+    "px-3 py-1.5 border border-line text-[13px] hover:bg-surfaceMuted transition-colors";
+
+/// Class string for a disabled pagination button.
+pub(crate) const PAGINATION_DISABLED_CLASS: &str =
+    "px-3 py-1.5 border border-line-light text-[13px] text-ink-400";
 
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {

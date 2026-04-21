@@ -2,7 +2,20 @@
 
 use html::text_content::Division;
 
+#[allow(dead_code)]
 /// Render the elevation section.
+/// Render a card with the given elevation style.
+pub(crate) fn elevation_card(title: &str, spec: &str, class: &str) -> Division {
+    let title = title.to_owned();
+    let spec = spec.to_owned();
+    let class = format!("p-5 {class}");
+    Division::builder()
+        .class(class)
+        .division(|t| t.class("text-[13px] font-medium").text(title))
+        .division(|s| s.class("mt-1 text-[12px] text-ink-500 mono").text(spec))
+        .build()
+}
+
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("grid grid-cols-1 md:grid-cols-3 gap-6")

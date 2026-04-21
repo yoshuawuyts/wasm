@@ -5,7 +5,8 @@ use html::text_content::Division;
 
 const CODE_CHIP: &str = "mono text-[11px] text-ink-700 bg-surfaceMuted px-1 py-0.5 rounded-sm";
 
-fn def_row(name: &Division, desc: TableCell) -> TableRow {
+#[allow(dead_code)]
+pub(crate) fn def_row(name: &Division, desc: TableCell) -> TableRow {
     let name_str = name.to_string();
     TableRow::builder()
         .class("border-b border-lineSoft")
@@ -17,7 +18,8 @@ fn def_row(name: &Division, desc: TableCell) -> TableRow {
         .build()
 }
 
-fn build_def_table() -> Table {
+#[allow(dead_code)]
+pub(crate) fn build_def_table() -> Table {
     let mut tbody = TableBody::builder();
     tbody.class("text-ink-900");
 
@@ -145,7 +147,8 @@ pub(crate) const TAB_ENTRIES: &[TabEntry] = &[
     },
 ];
 
-fn build_tab_table(entries: &[TabEntry]) -> Table {
+#[allow(dead_code)]
+pub(crate) fn build_tab_table(entries: &[TabEntry]) -> Table {
     let thead = TableHead::builder()
         .table_row(|tr| {
             tr.class("text-ink-400")

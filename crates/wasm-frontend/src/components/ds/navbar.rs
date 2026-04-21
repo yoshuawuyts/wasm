@@ -103,6 +103,7 @@ const MOON_THEME_ICON: &str = concat!(
     "</svg>"
 );
 
+#[allow(dead_code)]
 /// Render the production navbar.
 ///
 /// Produces a sticky translucent `<header>` with:

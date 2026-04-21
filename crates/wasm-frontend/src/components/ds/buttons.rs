@@ -31,6 +31,36 @@ const SVG_UPLOAD: &str = concat!(
 const ICON_BTN: &str =
     "h-8 w-8 grid place-items-center rounded-md hover:bg-surfaceMuted text-ink-700";
 
+#[allow(dead_code)]
+/// Render a filled button.
+pub(crate) fn filled_button(label: &str, compact: bool) -> Division {
+    let h = if compact { "h-8" } else { "h-9" };
+    let label = label.to_owned();
+    Division::builder()
+        .class("inline-block")
+        .button(|b| {
+            b.type_("button")
+                .class(format!("{h} px-3 inline-flex items-center gap-2 rounded-lg bg-surfaceMuted text-ink-900 text-[13px] hover:bg-ink-300"))
+                .text(label)
+        })
+        .build()
+}
+
+#[allow(dead_code)]
+/// Render an outline button.
+pub(crate) fn outline_button(label: &str, compact: bool) -> Division {
+    let h = if compact { "h-8" } else { "h-9" };
+    let label = label.to_owned();
+    Division::builder()
+        .class("inline-block")
+        .button(|b| {
+            b.type_("button")
+                .class(format!("{h} px-3 inline-flex items-center gap-2 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted"))
+                .text(label)
+        })
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()

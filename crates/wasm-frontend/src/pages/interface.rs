@@ -1,6 +1,6 @@
 //! Interface detail page.
 
-use crate::components::{copy_button, section_group};
+use crate::components::ds::{copy_button, section_group};
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};

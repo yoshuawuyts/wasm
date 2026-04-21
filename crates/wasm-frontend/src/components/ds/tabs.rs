@@ -2,7 +2,43 @@
 
 use html::text_content::Division;
 
+#[allow(dead_code)]
 /// Render the tabs & pills section.
+/// Render a segmented tab control (binary toggle).
+pub(crate) fn segmented_tabs(items: &[(&str, bool)]) -> Division {
+    let mut div = Division::builder();
+    div.class("inline-flex rounded-md border border-line overflow-hidden text-[13px]");
+    for (label, active) in items {
+        let class = if *active {
+            "px-4 h-8 bg-surface text-ink-900 font-medium border-r border-line last:border-r-0"
+        } else {
+            "px-4 h-8 bg-canvas text-ink-500 hover:text-ink-900 border-r border-line last:border-r-0"
+        };
+        let label = (*label).to_owned();
+        let class = class.to_owned();
+        div.button(|b| b.type_("button").class(class).text(label));
+    }
+    div.build()
+}
+
+#[allow(dead_code)]
+/// Render underline-style tabs.
+pub(crate) fn underline_tabs(items: &[(&str, bool)]) -> Division {
+    let mut div = Division::builder();
+    div.class("flex gap-4 border-b-[1.5px] border-rule text-[13px]");
+    for (label, active) in items {
+        let class = if *active {
+            "pb-2 border-b-[1.5px] border-ink-900 text-ink-900 font-medium -mb-px"
+        } else {
+            "pb-2 text-ink-500 hover:text-ink-900"
+        };
+        let label = (*label).to_owned();
+        let class = class.to_owned();
+        div.button(|b| b.type_("button").class(class).text(label));
+    }
+    div.build()
+}
+
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("space-y-8")

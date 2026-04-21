@@ -19,7 +19,8 @@ pub(crate) const RADII: &[(&str, &str, &str)] = &[
     ("", "rounded-pill", "pill \u{2014} 9999px"),
 ];
 
-fn spacing_row(value: &str, label: &str, width: &str) -> Division {
+#[allow(dead_code)]
+pub(crate) fn spacing_row(value: &str, label: &str, width: &str) -> Division {
     let width = width.to_owned();
     Division::builder()
         .class("flex items-center gap-4")

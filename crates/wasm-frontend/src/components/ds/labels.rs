@@ -16,7 +16,15 @@ pub(crate) const BARS: &[(&str, &str, &str)] = &[
     ("bg-cat-slate", "text-cat-slateInk", "Ad minim veniam"),
 ];
 
+#[allow(dead_code)]
 /// Render the labels section.
+/// Render a single label bar.
+pub(crate) fn label_bar(bg_class: &str, ink_class: &str, text: &str) -> Division {
+    let class = format!("bar {bg_class} {ink_class}");
+    let text = text.to_owned();
+    Division::builder().class(class).text(text).build()
+}
+
 pub(crate) fn render(
     section_id: &str,
     num: &str,

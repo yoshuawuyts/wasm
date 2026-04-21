@@ -18,7 +18,12 @@ const SVG_SPIN_LG: &str = concat!(
     "</svg>"
 );
 
-fn progress_bar(label: &'static str, pct: &'static str, fill_class: &'static str) -> Division {
+#[allow(dead_code)]
+pub(crate) fn progress_bar(
+    label: &'static str,
+    pct: &'static str,
+    fill_class: &'static str,
+) -> Division {
     Division::builder()
         .division(|labels| {
             labels

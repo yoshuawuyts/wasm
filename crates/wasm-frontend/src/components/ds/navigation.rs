@@ -16,8 +16,9 @@ pub(crate) const GROUP_2: &[(&str, bool)] = &[
     ("Aliquam Erat", false),
 ];
 
+#[allow(dead_code)]
 /// Build a nav list from items.
-fn nav_list(items: &[(&str, bool)]) -> UnorderedList {
+pub(crate) fn nav_list(items: &[(&str, bool)]) -> UnorderedList {
     let mut ul = UnorderedList::builder();
     ul.class("space-y-px text-[14px]");
     for (label, active) in items {

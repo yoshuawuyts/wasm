@@ -45,7 +45,8 @@ impl Swatch {
     }
 }
 
-fn render_swatch(s: &Swatch) -> Division {
+#[allow(dead_code)]
+pub(crate) fn render_swatch(s: &Swatch) -> Division {
     let mut d = Division::builder();
     if s.ink_class.is_empty() {
         d.division(|sw| sw.class(format!("swatch {}", s.bg)));
@@ -64,7 +65,12 @@ fn render_swatch(s: &Swatch) -> Division {
     d.build()
 }
 
-fn render_group(title: &'static str, grid_class: &'static str, swatches: &[Swatch]) -> Division {
+#[allow(dead_code)]
+pub(crate) fn render_group(
+    title: &'static str,
+    grid_class: &'static str,
+    swatches: &[Swatch],
+) -> Division {
     let title = title.to_owned();
     let mut grid = Division::builder();
     grid.class(grid_class);

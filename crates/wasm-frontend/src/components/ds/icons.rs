@@ -116,6 +116,19 @@ pub(crate) const GRID_ICONS: &[(&str, &str)] = &[
 
 const INLINE_DESC: &str = r#"These are the icons you'll see most across the site — in the top bar, in tree links, beside copyable code, and in callouts. They sit at <code class="mono text-[12px]">h-3.5 w-3.5</code> (14px), coloured <code class="mono text-[12px]">text-ink-500</code>, paired with body text or a mono label. Larger swatches below are reference at 20px so the stroke geometry is visible."#;
 
+#[allow(dead_code)]
+/// Render a Lucide icon SVG at the given size.
+///
+/// `inner` is the SVG fragment from a vendored file (via `include_str!`).
+/// Returns a full `<svg>` string. Uses `format!` because the `html` crate
+/// has no SVG element support.
+pub(crate) fn icon(size: u8, inner: &str) -> String {
+    let inner = inner.trim();
+    format!(
+        r#"<svg width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">{inner}</svg>"#,
+    )
+}
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

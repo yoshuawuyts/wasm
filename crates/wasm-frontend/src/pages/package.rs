@@ -2,7 +2,7 @@
 
 // r[impl frontend.pages.package-detail]
 
-use crate::components::{copy_button, section_group, section_heading};
+use crate::components::ds::{copy_button, section_group};
 use crate::wit_doc::WitDocument;
 use html::content::Section;
 use html::text_content::Division;
@@ -282,7 +282,10 @@ fn render_world_overview(doc: &WitDocument) -> Division {
 /// Render raw WIT text in a pre-formatted code block (fallback).
 fn render_raw_wit(wit_text: &str) -> Division {
     Division::builder()
-        .heading_2(|h2| h2.class(section_heading::CLASS).text("WIT Definition"))
+        .heading_2(|h2| {
+            h2.class(crate::components::ds::typography::SECTION_CLASS)
+                .text("WIT Definition")
+        })
         .push(
             html::text_content::PreformattedText::builder()
                 .class("border border-line p-4 overflow-x-auto text-[15px] leading-relaxed")
@@ -302,7 +305,7 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
         container.division(|world_div| {
             if world.name != "root" {
                 world_div.heading_2(|h2| {
-                    h2.class(section_heading::CLASS)
+                    h2.class(crate::components::ds::typography::SECTION_CLASS)
                         .text(format!("world {}", world.name))
                 });
             }

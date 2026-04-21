@@ -16,6 +16,41 @@ pub(crate) const ANATOMY_ITEMS: &[&str] = &[
     r#"Vertical rhythm: <code class="mono text-[12px]">pt-8 md:pt-12 pb-8 md:pb-12</code>, with a strong <code class="mono text-[12px]">.rule</code> divider beneath separating the header from page content."#,
 ];
 
+#[allow(dead_code)]
+/// Render a page header with kicker, title, tagline, and optional metadata strip.
+pub(crate) fn page_header_block(
+    kicker_html: &str,
+    title: &str,
+    tagline: &str,
+    metadata_html: Option<&str>,
+) -> Division {
+    let kicker_html = kicker_html.to_owned();
+    let title = title.to_owned();
+    let tagline = tagline.to_owned();
+    let mut div = Division::builder();
+    div.class("border border-line rounded-lg bg-canvas px-6 py-8");
+    div.division(|d| {
+        d.class("flex items-center gap-2 text-[12px] text-ink-500 mono uppercase tracking-wider")
+            .text(kicker_html)
+    });
+    div.heading_1(|h| {
+        h.class("mt-3 text-[36px] md:text-[44px] leading-[1.05] font-semibold tracking-tight")
+            .text(title)
+    });
+    div.paragraph(|p| {
+        p.class("mt-3 max-w-2xl text-[15px] text-ink-700 leading-relaxed")
+            .text(tagline)
+    });
+    if let Some(meta) = metadata_html {
+        let meta = meta.to_owned();
+        div.division(|d| {
+            d.class("mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-[13px]")
+                .text(meta)
+        });
+    }
+    div.build()
+}
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

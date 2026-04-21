@@ -3,7 +3,7 @@
 //! Provides a navigation sidebar showing sibling interfaces/worlds and
 //! package metadata, matching the layout of the package detail page.
 
-use crate::components::nav_list::{self, NavState};
+use crate::components::ds::nav_list::{self, NavState};
 use crate::wit_doc::WitDocument;
 use html::content::Aside;
 use html::text_content::{Division, UnorderedList};
@@ -42,7 +42,7 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
 
 /// Render the navigation card with interfaces and worlds.
 fn render_nav_card(ctx: &SidebarContext<'_>, pkg_url: &str) -> Division {
-    use crate::components::detail_row;
+    use crate::components::ds::detail_row;
 
     let mut card = Division::builder();
     card.class("text-[13px]");

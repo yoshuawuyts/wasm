@@ -1,6 +1,6 @@
 //! World detail page.
 
-use crate::components::{copy_button, section_heading};
+use crate::components::ds::copy_button;
 use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 use html::text_content::{Division, ListItem, UnorderedList};
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -153,7 +153,7 @@ fn render_item_section(
     let mut div = Division::builder();
     if iface_entries.is_empty() {
         div.heading_2(|h2| {
-            h2.class(section_heading::BORDERED_CLASS)
+            h2.class(crate::components::ds::typography::SECTION_BORDERED_CLASS)
                 .text(heading.to_owned())
         });
     } else {

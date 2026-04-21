@@ -22,7 +22,7 @@ pub(crate) const ANATOMY_ITEMS: &[&str] = &[
 const PILL_DESC: &str = r#"Method pill (<code class="mono text-[12px]">.id-method-*</code>) and kind pill (<code class="mono text-[12px]">.id-kind-*</code>) share shape and slot — swap by surface, not by stacking. The auth tag is the only header element that uses <code class="mono text-[12px]">cream</code> + the rounded-pill shape, reserving cream for "you need credentials" semantics across the design system."#;
 
 /// Build the live demo card: article with title, method pill, path, and tagline.
-fn build_demo() -> Division {
+pub(crate) fn build_demo() -> Division {
     let article = Article::builder()
         .class("space-y-5")
         .push(
@@ -84,7 +84,7 @@ fn build_demo() -> Division {
 }
 
 /// Build the anatomy rules list.
-fn build_anatomy(items: &[&str]) -> Division {
+pub(crate) fn build_anatomy(items: &[&str]) -> Division {
     let mut ul = html::text_content::UnorderedList::builder();
     ul.class(
         "text-[13px] text-ink-700 leading-relaxed space-y-1.5 pl-5 list-disc marker:text-ink-400",
@@ -101,7 +101,7 @@ fn build_anatomy(items: &[&str]) -> Division {
 }
 
 /// Pill row: label + list of pills.
-fn pill_row(label: &'static str, pills: &[(&'static str, &'static str)]) -> Division {
+pub(crate) fn pill_row(label: &'static str, pills: &[(&'static str, &'static str)]) -> Division {
     let mut row = Division::builder();
     row.class("flex flex-wrap items-center gap-3");
     row.span(|s| {
@@ -121,7 +121,7 @@ fn pill_row(label: &'static str, pills: &[(&'static str, &'static str)]) -> Divi
 }
 
 /// Build the pill variants grid.
-fn build_pills() -> Division {
+pub(crate) fn build_pills() -> Division {
     Division::builder()
         .division(|l| {
             l.class("text-[12px] text-ink-500 mb-3")

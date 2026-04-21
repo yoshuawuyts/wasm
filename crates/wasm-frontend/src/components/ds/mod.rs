@@ -171,3 +171,12 @@ fn is_void_element(tag: &str) -> bool {
         "br" | "hr" | "img" | "input" | "meta" | "link" | "source" | "area" | "base" | "col"
     )
 }
+pub(crate) mod button;
+pub(crate) mod copy_button;
+pub(crate) mod detail_row;
+pub(crate) mod link_button;
+pub(crate) mod nav_list;
+pub(crate) mod package_card;
+pub(crate) mod package_row;
+pub(crate) mod search_bar;
+pub(crate) mod section_group;

@@ -5,12 +5,12 @@
 
 const COPY_ICON: &str = concat!(
     r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
-    include_str!("../../../../vendor/lucide/copy.svg"),
+    include_str!("../../../../../vendor/lucide/copy.svg"),
     "</svg>"
 );
 const CHECK_ICON: &str = concat!(
     r#"<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
-    include_str!("../../../../vendor/lucide/check.svg"),
+    include_str!("../../../../../vendor/lucide/check.svg"),
     "</svg>"
 );
 

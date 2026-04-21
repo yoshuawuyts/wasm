@@ -8,7 +8,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use crate::components::{search_bar, section_group};
+use crate::components::ds::{search_bar, section_group};
 use crate::layout;
 
 /// Context for rendering the package page sidebar.
@@ -193,7 +193,7 @@ fn render_breadcrumb_path(crumbs: &[crate::components::ds::breadcrumb::Crumb]) -
 }
 
 /// Sidebar section label class matching the design system Details (section 23).
-const SIDEBAR_LABEL: &str = crate::components::detail_row::SECTION_LABEL_CLASS;
+const SIDEBAR_LABEL: &str = crate::components::ds::typography::SECTION_LABEL_CLASS;
 
 /// Render the right sidebar with all package metadata.
 fn render_sidebar(ctx: &SidebarContext<'_>, display_name: &str) -> Division {
@@ -519,17 +519,17 @@ pub(crate) fn render_install_command(display_name: &str, version: &str) -> Divis
 
 /// Render a label: value metadata row.
 fn meta_row(label: &str, value: &str) -> Division {
-    crate::components::detail_row::row(
+    crate::components::ds::detail_row::row(
         label,
-        crate::components::detail_row::Value::Text(value.to_owned()),
+        crate::components::ds::detail_row::Value::Text(value.to_owned()),
     )
 }
 
 /// Render a label: linked-value metadata row.
 fn meta_link_row(label: &str, text: &str, href: &str) -> Division {
-    crate::components::detail_row::row(
+    crate::components::ds::detail_row::row(
         label,
-        crate::components::detail_row::Value::Link {
+        crate::components::ds::detail_row::Value::Link {
             text: text.to_owned(),
             href: href.to_owned(),
         },

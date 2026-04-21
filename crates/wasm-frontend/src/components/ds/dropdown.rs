@@ -23,6 +23,51 @@ const SVG_DELETE: &str = concat!(
     "</svg>"
 );
 
+#[allow(dead_code)]
+/// Render a single dropdown menu item.
+pub(crate) fn menu_item(
+    icon_svg: &str,
+    label: &str,
+    shortcut: Option<&str>,
+    danger: bool,
+) -> Division {
+    let icon_svg = icon_svg.to_owned();
+    let label = label.to_owned();
+    let text_class = if danger {
+        "text-negative"
+    } else {
+        "text-ink-700"
+    };
+    let hover_class = if danger {
+        "hover:bg-cat-pink hover:text-cat-pinkInk"
+    } else {
+        "hover:bg-surfaceMuted hover:text-ink-900"
+    };
+    let class = format!(
+        "flex items-center gap-2.5 px-3 h-8 rounded-md {text_class} text-[13px] {hover_class} cursor-pointer w-full"
+    );
+    let mut div = Division::builder();
+    div.button(|b| {
+        let mut b = b.type_("button").class(class).text(icon_svg).text(label);
+        if let Some(hint) = shortcut {
+            let hint = hint.to_owned();
+            b = b.span(|s| s.class("ml-auto mono text-[11px] text-ink-400").text(hint));
+        }
+        b
+    });
+    div.build()
+}
+
+#[allow(dead_code)]
+/// Render a dropdown menu container with items.
+pub(crate) fn dropdown_menu(items_html: &str) -> Division {
+    let items_html = items_html.to_owned();
+    Division::builder()
+        .class("w-48 bg-surface rounded-lg border border-line shadow-tooltip p-1 text-[13px]")
+        .text(items_html)
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()

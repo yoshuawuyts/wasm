@@ -2,8 +2,6 @@
 
 use html::text_content::Division;
 
-use crate::components::code_block;
-use crate::components::page_heading;
 use crate::layout;
 
 /// Render the downloads page with install instructions.
@@ -12,15 +10,15 @@ pub(crate) fn render() -> String {
     let body = Division::builder()
         .class("pt-8 max-w-[65ch]")
         .heading_1(|h1| {
-            h1.class(format!("{} mb-6", page_heading::H1_CLASS))
+            h1.class(format!("{} mb-6", crate::components::ds::typography::H1_CLASS))
                 .text("Downloads")
         })
         .paragraph(|p| {
-            p.class(page_heading::BODY_CLASS)
+            p.class(crate::components::ds::typography::BODY_CLASS)
                 .text("Install the wasm CLI to manage WebAssembly components from your terminal.")
         })
         .heading_2(|h2| {
-            h2.class(page_heading::H2_CLASS)
+            h2.class(crate::components::ds::typography::H2_CLASS)
                 .text("Quick install")
         })
         .division(|d| {
@@ -32,7 +30,7 @@ pub(crate) fn render() -> String {
                         })
                         .push(
                             html::text_content::PreformattedText::builder()
-                                .class(code_block::CLASS)
+                                .class(crate::components::ds::code::CODE_BLOCK_CLASS)
                                 .code(|c| {
                                     c.text("curl -fsSL https://raw.githubusercontent.com/yoshuawuyts/wasm-cli/main/scripts/install.sh | sh")
                                 })
@@ -46,7 +44,7 @@ pub(crate) fn render() -> String {
                         })
                         .push(
                             html::text_content::PreformattedText::builder()
-                                .class(code_block::CLASS)
+                                .class(crate::components::ds::code::CODE_BLOCK_CLASS)
                                 .code(|c| {
                                     c.text("irm https://raw.githubusercontent.com/yoshuawuyts/wasm-cli/main/scripts/install.ps1 | iex")
                                 })
@@ -55,12 +53,12 @@ pub(crate) fn render() -> String {
                 })
         })
         .heading_2(|h2| {
-            h2.class(page_heading::H2_CLASS)
+            h2.class(crate::components::ds::typography::H2_CLASS)
                 .text("From source")
         })
         .push(
             html::text_content::PreformattedText::builder()
-                .class(code_block::CLASS)
+                .class(crate::components::ds::code::CODE_BLOCK_CLASS)
                 .code(|c| c.text("cargo install wasm-cli"))
                 .build(),
         )

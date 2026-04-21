@@ -13,6 +13,46 @@ const SVG_PLUS: &str = concat!(
     "</svg>"
 );
 
+#[allow(dead_code)]
+/// Render an empty state card with icon placeholder, title, description, and optional CTA.
+pub(crate) fn empty_state(
+    icon_svg: &str,
+    title: &str,
+    description: &str,
+    cta: Option<&str>,
+) -> Division {
+    let icon_svg = icon_svg.to_owned();
+    let title = title.to_owned();
+    let description = description.to_owned();
+    let mut div = Division::builder();
+    div.class("border border-line rounded-lg p-12 text-center bg-surface");
+    div.division(|icon| {
+        icon.class(
+            "mx-auto h-12 w-12 grid place-items-center rounded-full bg-surfaceMuted text-ink-500",
+        )
+        .text(icon_svg)
+    });
+    div.division(|d| {
+        d.class("mt-4 text-[16px] font-semibold tracking-tight")
+            .text(title)
+    });
+    div.paragraph(|p| {
+        p.class("mt-1 text-[13px] text-ink-500 max-w-xs mx-auto")
+            .text(description)
+    });
+    if let Some(cta_label) = cta {
+        let cta_label = cta_label.to_owned();
+        div.division(|d| {
+            d.class("mt-6").button(|b| {
+                b.type_("button")
+                    .class("h-9 px-4 rounded-lg border-[1.5px] border-ink-900 bg-surface text-ink-900 text-[13px] hover:bg-surfaceMuted")
+                    .text(cta_label)
+            })
+        });
+    }
+    div.build()
+}
+
 /// Render this section.
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()

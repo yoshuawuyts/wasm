@@ -5,7 +5,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::KnownPackage;
 
-use crate::components::{package_row, page_heading, search_bar};
+use crate::components::ds::{package_row, search_bar};
 use crate::layout;
 use wasm_meta_registry_client::{ApiError, RegistryClient};
 
@@ -25,16 +25,19 @@ fn render_results(query: &str, packages: &[KnownPackage]) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-[1.5px] border-rule mb-6")
             .heading_1(|h1| {
-                h1.class(page_heading::H1_CLASS)
+                h1.class(crate::components::ds::typography::H1_CLASS)
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
             .paragraph(|p| {
-                p.class(format!("{} mt-2", page_heading::SUBTITLE_CLASS))
-                    .text(format!(
-                        "{} result{} found",
-                        packages.len(),
-                        if packages.len() == 1 { "" } else { "s" }
-                    ))
+                p.class(format!(
+                    "{} mt-2",
+                    crate::components::ds::typography::SUBTITLE_CLASS
+                ))
+                .text(format!(
+                    "{} result{} found",
+                    packages.len(),
+                    if packages.len() == 1 { "" } else { "s" }
+                ))
             })
     });
 
@@ -83,7 +86,7 @@ fn render_error(query: &str, err: &ApiError) -> String {
     body.division(|div| {
         div.class("pt-8 pb-6 border-b-[1.5px] border-rule mb-6")
             .heading_1(|h1| {
-                h1.class(page_heading::H1_CLASS)
+                h1.class(crate::components::ds::typography::H1_CLASS)
                     .text(format!("Results for \u{201c}{query}\u{201d}"))
             })
     });
@@ -93,7 +96,10 @@ fn render_error(query: &str, err: &ApiError) -> String {
     body.division(|div| {
         div.class("py-16 text-center")
             .paragraph(|p| p.class("text-ink-900 font-medium").text("Unable to search"))
-            .paragraph(|p| p.class(page_heading::SUBTITLE_CLASS).text(err.to_string()))
+            .paragraph(|p| {
+                p.class(crate::components::ds::typography::SUBTITLE_CLASS)
+                    .text(err.to_string())
+            })
     });
 
     layout::document_with_nav("Search", &body.build().to_string())

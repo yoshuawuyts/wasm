@@ -24,6 +24,32 @@ pub(crate) const STATUSES: &[(&str, &str, &str)] = &[
     ("bg-cat-blue text-cat-blueInk", "bg-cat-blueInk", "Info"),
 ];
 
+#[allow(dead_code)]
+/// Render a status badge with a colored dot.
+pub(crate) fn status_badge(
+    badge_class: &str,
+    dot_class: &str,
+    label: &str,
+) -> html::inline_text::Span {
+    let badge_cls = format!("inline-flex items-center gap-1.5 px-2 h-6 rounded-pill {badge_class}");
+    let dot_cls = format!("h-1.5 w-1.5 rounded-full {dot_class}");
+    let label = label.to_owned();
+    html::inline_text::Span::builder()
+        .class(badge_cls)
+        .span(|s| s.class(dot_cls))
+        .text(label)
+        .build()
+}
+
+#[allow(dead_code)]
+/// Render a count badge (small pill with number).
+pub(crate) fn count_badge(value: &str) -> html::inline_text::Span {
+    html::inline_text::Span::builder()
+        .class("inline-flex items-center px-1.5 min-w-[20px] h-5 rounded-pill bg-ink-700 text-canvas justify-center text-[12px] font-medium")
+        .text(value.to_owned())
+        .build()
+}
+
 /// Render this section.
 pub(crate) fn render(
     section_id: &str,

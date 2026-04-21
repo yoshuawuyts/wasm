@@ -3,7 +3,7 @@
 use html::text_content::Division;
 use wasm_meta_registry_client::RegistryClient;
 
-use crate::components::{package_row, page_heading};
+use crate::components::ds::package_row;
 use crate::layout;
 
 /// Render the namespace page listing all packages for a publisher.
@@ -32,13 +32,17 @@ fn render_packages(
 
     body.division(|div| {
         div.class("pt-8 pb-8")
-            .heading_1(|h1| h1.class(page_heading::H1_CLASS).text(namespace.to_owned()))
+            .heading_1(|h1| {
+                h1.class(crate::components::ds::typography::H1_CLASS)
+                    .text(namespace.to_owned())
+            })
             .paragraph(|p| {
-                p.class(page_heading::SUBTITLE_CLASS).text(format!(
-                    "{} package{}",
-                    packages.len(),
-                    if packages.len() == 1 { "" } else { "s" }
-                ))
+                p.class(crate::components::ds::typography::SUBTITLE_CLASS)
+                    .text(format!(
+                        "{} package{}",
+                        packages.len(),
+                        if packages.len() == 1 { "" } else { "s" }
+                    ))
             })
     });
 

@@ -87,7 +87,8 @@ pub(crate) const RULES: &[(&str, &str)] = &[
     ),
 ];
 
-fn grid_example(
+#[allow(dead_code)]
+pub(crate) fn grid_example(
     label: &'static str,
     wireframe: &'static str,
     pre: &'static str,

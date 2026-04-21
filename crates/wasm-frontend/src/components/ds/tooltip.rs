@@ -2,7 +2,26 @@
 
 use html::text_content::Division;
 
+#[allow(dead_code)]
 /// Render the tooltip section.
+/// Render a tooltip card with a label and key-value rows.
+pub(crate) fn tooltip(label: &str, rows: &[(&str, &str)]) -> Division {
+    let label = label.to_owned();
+    let mut div = Division::builder();
+    div.class("w-48 bg-ink-900 text-canvas rounded-lg px-3 py-2.5 shadow-tooltip text-[12px]");
+    div.division(|d| d.class("text-ink-400 mb-1.5").text(label));
+    for (key, value) in rows {
+        let key = (*key).to_owned();
+        let value = (*value).to_owned();
+        div.division(|d| {
+            d.class("flex items-baseline justify-between gap-4 py-0.5")
+                .span(|s| s.class("text-ink-400").text(key))
+                .span(|s| s.class("font-medium").text(value))
+        });
+    }
+    div.build()
+}
+
 pub(crate) fn render(section_id: &str, num: &str, title: &str, desc: &str) -> String {
     let content = Division::builder()
         .class("p-12 bg-canvas border border-line rounded-lg flex items-center justify-center")

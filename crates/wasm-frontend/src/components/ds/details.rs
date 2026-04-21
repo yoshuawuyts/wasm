@@ -26,7 +26,8 @@ impl DetailEntry {
     }
 }
 
-fn inline_dl(class: &'static str, entries: &[DetailEntry]) -> DescriptionList {
+#[allow(dead_code)]
+pub(crate) fn inline_dl(class: &'static str, entries: &[DetailEntry]) -> DescriptionList {
     let mut dl = DescriptionList::builder();
     dl.class(class);
     for e in entries {
@@ -55,7 +56,8 @@ fn inline_dl(class: &'static str, entries: &[DetailEntry]) -> DescriptionList {
     dl.build()
 }
 
-fn stacked_dl(entries: &[DetailEntry]) -> DescriptionList {
+#[allow(dead_code)]
+pub(crate) fn stacked_dl(entries: &[DetailEntry]) -> DescriptionList {
     let mut dl = DescriptionList::builder();
     dl.class("space-y-3 max-w-[220px]");
     for e in entries {

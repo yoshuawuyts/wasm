@@ -13,7 +13,8 @@ pub(crate) struct ItemRow {
     pub(crate) deprecated: bool,
 }
 
-fn render_item_row(item: &ItemRow) -> Anchor {
+#[allow(dead_code)]
+pub(crate) fn render_item_row(item: &ItemRow) -> Anchor {
     let row_class = if item.deprecated {
         "item-row deprecated"
     } else {
@@ -32,7 +33,8 @@ fn render_item_row(item: &ItemRow) -> Anchor {
         .build()
 }
 
-fn render_item_list(items: &[ItemRow]) -> Division {
+#[allow(dead_code)]
+pub(crate) fn render_item_list(items: &[ItemRow]) -> Division {
     let mut list = Division::builder();
     list.class("item-list");
     for item in items {

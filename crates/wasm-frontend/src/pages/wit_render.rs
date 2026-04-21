@@ -121,7 +121,7 @@ pub(crate) fn render_type_ref(ty: &TypeRef) -> html::inline_text::Span {
 }
 
 /// CSS class for the standard WIT code block container.
-pub(crate) const CODE_BLOCK_CLASS: &str = crate::components::code_block::CLASS;
+pub(crate) const CODE_BLOCK_CLASS: &str = crate::components::ds::code::CODE_BLOCK_CLASS;
 
 /// Render a type definition inline inside a `<code>` block.
 pub(crate) fn render_type_in_code(

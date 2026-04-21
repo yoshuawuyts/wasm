@@ -1,6 +1,6 @@
 //! Item detail page (type or function within an interface).
 
-use crate::components::{copy_button, section_heading};
+use crate::components::ds::copy_button;
 use crate::wit_doc::{FunctionDoc, TypeDoc, TypeKind, TypeRef, WitDocument};
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
@@ -271,7 +271,10 @@ fn render_type_body(kind: &TypeKind) -> Division {
 /// Render a table of record fields.
 fn render_field_table(heading: &str, fields: &[crate::wit_doc::FieldDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| h2.class(section_heading::CLASS).text(heading.to_owned()));
+    div.heading_2(|h2| {
+        h2.class(crate::components::ds::typography::SECTION_CLASS)
+            .text(heading.to_owned())
+    });
 
     let mut table = Table::builder();
     table.class(TABLE_CLASS);
@@ -306,7 +309,10 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
 /// Render a variant cases table.
 fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
+    div.heading_2(|h2| {
+        h2.class(crate::components::ds::typography::SECTION_CLASS)
+            .text("Cases")
+    });
 
     let mut table = Table::builder();
     table.class(TABLE_CLASS);
@@ -339,7 +345,10 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
 /// Render an enum cases list.
 fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Cases"));
+    div.heading_2(|h2| {
+        h2.class(crate::components::ds::typography::SECTION_CLASS)
+            .text("Cases")
+    });
     let mut table = Table::builder();
     table.class(TABLE_CLASS);
     table.push(table_header(&["Case", "Description"]));
@@ -359,7 +368,10 @@ fn render_enum_list(cases: &[crate::wit_doc::EnumCaseDoc]) -> Division {
 /// Render a flags list.
 fn render_flags_list(flags: &[crate::wit_doc::FlagDoc]) -> Division {
     let mut div = Division::builder();
-    div.heading_2(|h2| h2.class(section_heading::CLASS).text("Flags"));
+    div.heading_2(|h2| {
+        h2.class(crate::components::ds::typography::SECTION_CLASS)
+            .text("Flags")
+    });
     let mut table = Table::builder();
     table.class(TABLE_CLASS);
     table.push(table_header(&["Flag", "Description"]));
@@ -387,8 +399,11 @@ fn render_resource_body(
 
     if let Some(ctor) = constructor {
         div.division(|d| {
-            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Constructor"))
-                .push(render_function_signature(ctor));
+            d.heading_2(|h2| {
+                h2.class(crate::components::ds::typography::SECTION_CLASS)
+                    .text("Constructor")
+            })
+            .push(render_function_signature(ctor));
             if let Some(docs) = &ctor.docs {
                 d.text(crate::markdown::render_block(
                     docs,
@@ -400,7 +415,10 @@ fn render_resource_body(
     }
     if !methods.is_empty() {
         div.division(|d| {
-            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Methods"));
+            d.heading_2(|h2| {
+                h2.class(crate::components::ds::typography::SECTION_CLASS)
+                    .text("Methods")
+            });
             for func in methods {
                 d.division(|m| {
                     m.class("py-3 border-b border-lineSoft");
@@ -419,7 +437,10 @@ fn render_resource_body(
     }
     if !statics.is_empty() {
         div.division(|d| {
-            d.heading_2(|h2| h2.class(section_heading::CLASS).text("Static Functions"));
+            d.heading_2(|h2| {
+                h2.class(crate::components::ds::typography::SECTION_CLASS)
+                    .text("Static Functions")
+            });
             for func in statics {
                 d.division(|m| {
                     m.class("py-3 border-b border-lineSoft");
