@@ -6,10 +6,12 @@
 use html::text_content::Division;
 
 /// Class string for a section label in a detail list.
+#[allow(dead_code)]
 pub(crate) const SECTION_LABEL_CLASS: &str =
     "text-[11px] uppercase tracking-wider text-ink-500 mb-2";
 
 /// Class string for the rule divider between detail sections.
+#[allow(dead_code)]
 pub(crate) const SECTION_RULE_CLASS: &str = "my-3 border-t-[1.5px] border-rule";
 
 /// Value type for a detail row.
@@ -44,6 +46,7 @@ pub(crate) fn row(label: &str, value: Value) -> Division {
 }
 
 /// Render a section label for grouping detail rows.
+#[allow(dead_code)]
 pub(crate) fn section_label(label: &str) -> Division {
     Division::builder()
         .class(SECTION_LABEL_CLASS)
@@ -52,6 +55,7 @@ pub(crate) fn section_label(label: &str) -> Division {
 }
 
 /// Render a rule divider between detail sections.
+#[allow(dead_code)]
 pub(crate) fn section_rule() -> Division {
     Division::builder().class(SECTION_RULE_CLASS).build()
 }

@@ -85,14 +85,16 @@ pub(crate) fn render(
         content.push(render_function_section(&iface.functions));
     }
 
-    let body_html = format!("{header_row}{}", content.build());
+    let body_html = content.build().to_string();
 
     // Build nav card with interface items for the sidebar
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
+        versions: &pkg.tags,
         doc,
         active: super::sidebar::SidebarActive::Interface(&iface.name),
+        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
     });
 
     let ctx = package_shell::SidebarContext {
@@ -103,7 +105,7 @@ pub(crate) fn render(
         exporters: &[],
         nav_html: Some(nav.to_string()),
     };
-    package_shell::render_page_with_crumbs(&ctx, &title, &body_html, &[])
+    package_shell::render_page_with_crumbs(&ctx, &title, &header_row, &body_html, &[])
 }
 
 /// Render a section of types grouped by kind.

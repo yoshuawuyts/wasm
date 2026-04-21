@@ -6,6 +6,7 @@
 use html::text_content::{Division, ListItem, UnorderedList};
 
 /// State of a navigation item.
+#[allow(dead_code)]
 pub(crate) enum NavState {
     /// Currently selected — surfaceMuted background, ink-900, font-medium.
     Active,
@@ -14,6 +15,7 @@ pub(crate) enum NavState {
 }
 
 /// Render a single nav list item (link with active/inactive styling).
+#[allow(dead_code)]
 pub(crate) fn item(label: &str, href: &str, state: &NavState) -> ListItem {
     let cls = match *state {
         NavState::Active => {

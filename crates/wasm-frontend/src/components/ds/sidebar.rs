@@ -4,6 +4,7 @@ use html::content::Navigation;
 use html::interactive::Details;
 use html::text_content::Division;
 
+#[allow(dead_code)]
 const SVG_CHEV_DOWN: &str = concat!(
     r#"<svg class="h-3 w-3 text-ink-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">"#,
     include_str!("../../../../../vendor/lucide/chevron-down.svg"),
@@ -14,7 +15,9 @@ const SVG_CHEV_RIGHT: &str = concat!(
     include_str!("../../../../../vendor/lucide/chevron-right.svg"),
     "</svg>"
 );
+#[allow(dead_code)]
 const SVG_GITHUB: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 0 0-2.5 15.6c.4 0 .55-.17.55-.38v-1.4c-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.71 1.23 1.87.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.13 0 0 .67-.22 2.2.82A7.6 7.6 0 0 1 8 4.04c.68 0 1.37.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.11.16 1.93.08 2.13.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.74.54 1.49v2.21c0 .21.15.46.55.38A8 8 0 0 0 8 .2Z" /></svg>"#;
+#[allow(dead_code)]
 const SVG_CRATE: &str = r#"<svg class="h-3.5 w-3.5 text-ink-500 flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><rect x="2.5" y="3" width="11" height="10" rx="1" /><path d="M2.5 6.5h11M6 3v10" /></svg>"#;
 
 // Raw HTML: Span::style() creates a <style> child, not an inline style attribute.
@@ -40,29 +43,222 @@ pub(crate) fn tree_link(sigil_html: &str, name: &str, meta: &str) -> html::inlin
 }
 
 const SIGIL_CMD: &str = "var(--c-cat-green)";
-const SIGIL_CMD_INK: &str = "var(--c-cat-greenInk)";
+const SIGIL_CMD_INK: &str = "var(--c-cat-green-ink)";
 const SIGIL_GRP: &str = "var(--c-cat-lilac)";
-const SIGIL_GRP_INK: &str = "var(--c-cat-lilacInk)";
+const SIGIL_GRP_INK: &str = "var(--c-cat-lilac-ink)";
+
+/// A sidebar nav entry.
+pub(crate) struct SidebarEntry {
+    /// Sigil background color CSS value.
+    pub sigil_bg: &'static str,
+    /// Sigil text color CSS value.
+    pub sigil_color: &'static str,
+    /// Sigil character.
+    pub sigil_text: &'static str,
+    /// Display name.
+    pub name: String,
+    /// Link href.
+    pub href: String,
+    /// Trailing meta text (e.g. "root").
+    pub meta: String,
+    /// Whether this entry is currently active.
+    pub active: bool,
+}
+
+/// A collapsible group in the sidebar.
+pub(crate) struct SidebarGroup {
+    /// Group label.
+    pub label: String,
+    /// Link href for the group label (navigates on click).
+    pub href: Option<String>,
+    /// Sigil background color. Defaults to group lilac if `None`.
+    pub sigil_bg: Option<&'static str>,
+    /// Sigil text color. Defaults to group lilac ink if `None`.
+    pub sigil_color: Option<&'static str>,
+    /// Sigil character. Defaults to "G" if `None`.
+    pub sigil_text: Option<&'static str>,
+    /// Whether the group is open.
+    pub open: bool,
+    /// Override the displayed count. If `None`, uses `children.len()`.
+    pub count: Option<usize>,
+    /// Child entries.
+    pub children: Vec<SidebarEntry>,
+}
+
+/// A sidebar item — either a flat entry or a collapsible group.
+pub(crate) enum SidebarItem {
+    /// A flat nav entry (not inside a group).
+    Entry(SidebarEntry),
+    /// A collapsible group of entries.
+    Group(SidebarGroup),
+}
+
+/// Build a nested sidebar matching the DS C01 pattern.
+///
+/// Renders a bordered card with an optional version button, optional section
+/// label, a nav tree of flat entries and collapsible `<details>` groups with
+/// colored sigils, and an optional footer section.
+pub(crate) fn render_nested_sidebar(
+    current_version: &str,
+    versions: &[&str],
+    section_label: Option<&str>,
+    items: &[SidebarItem],
+    footer_html: Option<&str>,
+) -> String {
+    let version_label = if versions.first() == Some(&current_version) {
+        format!("v{current_version} (latest)")
+    } else {
+        format!("v{current_version}")
+    };
+
+    let mut nav = Navigation::builder();
+    nav.class("space-y-0.5 text-[13px]");
+
+    for item in items {
+        match item {
+            SidebarItem::Entry(entry) => {
+                nav.push(render_entry(entry));
+            }
+            SidebarItem::Group(group) => {
+                nav.push(render_group(group));
+            }
+        }
+    }
+
+    let mut card = Division::builder();
+    card.class("max-w-[300px]");
+
+    // Version button
+    if !versions.is_empty() {
+        card.division(|v| {
+            v.class("pb-4 border-b-[1.5px] border-rule")
+                .division(|l| {
+                    l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1")
+                        .text("Version")
+                })
+                .button(|b| {
+                    b.class("w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]")
+                        .span(|s| s.class("mono").text(version_label.clone()))
+                        .text(SVG_CHEV_DOWN)
+                })
+        });
+    }
+
+    // Section label
+    if let Some(label) = section_label {
+        card.division(|l| {
+            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 mt-4")
+                .text(label.to_owned())
+        });
+    }
+
+    card.push(nav.build());
+
+    // Footer section
+    if let Some(footer) = footer_html {
+        card.text(footer.to_owned());
+    }
+
+    card.build().to_string()
+}
+
+/// Render a single flat entry as a tree-link anchor.
+fn render_entry(entry: &SidebarEntry) -> html::inline_text::Anchor {
+    let entry_sigil = sigil(entry.sigil_bg, entry.sigil_color, entry.sigil_text);
+    let cls = if entry.active {
+        "tree-link active"
+    } else {
+        "tree-link"
+    };
+    let mut a = html::inline_text::Anchor::builder();
+    a.href(entry.href.clone()).class(cls);
+    a.text(entry_sigil);
+    a.span(|s| s.class("mono").text(entry.name.clone()));
+    if !entry.meta.is_empty() {
+        let meta = entry.meta.clone();
+        a.span(|s| {
+            s.class("ml-auto mono text-[10.5px] text-ink-400")
+                .text(meta)
+        });
+    }
+    a.build()
+}
+
+/// Render a collapsible group as a `<details>` element.
+///
+/// The chevron toggles open/close, while the label navigates to `href`
+/// (if provided) without toggling.
+fn render_group(group: &SidebarGroup) -> Details {
+    let bg = group.sigil_bg.unwrap_or(SIGIL_GRP);
+    let color = group.sigil_color.unwrap_or(SIGIL_GRP_INK);
+    let text = group.sigil_text.unwrap_or("G");
+    let grp_sigil = sigil(bg, color, text);
+    let count = group.count.unwrap_or(group.children.len());
+    let label = &group.label;
+
+    let mut children_html = String::new();
+    let has_active = group.open || group.children.iter().any(|e| e.active);
+
+    for entry in &group.children {
+        children_html.push_str(&render_entry(entry).to_string());
+    }
+
+    let summary_cls = if has_active {
+        "tree-link active"
+    } else {
+        "tree-link"
+    };
+
+    let mut details = Details::builder();
+    if group.open || has_active {
+        details.open(true);
+    }
+
+    let children_div = if group.children.is_empty() {
+        String::new()
+    } else {
+        format!(r#"<div class="tree-children space-y-0.5">{children_html}</div>"#)
+    };
+
+    // Build the label part — either a navigating <a> or plain spans
+    let label_html = match &group.href {
+        Some(href) => {
+            format!(
+                r#"<a href="{href}" class="flex items-center gap-1.5 flex-1 min-w-0" onclick="event.stopPropagation()">{grp_sigil}<span class="mono">{label}</span><span class="ml-auto mono text-[10.5px] text-ink-400">{count}</span></a>"#
+            )
+        }
+        None => {
+            format!(
+                r#"{grp_sigil}<span class="mono">{label}</span><span class="ml-auto mono text-[10.5px] text-ink-400">{count}</span>"#
+            )
+        }
+    };
+
+    details.text(format!(
+        r#"<summary class="{summary_cls}">{SVG_CHEV_RIGHT}{label_html}</summary>{children_div}"#,
+    ));
+    details.build()
+}
 
 pub(crate) const SIGIL_LEGEND: &[(&str, &str, &str, &str)] = &[
     (
         "var(--c-cat-green)",
-        "var(--c-cat-greenInk)",
+        "var(--c-cat-green-ink)",
         "c",
         "Command",
     ),
-    ("var(--c-cat-lilac)", "var(--c-cat-lilacInk)", "G", "Group"),
-    ("var(--c-cat-blue)", "var(--c-cat-blueInk)", "F", "Flag"),
-    ("var(--c-cat-peach)", "var(--c-cat-peachInk)", "E", "Env"),
+    ("var(--c-cat-lilac)", "var(--c-cat-lilac-ink)", "G", "Group"),
+    ("var(--c-cat-blue)", "var(--c-cat-blue-ink)", "F", "Flag"),
+    ("var(--c-cat-peach)", "var(--c-cat-peach-ink)", "E", "Env"),
     (
         "var(--c-cat-pink)",
-        "var(--c-cat-pinkInk)",
+        "var(--c-cat-pink-ink)",
         "X",
         "Exit code",
     ),
     (
         "var(--c-cat-slate)",
-        "var(--c-cat-slateInk)",
+        "var(--c-cat-slate-ink)",
         "\u{00b7}",
         "Root / misc",
     ),
@@ -86,45 +282,100 @@ pub(crate) fn render(
     sigil_legend: &[(&str, &str, &str, &str)],
     anatomy_items: &[&str],
 ) -> String {
-    let cmd_sigil = sigil(SIGIL_CMD, SIGIL_CMD_INK, "c");
-    let grp_sigil = sigil(SIGIL_GRP, SIGIL_GRP_INK, "G");
-    let root_sigil = sigil("var(--c-cat-slate)", "var(--c-cat-slateInk)", "\u{00b7}");
+    // Build demo sidebar using the production function
+    let demo_versions: &[&str] = &["2.4.0", "2.3.1", "2.3.0", "2.2.0", "1.0.0"];
 
-    // Build the sidebar nav
-    let mut nav = Navigation::builder();
-    nav.class("space-y-0.5 text-[13px]");
-    nav.push(tree_link(&root_sigil, "wasm", "root"));
-    nav.push(tree_link(&cmd_sigil, "init", ""));
-    nav.push(tree_link(&cmd_sigil, "build", ""));
-    nav.push(tree_link(&cmd_sigil, "run", ""));
+    #[allow(clippy::items_after_statements)]
+    fn cmd(name: &str) -> SidebarEntry {
+        SidebarEntry {
+            sigil_bg: SIGIL_CMD,
+            sigil_color: SIGIL_CMD_INK,
+            sigil_text: "c",
+            name: name.to_owned(),
+            href: "#".to_owned(),
+            meta: String::new(),
+            active: false,
+        }
+    }
 
-    // Registry group (open, active)
-    let mut registry = Details::builder();
-    registry.open(true);
-    registry.text(format!(
-        r#"<summary class="tree-link active">{SVG_CHEV_RIGHT}{grp_sigil}<span class="mono">registry</span><span class="ml-auto mono text-[10.5px] text-ink-400">7</span></summary><div class="tree-children space-y-0.5">{}{}{}{}</div>"#,
-        tree_link(&cmd_sigil, "add", ""),
-        tree_link(&cmd_sigil, "remove", ""),
-        tree_link(&cmd_sigil, "list", ""),
-        tree_link(&cmd_sigil, "publish", ""),
-    ));
-    nav.push(registry.build());
+    let demo_items = vec![
+        SidebarItem::Entry(SidebarEntry {
+            sigil_bg: "var(--c-cat-slate)",
+            sigil_color: "var(--c-cat-slate-ink)",
+            sigil_text: "\u{00b7}",
+            name: "wasm".to_owned(),
+            href: "#".to_owned(),
+            meta: "root".to_owned(),
+            active: false,
+        }),
+        SidebarItem::Entry(cmd("init")),
+        SidebarItem::Entry(cmd("build")),
+        SidebarItem::Entry(cmd("run")),
+        SidebarItem::Group(SidebarGroup {
+            label: "registry".to_owned(),
+            href: None,
+            sigil_bg: None,
+            sigil_color: None,
+            sigil_text: None,
+            open: true,
+            count: Some(7),
+            children: vec![cmd("add"), cmd("remove"), cmd("list"), cmd("publish")],
+        }),
+        SidebarItem::Group(SidebarGroup {
+            label: "component".to_owned(),
+            href: None,
+            sigil_bg: None,
+            sigil_color: None,
+            sigil_text: None,
+            open: false,
+            count: Some(5),
+            children: vec![],
+        }),
+        SidebarItem::Group(SidebarGroup {
+            label: "wit".to_owned(),
+            href: None,
+            sigil_bg: None,
+            sigil_color: None,
+            sigil_text: None,
+            open: false,
+            count: Some(4),
+            children: vec![],
+        }),
+        SidebarItem::Entry(cmd("help")),
+    ];
 
-    // Component group (closed)
-    let mut component = Details::builder();
-    component.text(format!(
-        r#"<summary class="tree-link">{SVG_CHEV_RIGHT}{grp_sigil}<span class="mono">component</span><span class="ml-auto mono text-[10.5px] text-ink-400">5</span></summary>"#
-    ));
-    nav.push(component.build());
+    // Project links footer
+    let footer = Division::builder()
+        .class("mt-5 pt-4 border-t-[1.5px] border-rule")
+        .division(|l| {
+            l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2")
+                .text("Project")
+        })
+        .push(
+            Navigation::builder()
+                .class("space-y-px")
+                .anchor(|a| {
+                    a.href("#".to_owned())
+                        .class("tree-link")
+                        .text(format!("{SVG_GITHUB} Repository"))
+                })
+                .anchor(|a| {
+                    a.href("#".to_owned())
+                        .class("tree-link")
+                        .text(format!("{SVG_CRATE} Crates.io"))
+                })
+                .build(),
+        )
+        .build()
+        .to_string();
 
-    // Wit group (closed)
-    let mut wit = Details::builder();
-    wit.text(format!(
-        r#"<summary class="tree-link">{SVG_CHEV_RIGHT}{grp_sigil}<span class="mono">wit</span><span class="ml-auto mono text-[10.5px] text-ink-400">4</span></summary>"#
-    ));
-    nav.push(wit.build());
-
-    nav.push(tree_link(&cmd_sigil, "help", ""));
+    let sidebar_card = render_nested_sidebar(
+        "2.4.0",
+        demo_versions,
+        Some("Commands"),
+        &demo_items,
+        Some(&footer),
+    );
 
     // Sigil legend
     let mut legend_grid = Division::builder();
@@ -152,34 +403,8 @@ pub(crate) fn render(
 
     let content = Division::builder()
         .class("space-y-6")
-        // Live demo
-        .division(|d| {
-            d.class("border border-line rounded-lg bg-canvas p-4 max-w-[300px]")
-                // Version dropdown
-                .division(|v| {
-                    v.class("pb-4 border-b hairline")
-                        .division(|l| l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-1").text("Version"))
-                        .button(|b| {
-                            b.class("w-full h-7 px-2.5 rounded-md border border-line bg-surface flex items-center justify-between text-ink-900 hover:bg-surfaceMuted text-[12px]")
-                                .span(|s| s.class("mono").text("v2.4.0 (latest)"))
-                                .text(SVG_CHEV_DOWN)
-                        })
-                })
-                // Commands label
-                .division(|l| l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2 mt-4").text("Commands"))
-                // Nav tree
-                .push(nav.build())
-                // Project links
-                .division(|proj| {
-                    proj.class("mt-5 pt-4 border-t hairline")
-                        .division(|l| l.class("mono uppercase tracking-wider text-[10px] text-ink-500 mb-2").text("Project"))
-                        .push(Navigation::builder()
-                            .class("space-y-px")
-                            .anchor(|a| a.href("#".to_owned()).class("tree-link").text(format!("{SVG_GITHUB} Repository")))
-                            .anchor(|a| a.href("#".to_owned()).class("tree-link").text(format!("{SVG_CRATE} Crates.io")))
-                            .build())
-                })
-        })
+        // Live demo — rendered by the same production function
+        .text(sidebar_card)
         // Sigil legend
         .division(|d| {
             d.division(|l| l.class("text-[12px] text-ink-500 mb-3").text("Sigil kinds"))

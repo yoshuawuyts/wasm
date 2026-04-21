@@ -94,14 +94,26 @@ pub(crate) fn render(
         page_header::page_header_block(&kicker, &display_name, tagline, Some(&install_meta))
             .to_string();
 
-    let wit_content = if let Some(detail) = version_detail {
-        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref(), pkg, version).to_string()
+    let (wit_content, toc_entries) = if let Some(detail) = version_detail {
+        render_wit_content_with_doc(detail, &url_base, wit_doc.as_ref(), pkg, version)
     } else {
-        String::new()
+        (String::new(), Vec::new())
     };
 
-    let body_html =
-        format!("{header}<div class=\"space-y-10 max-w-4xl pt-8 pb-12\">{wit_content}</div>");
+    let body_html = format!("<div class=\"space-y-10 max-w-4xl pt-8 pb-12\">{wit_content}</div>");
+
+    // Build "On this page" ToC
+    let toc_html = if toc_entries.is_empty() {
+        None
+    } else {
+        let links: Vec<(&str, &str)> = toc_entries
+            .iter()
+            .map(|(id, label)| (id.as_str(), label.as_str()))
+            .collect();
+        Some(crate::components::ds::on_this_page::on_this_page_nav(
+            &links,
+        ))
+    };
 
     // Build nav card showing interfaces/worlds (same as sub-pages)
     let nav_html = wit_doc.as_ref().map(|doc| {
@@ -109,8 +121,10 @@ pub(crate) fn render(
         let nav_ctx = super::sidebar::SidebarContext {
             display_name: &display_name,
             version,
+            versions: &pkg.tags,
             doc,
             active: super::sidebar::SidebarActive::Interface(""),
+            annotations: version_detail.and_then(|d| d.annotations.as_ref()),
         };
         super::sidebar::render_sidebar(&nav_ctx).to_string()
     });
@@ -123,7 +137,13 @@ pub(crate) fn render(
         exporters,
         nav_html,
     };
-    package_shell::render_page(&shell_ctx, &display_name, &body_html)
+    package_shell::render_page(
+        &shell_ctx,
+        &display_name,
+        &header,
+        &body_html,
+        toc_html.as_deref(),
+    )
 }
 
 /// Render the WIT content section for a package version.
@@ -131,22 +151,29 @@ pub(crate) fn render(
 /// When a pre-parsed `WitDocument` is available, show interfaces and worlds
 /// as navigable cards.  Otherwise fall back to the world summaries that the
 /// registry extracted at index time plus the raw WIT text block.
+/// Returns `(html_string, toc_entries)` where each ToC entry is `(href, label)`.
 fn render_wit_content_with_doc(
     detail: &PackageVersion,
     _url_base: &str,
     doc: Option<&WitDocument>,
     pkg: &KnownPackage,
     version: &str,
-) -> Section {
+) -> (String, Vec<(String, String)>) {
     let mut section = Section::builder();
     section.class("space-y-10");
+    let mut toc: Vec<(String, String)> = Vec::new();
 
     if let Some(doc) = doc {
         if !doc.worlds.is_empty() {
-            section.push(render_world_overview(doc));
+            toc.push(("#worlds".to_owned(), "Worlds".to_owned()));
+            section.division(|d| d.id("worlds".to_owned()).push(render_world_overview(doc)));
         }
         if !doc.interfaces.is_empty() {
-            section.push(render_interface_overview(doc));
+            toc.push(("#interfaces".to_owned(), "Interfaces".to_owned()));
+            section.division(|d| {
+                d.id("interfaces".to_owned())
+                    .push(render_interface_overview(doc))
+            });
         }
     } else {
         // Fallback: prefer component-level imports/exports (from wasm-metadata,
@@ -159,14 +186,26 @@ fn render_wit_content_with_doc(
         if has_component_imports {
             for comp in &detail.components {
                 if !comp.imports.is_empty() {
-                    section.push(render_iface_ref_list("Imports", &comp.imports));
+                    toc.push(("#imports".to_owned(), "Imports".to_owned()));
+                    section.division(|d| {
+                        d.id("imports".to_owned())
+                            .push(render_iface_ref_list("Imports", &comp.imports))
+                    });
                 }
                 if !comp.exports.is_empty() {
-                    section.push(render_iface_ref_list("Exports", &comp.exports));
+                    toc.push(("#exports".to_owned(), "Exports".to_owned()));
+                    section.division(|d| {
+                        d.id("exports".to_owned())
+                            .push(render_iface_ref_list("Exports", &comp.exports))
+                    });
                 }
             }
         } else if !detail.worlds.is_empty() {
-            section.push(render_world_summaries(detail));
+            toc.push(("#worlds".to_owned(), "Worlds".to_owned()));
+            section.division(|d| {
+                d.id("worlds".to_owned())
+                    .push(render_world_summaries(detail))
+            });
         }
 
         // Only show the raw WIT text if it's genuine WIT (not lossy
@@ -175,7 +214,8 @@ fn render_wit_content_with_doc(
         if let Some(wit_text) = &detail.wit_text
             && !is_lossy_wit(wit_text)
         {
-            section.push(render_raw_wit(wit_text));
+            toc.push(("#wit".to_owned(), "WIT Definition".to_owned()));
+            section.division(|d| d.id("wit".to_owned()).push(render_raw_wit(wit_text)));
         }
     }
 
@@ -190,9 +230,12 @@ fn render_wit_content_with_doc(
             .filter(|ch| ch.kind.as_deref() == Some("module"))
             .collect();
         if !modules.is_empty() {
-            section.push(render_children_overview(
-                "Modules", &modules, &url_base, "module",
-            ));
+            toc.push(("#modules".to_owned(), "Modules".to_owned()));
+            section.division(|d| {
+                d.id("modules".to_owned()).push(render_children_overview(
+                    "Modules", &modules, &url_base, "module",
+                ))
+            });
         }
 
         // Nested components section
@@ -202,21 +245,28 @@ fn render_wit_content_with_doc(
             .filter(|ch| ch.kind.as_deref() == Some("component"))
             .collect();
         if !components.is_empty() {
-            section.push(render_children_overview(
-                "Components",
-                &components,
-                &url_base,
-                "component",
-            ));
+            toc.push(("#components".to_owned(), "Components".to_owned()));
+            section.division(|d| {
+                d.id("components".to_owned()).push(render_children_overview(
+                    "Components",
+                    &components,
+                    &url_base,
+                    "component",
+                ))
+            });
         }
 
         // Root toolchain
         if !comp.producers.is_empty() {
-            section.push(render_producers(&comp.producers));
+            toc.push(("#toolchain".to_owned(), "Toolchain".to_owned()));
+            section.division(|d| {
+                d.id("toolchain".to_owned())
+                    .push(render_producers(&comp.producers))
+            });
         }
     }
 
-    section.build()
+    (section.build().to_string(), toc)
 }
 
 /// Render a section listing child modules or components as navigable links.
@@ -285,7 +335,7 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
         .iter()
         .map(|iface| item_list::DynItemRow {
             sigil_bg: "var(--c-cat-lilac)".to_owned(),
-            sigil_color: "var(--c-cat-lilacInk)".to_owned(),
+            sigil_color: "var(--c-cat-lilac-ink)".to_owned(),
             sigil_text: "I".to_owned(),
             name: iface.name.clone(),
             href: iface.url.clone(),
@@ -308,7 +358,7 @@ fn render_world_overview(doc: &WitDocument) -> Division {
         .iter()
         .map(|world| item_list::DynItemRow {
             sigil_bg: "var(--c-cat-green)".to_owned(),
-            sigil_color: "var(--c-cat-greenInk)".to_owned(),
+            sigil_color: "var(--c-cat-green-ink)".to_owned(),
             sigil_text: "W".to_owned(),
             name: world.name.clone(),
             href: world.url.clone(),

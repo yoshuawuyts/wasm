@@ -1,6 +1,6 @@
 ---
-source: crates/wasm-frontend/src/components/ds/c04_item_list.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/item_list.rs
+expression: "crate::components::ds::pretty_html(&render(\"c-item-list\", \"C04\", \"Item List\",\n\"Compact index of a group\\u{2019}s children \\u{2014} subcommands, endpoints, schemas. Each row is a sigil, a name + one-line description, and trailing meta. Rows separate with hairline rules, no card chrome.\",\nCMD_ROWS, ENDPOINT_ROWS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-item-list">
   <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
@@ -25,7 +25,7 @@ expression: "crate::components::ds::pretty_html(&render())"
         </div>
         <div class="item-list">
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -41,7 +41,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -57,7 +57,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -73,7 +73,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -89,7 +89,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -105,7 +105,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row deprecated">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               c
             </span>
             <div>
@@ -135,7 +135,7 @@ expression: "crate::components::ds::pretty_html(&render())"
         </div>
         <div class="item-list">
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">
+            <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">
               G
             </span>
             <div>
@@ -151,7 +151,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blueInk);">
+            <span class="sigil" style="background:var(--c-cat-blue);color:var(--c-cat-blue-ink);">
               G
             </span>
             <div>
@@ -167,7 +167,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+            <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
               P
             </span>
             <div>
@@ -183,7 +183,7 @@ expression: "crate::components::ds::pretty_html(&render())"
             </span>
           </a>
           <a href="#c-item-list" class="item-row">
-            <span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pinkInk);">
+            <span class="sigil" style="background:var(--c-cat-pink);color:var(--c-cat-pink-ink);">
               D
             </span>
             <div>

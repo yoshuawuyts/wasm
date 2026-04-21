@@ -156,7 +156,7 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
         .class("sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
         .division(|inner| {
             inner
-                .class("px-4 md:px-6 h-12 max-w-6xl mx-auto grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] items-center gap-4")
+                .class("px-4 md:px-6 h-12 max-w-6xl grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] items-center gap-4")
                 .text(left)
                 .division(|center| center.class("hidden sm:block").text(search))
                 .text(right)
@@ -521,13 +521,13 @@ fn mobile_search() -> String {
                                 })
                                 // Raw HTML: sigil <span>s use inline style= for category colors.
                                 // Span::style() creates a <style> child, not an inline style attribute.
-                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span><span class="mono text-ink-900">wasi:<span class="font-semibold">http</span></span></a>"##)
-                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">G</span><span class="mono text-ink-700">wasi:<span class="font-semibold">http</span>-types</span></a>"##)
+                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">G</span><span class="mono text-ink-900">wasi:<span class="font-semibold">http</span></span></a>"##)
+                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">G</span><span class="mono text-ink-700">wasi:<span class="font-semibold">http</span>-types</span></a>"##)
                                 .division(|hdr| {
                                     hdr.class("px-2 pt-2 pb-1.5 mono uppercase tracking-wider text-[10px] text-ink-500")
                                         .text("Commands")
                                 })
-                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">c</span><span class="mono text-ink-700">wasm <span class="font-semibold">http</span> serve</span></a>"##)
+                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">c</span><span class="mono text-ink-700">wasm <span class="font-semibold">http</span> serve</span></a>"##)
                         })
                 })
         })

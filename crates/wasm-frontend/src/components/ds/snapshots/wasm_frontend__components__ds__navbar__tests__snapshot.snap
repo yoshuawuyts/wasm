@@ -1,6 +1,6 @@
 ---
-source: crates/wasm-frontend/src/components/ds/c06_navbar.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/navbar.rs
+expression: "crate::components::ds::pretty_html(&render(\"c-navbar\", \"C06\", \"Navbar\",\n\"Sticky page chrome: brand mark, command palette trigger, primary nav, theme toggle. Sits above all content with a translucent <code class=\\\"mono text-[12px]\\\">bg-canvas/90</code> + <code class=\\\"mono text-[12px]\\\">backdrop-blur</code> so scrolling content reads through without losing legibility.\",\nDRAWER_LINKS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-navbar">
   <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
@@ -333,7 +333,7 @@ expression: "crate::components::ds::pretty_html(&render())"
                     Packages
                   </div>
                   <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline">
-                    <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">
+                    <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">
                       G
                     </span>
                     <span class="mono text-ink-900">
@@ -344,7 +344,7 @@ expression: "crate::components::ds::pretty_html(&render())"
                     </span>
                   </a>
                   <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline">
-                    <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilacInk);">
+                    <span class="sigil" style="background:var(--c-cat-lilac);color:var(--c-cat-lilac-ink);">
                       G
                     </span>
                     <span class="mono text-ink-700">
@@ -359,7 +359,7 @@ expression: "crate::components::ds::pretty_html(&render())"
                     Commands
                   </div>
                   <a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline">
-                    <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-greenInk);">
+                    <span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">
                       c
                     </span>
                     <span class="mono text-ink-700">

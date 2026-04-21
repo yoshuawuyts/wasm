@@ -76,13 +76,15 @@ pub(crate) fn render_type(
     // Type body content (fields, variants, etc.)
     let body = render_type_body(&ty.kind).to_string();
 
-    let content = format!("{header}<div class=\"max-w-3xl\">{body}</div>");
+    let content = format!("<div class=\"max-w-3xl\">{body}</div>");
 
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
+        versions: &pkg.tags,
         doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &ty.name),
+        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
     });
 
     let ctx = package_shell::SidebarContext {
@@ -101,7 +103,7 @@ pub(crate) fn render_type(
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];
-    package_shell::render_page_with_crumbs(&ctx, &title, &content, &extra)
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra)
 }
 
 /// Render the item detail page for a freestanding function.
@@ -130,13 +132,15 @@ pub(crate) fn render_function(
     )
     .to_string();
 
-    let content = header;
+    let content = String::new();
 
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
+        versions: &pkg.tags,
         doc,
         active: super::sidebar::SidebarActive::Item(iface_name, &func.name),
+        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
     });
 
     let ctx = package_shell::SidebarContext {
@@ -155,7 +159,7 @@ pub(crate) fn render_function(
         label: iface_name.to_owned(),
         href: Some(iface_url),
     }];
-    package_shell::render_page_with_crumbs(&ctx, &title, &content, &extra)
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra)
 }
 
 /// Get the display label for a type kind.

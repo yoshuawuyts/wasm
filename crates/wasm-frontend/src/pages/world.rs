@@ -50,13 +50,15 @@ pub(crate) fn render(
         ));
     }
 
-    let body_html = format!("{header}{}", content.build());
+    let body_html = content.build().to_string();
 
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
         version,
+        versions: &pkg.tags,
         doc,
         active: super::sidebar::SidebarActive::World(&world.name),
+        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
     });
 
     let ctx = package_shell::SidebarContext {
@@ -70,6 +72,7 @@ pub(crate) fn render(
     package_shell::render_page_with_crumbs(
         &ctx,
         &title,
+        &header,
         &body_html,
         &[crate::components::ds::breadcrumb::Crumb {
             label: format!("world/{}", world.name),

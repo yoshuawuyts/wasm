@@ -114,7 +114,7 @@ pub(crate) fn render_dyn_item_list(title: &str, items: &[DynItemRow]) -> Divisio
 pub(crate) const CMD_ROWS: &[ItemRow] = &[
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "add",
         desc: "Register a new namespace and point it at an OCI registry URL.",
@@ -123,7 +123,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "remove",
         desc: "Forget a registered namespace. Locally cached artifacts are kept.",
@@ -132,7 +132,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "list",
         desc: "Print the effective set of registries, with the source of each entry.",
@@ -141,7 +141,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "login",
         desc: "Store credentials for a registry in the OS keychain.",
@@ -150,7 +150,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "publish",
         desc: "Build and upload the current package to a registry.",
@@ -159,7 +159,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "c",
         name: "login-token",
         desc: "Legacy token-only login. Removed in 2.0 \u{2014} use <span class=\"mono text-[12px]\">login --password-stdin</span> instead.",
@@ -171,7 +171,7 @@ pub(crate) const CMD_ROWS: &[ItemRow] = &[
 pub(crate) const ENDPOINT_ROWS: &[ItemRow] = &[
     ItemRow {
         sigil_bg: "var(--c-cat-blue)",
-        sigil_color: "var(--c-cat-blueInk)",
+        sigil_color: "var(--c-cat-blue-ink)",
         sigil_text: "G",
         name: "/v1/packages/{name}",
         desc: "Resolve a package by canonical name. Returns the latest version metadata.",
@@ -180,7 +180,7 @@ pub(crate) const ENDPOINT_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-blue)",
-        sigil_color: "var(--c-cat-blueInk)",
+        sigil_color: "var(--c-cat-blue-ink)",
         sigil_text: "G",
         name: "/v1/packages/{name}/versions",
         desc: "List every published version of a package, newest first.",
@@ -189,7 +189,7 @@ pub(crate) const ENDPOINT_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-green)",
-        sigil_color: "var(--c-cat-greenInk)",
+        sigil_color: "var(--c-cat-green-ink)",
         sigil_text: "P",
         name: "/v1/packages/{name}",
         desc: "Publish a new version. Body is a streaming OCI image manifest.",
@@ -198,7 +198,7 @@ pub(crate) const ENDPOINT_ROWS: &[ItemRow] = &[
     },
     ItemRow {
         sigil_bg: "var(--c-cat-pink)",
-        sigil_color: "var(--c-cat-pinkInk)",
+        sigil_color: "var(--c-cat-pink-ink)",
         sigil_text: "D",
         name: "/v1/packages/{name}/versions/{ver}",
         desc: "Yank a version. The artifact remains, but it stops resolving by default.",

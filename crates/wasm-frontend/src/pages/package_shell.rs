@@ -31,8 +31,14 @@ pub(crate) struct SidebarContext<'a> {
 /// Render the shared page shell: two-column layout with sidebar,
 /// wrapped in the HTML document layout.
 #[must_use]
-pub(crate) fn render_page(ctx: &SidebarContext<'_>, title: &str, body_content: &str) -> String {
-    render_page_inner(ctx, title, body_content, &[], true)
+pub(crate) fn render_page(
+    ctx: &SidebarContext<'_>,
+    title: &str,
+    header: &str,
+    body_content: &str,
+    toc_html: Option<&str>,
+) -> String {
+    render_page_inner(ctx, title, header, body_content, &[], true, toc_html)
 }
 
 /// Render the page shell with extra breadcrumb segments after the package name.
@@ -40,10 +46,11 @@ pub(crate) fn render_page(ctx: &SidebarContext<'_>, title: &str, body_content: &
 pub(crate) fn render_page_with_crumbs(
     ctx: &SidebarContext<'_>,
     title: &str,
+    header: &str,
     body_content: &str,
     extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
 ) -> String {
-    render_page_inner(ctx, title, body_content, extra_crumbs, false)
+    render_page_inner(ctx, title, header, body_content, extra_crumbs, false, None)
 }
 
 /// Inner page shell renderer.
@@ -54,9 +61,11 @@ pub(crate) fn render_page_with_crumbs(
 fn render_page_inner(
     ctx: &SidebarContext<'_>,
     title: &str,
+    header: &str,
     body_content: &str,
     extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
     _is_root: bool,
+    toc_html: Option<&str>,
 ) -> String {
     use crate::components::ds::breadcrumb::Crumb;
     use crate::components::ds::navbar::{self, NavLink};
@@ -99,8 +108,32 @@ fn render_page_inner(
     ];
     let nav = navbar::render_bar(&crumbs, LINKS);
 
+    // Sidebar navigation (interfaces/worlds tree)
+    let sidebar_html = ctx.nav_html.as_deref().unwrap_or("");
+
+    let toc_column = match toc_html {
+        Some(toc) => format!(
+            r#"<aside class="hidden lg:block" style="position:sticky;top:80px;align-self:start;max-height:calc(100vh - 6rem);overflow-y:auto">{toc}</aside>"#
+        ),
+        None => String::new(),
+    };
+
+    let grid_class = if toc_html.is_some() {
+        "mt-8 md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[240px_1fr_200px] md:gap-8"
+    } else {
+        "mt-8 md:grid md:grid-cols-[240px_1fr] md:gap-8"
+    };
+
     let body = format!(
-        r#"{nav}<main class="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-8">{body_content}</main>"#,
+        r#"{nav}
+<div class="flex-1 w-full max-w-6xl px-4 sm:px-6 md:px-8 py-8">
+  {header}
+  <div class="{grid_class}">
+    <aside class="hidden md:block" style="position:sticky;top:80px;align-self:start;max-height:calc(100vh - 6rem);overflow-y:auto">{sidebar_html}</aside>
+    <main style="min-width:0">{body_content}</main>
+    {toc_column}
+  </div>
+</div>"#,
     );
 
     layout::document_full_width(title, &body)

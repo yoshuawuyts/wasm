@@ -55,7 +55,7 @@ pub(crate) fn render(
 </div>"#,
     );
 
-    let mut body = format!("{header}<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">");
+    let mut body = String::from("<div class=\"space-y-10 max-w-3xl pt-4 pb-12\">");
 
     // WIT imports
     if !child.imports.is_empty() {
@@ -101,7 +101,7 @@ pub(crate) fn render(
         exporters: &[],
         nav_html: None,
     };
-    package_shell::render_page_with_crumbs(&ctx, &title, &body, &[])
+    package_shell::render_page_with_crumbs(&ctx, &title, &header, &body, &[])
 }
 
 /// Render producers as a list, excluding language entries (shown in subtitle).
