@@ -502,18 +502,20 @@ fn push_wit_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>, doc: &Wi
 fn push_component_children_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>) {
     // Flatten one level of children — top-level component(s) usually wrap the
     // children we want to show in nav.
-    let mut child_idx = 0usize;
+    let mut module_idx = 0usize;
+    let mut component_idx = 0usize;
     let mut modules: Vec<(usize, &ComponentSummary)> = Vec::new();
     let mut components: Vec<(usize, &ComponentSummary)> = Vec::new();
     for comp in ctx.components {
         for child in &comp.children {
             let kind = child.kind.as_deref().unwrap_or("module");
             if kind == "component" {
-                components.push((child_idx, child));
+                components.push((component_idx, child));
+                component_idx += 1;
             } else {
-                modules.push((child_idx, child));
+                modules.push((module_idx, child));
+                module_idx += 1;
             }
-            child_idx += 1;
         }
     }
 
@@ -535,14 +537,19 @@ fn push_component_children_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContex
                 let display = child
                     .name
                     .clone()
-                    .unwrap_or_else(|| format!("{kind_url} {idx}"));
+                    .unwrap_or_else(|| format!("{kind_url}[{idx}]"));
                 let active = matches!(ctx.active, SidebarActive::Child(name) if name == display);
+                let href = if kind_url == "module" {
+                    format!("{}/{}/{}", ctx.url_base, kind_url, display)
+                } else {
+                    format!("{}/{}/{}", ctx.url_base, kind_url, idx)
+                };
                 SidebarEntry {
                     sigil_bg: sigil.bg,
                     sigil_color: sigil.color,
                     sigil_text: sigil.text,
                     name: display,
-                    href: format!("{}/{}/{}", ctx.url_base, kind_url, idx),
+                    href,
                     meta: String::new(),
                     active,
                 }

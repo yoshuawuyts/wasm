@@ -5,6 +5,40 @@
 
 use html::text_content::Division;
 
+const SEARCH_ICON: &str = concat!(
+    r#"<svg class="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-400" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../../vendor/lucide/search.svg"),
+    "</svg>"
+);
+
+/// Render the landing-page "explore" search input — full-width, with a
+/// leading magnifying-glass icon and a trailing `⌘K` keyboard hint.
+///
+/// Submitting the form navigates to `/search?q=...`. The placeholder is
+/// formatted with the supplied package count.
+pub(crate) fn landing(placeholder_count: &str) -> Division {
+    let placeholder = format!("Search {placeholder_count} packages\u{2026}");
+    Division::builder()
+        .form(|form| {
+            form.action("/search")
+                .method("get")
+                .class("mt-6 relative")
+                .text(SEARCH_ICON)
+                .input(|input| {
+                    input
+                        .type_("search")
+                        .name("q")
+                        .placeholder(placeholder)
+                        .aria_label("Search packages")
+                        .class("block w-full h-10 pl-10 pr-24 rounded-lg border border-line bg-canvas text-[14px] placeholder:text-ink-400 focus:outline-none focus:border-ink-900")
+                })
+                .text(
+                    r#"<kbd class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 h-6 px-2 rounded border border-lineSoft bg-surfaceMuted text-[11px] mono text-ink-500"><span>⌘</span><span>K</span></kbd>"#,
+                )
+        })
+        .build()
+}
+
 /// Configuration for the search bar.
 pub(crate) struct SearchBar {
     /// Current query value (empty for no pre-fill).

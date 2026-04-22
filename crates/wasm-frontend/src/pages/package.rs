@@ -3,7 +3,7 @@
 // r[impl frontend.pages.package-detail]
 
 use crate::components::ds::wit_item::{self, WitItem, WitItemKind};
-use crate::components::ds::{page_header, section_group};
+use crate::components::ds::{metadata_table, page_header};
 use crate::components::page_sidebar::SidebarActive;
 use crate::wit_doc::WitDocument;
 use html::content::Section;
@@ -256,13 +256,10 @@ fn render_wit_content_with_doc(
             });
         }
 
-        // Root toolchain
-        if !comp.producers.is_empty() {
-            toc.push(("#toolchain".to_owned(), "Toolchain".to_owned(), false));
-            section.division(|d| {
-                d.id("toolchain".to_owned())
-                    .push(render_producers(&comp.producers))
-            });
+        // Root metadata table (producers, size, languages, etc.)
+        if let Some(table) = metadata_table::render(comp) {
+            toc.push(("#metadata".to_owned(), "Metadata".to_owned(), false));
+            section.division(|d| d.id("metadata".to_owned()).push(table));
         }
     }
 
@@ -436,37 +433,6 @@ pub(crate) fn format_size(bytes: u64) -> String {
         b if b >= KIB => format!("{:.1} KiB", b as f64 / KIB as f64),
         b => format!("{b} B"),
     }
-}
-
-/// Render producer entries as a list, excluding language entries.
-fn render_producers(producers: &[wasm_meta_registry_client::ProducerEntry]) -> Division {
-    let filtered: Vec<_> = producers.iter().filter(|e| e.field != "language").collect();
-    if filtered.is_empty() {
-        return Division::builder().build();
-    }
-
-    let mut div = Division::builder();
-    div.push(section_group::header("Producers", filtered.len()));
-
-    for entry in &filtered {
-        let version = &entry.version;
-        let display_version = version
-            .split_once(" (")
-            .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
-        let desc = if display_version.is_empty() {
-            String::new()
-        } else {
-            format!("v{display_version}")
-        };
-        div.push(section_group::item_row(
-            &entry.name,
-            "#",
-            &section_group::ItemColor::Accent,
-            &section_group::Stability::Unknown,
-            &desc,
-        ));
-    }
-    div.build()
 }
 
 /// Extract the first sentence from a doc comment for summary display.

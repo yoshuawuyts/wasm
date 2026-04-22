@@ -61,6 +61,30 @@ pub(crate) fn document_design_system(title: &str, body_content: &str) -> String 
     )
 }
 
+/// Render the landing-page document — full-width main, sticky navbar, and
+/// the rich site footer. The body is expected to provide its own
+/// `max-w-[1280px]` containers per section.
+#[must_use]
+pub(crate) fn document_landing(title: &str, body_content: &str) -> String {
+    use crate::components::ds::navbar::{self, NavLink};
+    const LINKS: &[NavLink] = &[
+        NavLink {
+            label: "Packages",
+            href: "/all",
+        },
+        NavLink {
+            label: "Docs",
+            href: "/docs",
+        },
+        NavLink {
+            label: "Spec",
+            href: "/docs",
+        },
+    ];
+    let nav = navbar::render_bar(&[], LINKS);
+    document_inner(title, body_content, &nav, MAIN_CLASS_FULL, true)
+}
+
 const MAIN_CLASS_CENTERED: &str = "flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 md:px-8 pb-12";
 const MAIN_CLASS_FULL: &str = "flex-1 w-full";
 
@@ -528,8 +552,8 @@ fn document_inner(
     /* Sigil */
     .sigil {{ display: inline-grid; place-items: center; height: 18px; width: 18px; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 600; line-height: 1; flex-shrink: 0; text-transform: uppercase; }}
     /* Tree-link */
-    .tree-link {{ display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 0; border-radius: 4px; font-size: 13px; color: var(--c-ink-700); text-decoration: none; line-height: 1.4; }}
-    .tree-link .mono {{ font-size: 12.5px; }}
+    .tree-link {{ display: flex; align-items: flex-start; gap: 8px; padding: 3px 8px 3px 0; border-radius: 4px; font-size: 13px; color: var(--c-ink-700); text-decoration: none; line-height: 1.4; min-width: 0; }}
+    .tree-link .mono {{ font-size: 12.5px; min-width: 0; overflow-wrap: break-word; word-break: break-all; }}
     .tree-link:hover {{ background: var(--c-surface-muted); color: var(--c-ink-900); }}
     .tree-link.active {{ background: var(--c-surface-muted); color: var(--c-ink-900); font-weight: 500; }}
     .tree-link .chev {{ width: 10px; height: 10px; flex-shrink: 0; color: var(--c-ink-400); transition: transform 120ms cubic-bezier(.2, 0, 0, 1); }}

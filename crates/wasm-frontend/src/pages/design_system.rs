@@ -49,6 +49,13 @@ const TOC_COMPONENT_ENTRIES: &[(&str, &str)] = &[
     ("#c-item-list", "C04 \u{2014} Item List"),
     ("#c-item-details", "C05 \u{2014} Item Details"),
     ("#c-navbar", "C06 \u{2014} Navbar"),
+    ("#c-hero", "C07 \u{2014} Hero"),
+    ("#c-install-card", "C08 \u{2014} Install Card"),
+    ("#c-metrics-strip", "C09 \u{2014} Metrics Strip"),
+    ("#c-link-list", "C10 \u{2014} Link List"),
+    ("#c-principles-grid", "C11 \u{2014} Principles Grid"),
+    ("#c-cta-strip", "C12 \u{2014} CTA Strip"),
+    ("#c-footer", "C13 \u{2014} Footer"),
 ];
 
 /// Render the design system reference page.
@@ -353,5 +360,269 @@ pub(crate) fn render() -> String {
         ds::navbar::ANATOMY_ITEMS,
     ));
 
+    // Landing-page composed components (C07–C13)
+    html.push_str(RULE_MT);
+    html.push_str(&render_landing_components());
+
     layout::document_design_system("Design System", &html)
+}
+
+/// Render the landing-page composed components (C07–C13). Each section uses
+/// the two-column [`ds::section`] helper and showcases one component with
+/// representative content.
+fn render_landing_components() -> String {
+    use crate::components::ds::{
+        cta_strip::{self, CtaStrip},
+        footer::{self, Footer, FooterColumn, FooterLink},
+        hero::{self, Hero, HeroCta, HeroCtaStyle},
+        install_card::{self, InstallCard},
+        link_list::{self, LeftStyle, LinkRow, RightStyle},
+        metrics_strip::{self, Metric},
+        principles_grid::{self, Principle},
+    };
+
+    let mut html = String::with_capacity(32 * 1024);
+
+    // C07 — Hero
+    let hero_demo = hero::render(&Hero {
+        kicker: &["v1.0", "Stable"],
+        title: "The package manager for components.",
+        lede: "Resolve, vendor, and compose WebAssembly components from any registry.",
+        ctas: &[
+            HeroCta {
+                label: "Get started",
+                href: "#",
+                style: HeroCtaStyle::Primary,
+            },
+            HeroCta {
+                label: "Browse",
+                href: "#",
+                style: HeroCtaStyle::Secondary,
+            },
+        ],
+        right: r#"<div class="rounded-lg border border-line bg-surface shadow-card h-40 grid place-items-center text-[12px] text-ink-500 mono">install card slot</div>"#,
+    });
+    html.push_str(&ds::section(
+        "c-hero",
+        "C07",
+        "Hero",
+        "Two-column landing-page intro: small mono kicker, large balanced headline, lede, primary + secondary CTAs and an optional ghost link. The right column is a free-form slot.",
+        &hero_demo,
+    ));
+
+    // C08 — Install Card
+    let install_demo = install_card::render(&InstallCard {
+        platforms: &["macOS", "Linux", "Windows"],
+        filename: "install.sh",
+        snippet_html: &format!(
+            "{}\n{}",
+            install_card::prompt("curl -sSf https://wasm.dev/install.sh | sh"),
+            install_card::positive("  ✓ Installed wasm v0.4.0"),
+        ),
+        sha: "9e4a…c0f1",
+    });
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-install-card",
+        "C08",
+        "Install Card",
+        "Surface card showing a multi-platform install snippet. Tab strip selects the platform; the body is a styled <code class=\"mono text-[12px]\">&lt;pre&gt;</code> using design-system code spans; the footer carries a SHA and a copy button.",
+        &install_demo,
+    ));
+
+    // C09 — Metrics Strip
+    let metrics_demo = metrics_strip::render(&[
+        Metric {
+            label: "Packages",
+            value: "73",
+            delta: Some("+2 this week"),
+            verified: false,
+        },
+        Metric {
+            label: "Authors",
+            value: "13",
+            delta: Some("+1"),
+            verified: false,
+        },
+        Metric {
+            label: "Versions",
+            value: "124",
+            delta: Some("+4"),
+            verified: false,
+        },
+        Metric {
+            label: "Integrity",
+            value: "100%",
+            delta: Some("verified"),
+            verified: true,
+        },
+    ]);
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-metrics-strip",
+        "C09",
+        "Metrics Strip",
+        "Four-up divided stat row used to summarise the registry at a glance. Mono kicker, tabular value, optional delta with an optional verification dot.",
+        &metrics_demo,
+    ));
+
+    // C10 — Link List
+    let featured_demo = link_list::render(
+        "Featured",
+        &[
+            LinkRow {
+                left: "wasi:http",
+                right: "WASI standard for HTTP",
+                href: "#",
+            },
+            LinkRow {
+                left: "wasi:cli",
+                right: "Command-line entry points",
+                href: "#",
+            },
+        ],
+        &LeftStyle::Mono,
+        &RightStyle::Description,
+    );
+    let categories_demo = link_list::render(
+        "Categories",
+        &[
+            LinkRow {
+                left: "HTTP & networking",
+                right: "1 248",
+                href: "#",
+            },
+            LinkRow {
+                left: "Storage",
+                right: "512",
+                href: "#",
+            },
+        ],
+        &LeftStyle::Plain,
+        &RightStyle::Count,
+    );
+    let link_list_demo = format!(
+        r#"<div class="grid sm:grid-cols-2 gap-x-12 gap-y-10">{featured_demo}{categories_demo}</div>"#
+    );
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-link-list",
+        "C10",
+        "Link List",
+        "Two-line directory list with a heavy top rule and hairline row separators. Two variants: mono name + muted description, or plain name + tabular count.",
+        &link_list_demo,
+    ));
+
+    // C11 — Principles Grid
+    let principles_demo = principles_grid::render(
+        "Why",
+        "Built for components.",
+        "A package manager designed around the WebAssembly Component Model.",
+        &[
+            Principle {
+                bg_class: "bg-cat-blue",
+                fg_class: "text-cat-blueInk",
+                icon_svg: r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>"#,
+                title: "Reproducible",
+                body: "Every dependency is locked by content hash.",
+            },
+            Principle {
+                bg_class: "bg-cat-green",
+                fg_class: "text-cat-greenInk",
+                icon_svg: r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9 6 9-6"/><path d="M3 7v10l9 6 9-6V7"/><path d="M3 7l9-4 9 4"/></svg>"#,
+                title: "Federated",
+                body: "Pull from any OCI-compatible registry.",
+            },
+        ],
+    );
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-principles-grid",
+        "C11",
+        "Principles Grid",
+        "2×N grid of value-proposition tiles. Each tile has a coloured square sigil (categorical palette) plus a short title and body.",
+        &principles_demo,
+    ));
+
+    // C12 — CTA Strip
+    let cta_demo = cta_strip::render(&CtaStrip {
+        kicker: "For maintainers",
+        title: "Publish your component.",
+        body_html: "Add your namespace and run <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">wasm publish</code>.",
+        primary_label: "Publishing guide",
+        primary_href: "#",
+        secondary_label: "Read the spec",
+        secondary_href: "#",
+    });
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-cta-strip",
+        "C12",
+        "CTA Strip",
+        "Pre-footer band with a top hairline. Kicker + headline + body on the left, primary + secondary CTAs on the right.",
+        &cta_demo,
+    ));
+
+    // C13 — Footer
+    let footer_demo = footer::render(&Footer {
+        brand: "wasm",
+        lede: "A package manager and registry for WebAssembly components.",
+        status: "All systems operational",
+        columns: &[
+            FooterColumn {
+                kicker: "Browse",
+                links: &[
+                    FooterLink {
+                        label: "Packages",
+                        href: "#",
+                    },
+                    FooterLink {
+                        label: "Authors",
+                        href: "#",
+                    },
+                ],
+            },
+            FooterColumn {
+                kicker: "Develop",
+                links: &[
+                    FooterLink {
+                        label: "Docs",
+                        href: "#",
+                    },
+                    FooterLink {
+                        label: "Spec",
+                        href: "#",
+                    },
+                ],
+            },
+            FooterColumn {
+                kicker: "Community",
+                links: &[FooterLink {
+                    label: "GitHub",
+                    href: "#",
+                }],
+            },
+        ],
+        copyright: "© 2026 wasm contributors",
+        legal: &[
+            FooterLink {
+                label: "Privacy",
+                href: "#",
+            },
+            FooterLink {
+                label: "Terms",
+                href: "#",
+            },
+        ],
+    });
+    html.push_str(RULE_MT);
+    html.push_str(&ds::section(
+        "c-footer",
+        "C13",
+        "Footer",
+        "Site footer: brand block (name + lede + status pill) and four link columns, with a hairline-separated bottom row carrying the mono copyright and legal links.",
+        &footer_demo,
+    ));
+
+    html
 }

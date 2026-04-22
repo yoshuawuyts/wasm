@@ -1,10 +1,9 @@
 //! Detail page for a child module or component inside a Wasm component.
 
+use crate::components::ds::metadata_table;
 use crate::components::ds::page_header;
-use crate::components::ds::section_group;
 use crate::components::ds::wit_item::{self, WitItem};
 use crate::components::page_sidebar::SidebarActive;
-use html::text_content::{Division, UnorderedList};
 use wasm_meta_registry_client::{ComponentSummary, KnownPackage, PackageVersion};
 
 use super::detail::{self, DetailSpec};
@@ -34,13 +33,11 @@ pub(crate) fn render(
     }
     let kicker = kicker_parts.join(" \u{00b7} ");
 
-    // Use the languages list as the tagline (the only descriptive text we have
-    // for a child component).
-    let tagline = if child.languages.is_empty() {
-        "No description available.".to_owned()
-    } else {
-        format!("Built with {}.", child.languages.join(", "))
-    };
+    let tagline = child
+        .description
+        .as_deref()
+        .unwrap_or("No description available.")
+        .to_owned();
 
     let header = page_header::page_header_block(&kicker, display_name, &tagline, None).to_string();
 
@@ -66,14 +63,9 @@ pub(crate) fn render(
         body.push_str(&wit_item::render_item_section("Exports", &entries).to_string());
     }
 
-    // Producers
-    if !child.producers.is_empty() {
-        body.push_str(&render_producers_section(&child.producers));
-    }
-
-    // Dependencies
-    if !child.bill_of_materials.is_empty() {
-        body.push_str(&render_bom_section(&child.bill_of_materials));
+    // Metadata table (producers, dependencies, languages, size, etc.)
+    if let Some(table) = metadata_table::render(child) {
+        body.push_str(&table.to_string());
     }
 
     body.push_str("</div>");
@@ -95,96 +87,6 @@ pub(crate) fn render(
         importers: &[],
         exporters: &[],
     })
-}
-
-/// Render producers as a list, excluding language entries (shown in subtitle).
-fn render_producers_section(producers: &[wasm_meta_registry_client::ProducerEntry]) -> String {
-    // Filter out language entries — those are shown in the subtitle.
-    let filtered: Vec<_> = producers.iter().filter(|e| e.field != "language").collect();
-    if filtered.is_empty() {
-        return String::new();
-    }
-
-    let mut div = Division::builder();
-    div.push(section_group::header("Producers", filtered.len()));
-
-    let mut ul = UnorderedList::builder();
-    for entry in &filtered {
-        let name = entry.name.clone();
-        let version = entry.version.clone();
-        // Strip parenthesized info from display, keep in tooltip.
-        let display_version = version
-            .split_once(" (")
-            .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
-        let tooltip = if version.is_empty() {
-            name.clone()
-        } else {
-            format!("{name} {version}")
-        };
-        ul.list_item(|li| {
-            li.class("py-1");
-            li.span(|s| {
-                s.class("text-[14px] min-w-0 truncate").title(tooltip);
-                s.span(|n| n.class("text-accent").text(name));
-                if !display_version.is_empty() {
-                    s.span(|v| {
-                        v.class("text-ink-400 ml-1")
-                            .text(format!("@{display_version}"))
-                    });
-                }
-                s
-            });
-            li
-        });
-    }
-    div.push(ul.build());
-    div.build().to_string()
-}
-
-/// Render dependencies as package URLs with links to crates.io.
-fn render_bom_section(deps: &[wasm_meta_registry_client::BomEntry]) -> String {
-    let mut div = Division::builder();
-    div.push(section_group::header("Dependencies", deps.len()));
-
-    let mut ul = UnorderedList::builder();
-    for dep in deps {
-        let name = dep.name.clone();
-        let version = dep.version.clone();
-        let source = dep.source.as_deref().unwrap_or("crates.io");
-        let (purl_type, href) = match source {
-            "crates.io" | "registry" => (
-                "cargo",
-                Some(format!("https://crates.io/crates/{name}/{version}")),
-            ),
-            _ => ("generic", None),
-        };
-        let purl = format!("pkg:{purl_type}/{name}@{version}");
-        ul.list_item(|li| {
-            li.class("py-1");
-            if let Some(url) = href {
-                li.anchor(|a| {
-                    a.href(url).class("text-[14px] hover:underline");
-                    a.span(|s| s.class("text-ink-500").text(format!("pkg:{purl_type}/")));
-                    a.span(|s| s.class("text-accent").text(name));
-                    a.span(|s| s.class("text-ink-400 ml-1").text(format!("@{version}")));
-                    a
-                })
-                .title(purl);
-            } else {
-                li.span(|s| {
-                    s.class("text-[14px]");
-                    s.span(|ps| ps.class("text-ink-500").text(format!("pkg:{purl_type}/")));
-                    s.span(|ns| ns.class("text-ink-900").text(name));
-                    s.span(|vs| vs.class("text-ink-400 ml-1").text(format!("@{version}")));
-                    s
-                })
-                .title(purl);
-            }
-            li
-        });
-    }
-    div.push(ul.build());
-    div.build().to_string()
 }
 
 #[cfg(test)]
@@ -272,8 +174,11 @@ mod tests {
         assert!(html.contains("inner"));
         assert!(html.contains("Imports"));
         assert!(html.contains("Exports"));
-        assert!(html.contains("Producers"));
-        assert!(html.contains("Dependencies"));
+        assert!(html.contains("Metadata"));
+        // Producer and dependency data are inside the metadata table
+        assert!(html.contains("Processed By"));
+        assert!(html.contains("wit-component"));
+        assert!(html.contains("serde"));
     }
 
     #[test]
@@ -288,7 +193,7 @@ mod tests {
     fn render_empty_sections_are_skipped() {
         let pkg = sample_pkg();
         let mut child = sample_child("module");
-        // Only language producers — filtered out of producers section.
+        // Only language producers — filtered out of metadata table.
         child.producers = vec![ProducerEntry {
             field: "language".into(),
             name: "Rust".into(),
@@ -300,7 +205,8 @@ mod tests {
         child.languages = vec![];
         child.size_bytes = None;
         let html = render(&pkg, "1.0.0", None, &child, "inner");
-        assert!(!html.contains(">Producers<"));
+        // Producer/dependency sub-sections should be absent
+        assert!(!html.contains("wit-component"));
         assert!(!html.contains(">Dependencies<"));
     }
 }

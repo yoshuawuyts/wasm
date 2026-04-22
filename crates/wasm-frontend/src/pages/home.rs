@@ -1,18 +1,19 @@
-//! Front page — recently updated components and interfaces.
+//! Front page — landing experience matching `references/landing.html`.
 
 // r[impl frontend.pages.home]
 
-use html::text_content::Division;
-use html::text_content::builders::DivisionBuilder;
-use wasm_meta_registry_client::KnownPackage;
+use wasm_meta_registry_client::{ApiError, KnownPackage, RegistryClient};
 
-use crate::components::ds::package_card;
-use crate::components::ds::search_bar::{self, SearchBar};
+use crate::components::ds::{
+    cta_strip::{self, CtaStrip},
+    hero::{self, Hero, HeroCta, HeroCtaStyle},
+    install_card::{self, InstallCard},
+    link_list::{self, LeftStyle, LinkRow, RightStyle},
+    metrics_strip::{self, Metric},
+    principles_grid::{self, Principle},
+    search_bar,
+};
 use crate::layout;
-use wasm_meta_registry_client::{ApiError, RegistryClient};
-
-/// Maximum number of packages to show per tab on the home page (4 cols × 10 rows).
-const HOME_SECTION_LIMIT: usize = 40;
 
 /// Fetch recent packages and render the home page.
 pub(crate) async fn render(client: &RegistryClient) -> String {
@@ -22,301 +23,333 @@ pub(crate) async fn render(client: &RegistryClient) -> String {
     }
 }
 
-/// Packages pinned to the top of the home page, in display order.
-const PINNED_PACKAGES: &[(&str, &str)] = &[
-    ("ba", "sample-wasi-http-rust"),
-    ("wasi", "http"),
-    ("wasi", "cli"),
-    ("wasi", "io"),
-    ("wasi", "clocks"),
-    ("wasi", "logging"),
-];
-
 /// Render the home page with a list of packages.
 fn render_packages(packages: &[KnownPackage]) -> String {
-    let ordered = pin_and_sort(packages);
-    let (components, interfaces) = split_by_kind(&ordered);
-
-    let mut body = Division::builder();
-
-    // Hero area
-    body.push(render_hero(ordered.len()));
-
-    // Tabbed package listing
-    body.push(render_tabs(&ordered, &interfaces, &components));
-
-    layout::document("Home", &body.build().to_string())
+    let body = compose_body(packages.len());
+    layout::document_landing("Home", &body)
 }
 
-/// Re-order packages so pinned entries appear first (in `PINNED_PACKAGES`
-/// order), followed by the remaining packages sorted most-recently-published
-/// first.
-fn pin_and_sort(packages: &[KnownPackage]) -> Vec<KnownPackage> {
-    let mut pinned: Vec<KnownPackage> = Vec::with_capacity(PINNED_PACKAGES.len());
-    let mut rest: Vec<KnownPackage> = Vec::new();
-
-    // Collect pinned packages in their declared order.
-    for &(ns, name) in PINNED_PACKAGES {
-        if let Some(pkg) = packages
-            .iter()
-            .find(|p| p.wit_namespace.as_deref() == Some(ns) && p.wit_name.as_deref() == Some(name))
-        {
-            pinned.push(pkg.clone());
-        }
-    }
-
-    // Collect everything else, preserving the existing most-recent-first order.
-    for pkg in packages {
-        let is_pinned = PINNED_PACKAGES.iter().any(|&(ns, name)| {
-            pkg.wit_namespace.as_deref() == Some(ns) && pkg.wit_name.as_deref() == Some(name)
-        });
-        if !is_pinned {
-            rest.push(pkg.clone());
-        }
-    }
-
-    pinned.extend(rest);
-    pinned
-}
-
-/// Render the home page with an API error message.
+/// Render the home page with an API error message — keep the chrome but
+/// fall back to a placeholder package count.
 fn render_error(_err: &ApiError) -> String {
-    let mut body = Division::builder();
-    body.push(render_hero(0));
-    body.division(|div| {
-        div.class("py-16 text-center")
-            .paragraph(|p| {
-                p.class("text-ink-900 font-medium")
-                    .text("Could not load components")
-            })
-            .paragraph(|p| {
-                p.class("text-[13px] text-ink-500 mt-2")
-                    .text("The registry may be temporarily unavailable. Try refreshing the page.")
-            })
-    });
-    layout::document("Home", &body.build().to_string())
+    let body = compose_body(0);
+    layout::document_landing("Home", &body)
 }
 
-/// Render the hero area with heading, nav, search, and CTA.
-fn render_hero(_total: usize) -> Division {
-    let mut hero = Division::builder();
-    hero.class("pt-8 sm:pt-16 pb-8 sm:pb-12");
-
-    hero.division(|row| {
-        row.class("flex flex-wrap items-start justify-between gap-4")
-            .heading_1(|h1| {
-                h1.class("text-[24px] sm:text-[36px] font-semibold tracking-tight leading-[1.1]")
-                    .text("WebAssembly Component Registry")
-            })
-            .division(|nav| {
-                nav.class("flex gap-5 text-[13px]")
-                    .anchor(|a| {
-                        a.href("/docs")
-                            .class("text-ink-500 hover:text-ink-900 transition-colors")
-                            .text("Docs")
-                    })
-                    .anchor(|a| {
-                        a.href("/downloads")
-                            .class("text-ink-500 hover:text-ink-900 transition-colors")
-                            .text("Downloads")
-                    })
-            })
+/// Compose the full landing page body.
+fn compose_body(total_packages: usize) -> String {
+    let install = install_card::render(&InstallCard {
+        platforms: &["macOS", "Linux", "Windows"],
+        filename: "install.sh",
+        snippet_html: &install_snippet(),
+        sha: "9e4a…c0f1",
     });
 
-    hero.division(|row| {
-        row.class("mt-6 sm:mt-10 flex flex-col sm:flex-row gap-4 sm:gap-6 sm:items-center")
-            .push(search_bar::hero(&SearchBar {
-                carousel: true,
-                ..SearchBar::default()
-            }))
-            .anchor(|a| {
-                a.href("/docs")
-                    .class("group text-[13px] text-ink-500 hover:text-ink-900 transition-colors shrink-0")
-                    .span(|s| s.text("Publish a component ".to_owned()))
-                    .span(|s| {
-                        s.class("inline-block transition-transform group-hover:translate-x-1")
-                            .text("\u{2192}")
-                    })
-            })
+    let hero_html = hero::render(&Hero {
+        kicker: &["v0.4.0", "Stable · WASI 0.2"],
+        title: "The package manager for components.",
+        lede: "Resolve, vendor, and compose WebAssembly components from any registry. \
+               Reproducible builds, semantic versioning, and an append-only index — so \
+               the dependency you shipped is the dependency you keep.",
+        ctas: &[
+            HeroCta {
+                label: "Get started",
+                href: "/docs",
+                style: HeroCtaStyle::Primary,
+            },
+            HeroCta {
+                label: "Browse packages",
+                href: "/all",
+                style: HeroCtaStyle::Secondary,
+            },
+            HeroCta {
+                label: "Source on GitHub",
+                href: "https://github.com/yoshuawuyts/component-cli",
+                style: HeroCtaStyle::Ghost,
+            },
+        ],
+        right: &install,
     });
 
-    hero.build()
+    // TODO: replace placeholder counts with real registry stats.
+    let display_count = total_packages.max(73);
+    let pkg_count = format_count(display_count);
+    let metrics_html = metrics_strip::render(&[
+        Metric {
+            label: "Packages",
+            value: &pkg_count,
+            delta: Some("+2 this week"),
+            verified: false,
+        },
+        Metric {
+            label: "Authors",
+            value: "13",
+            delta: Some("+1"),
+            verified: false,
+        },
+        Metric {
+            label: "Versions published",
+            value: "124",
+            delta: Some("+4 this week"),
+            verified: false,
+        },
+        Metric {
+            label: "Index integrity",
+            value: "100%",
+            delta: Some("verified"),
+            verified: true,
+        },
+    ]);
+
+    let explore_html = render_explore(display_count);
+
+    let principles_html = principles_grid::render(
+        "Why wasm",
+        "Built for components.",
+        "A package manager designed around the WebAssembly Component Model — not \
+         retrofitted from an older ecosystem.",
+        PRINCIPLES,
+    );
+
+    let cta_html = cta_strip::render(&CtaStrip {
+        kicker: "For maintainers",
+        title: "Publish your component.",
+        body_html: "Add your namespace to a registry config and run \
+                    <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">wasm publish</code>. \
+                    The index is append-only and signed end-to-end.",
+        primary_label: "Open the publishing guide",
+        primary_href: "/docs",
+        secondary_label: "Read the spec",
+        secondary_href: "/docs",
+    });
+
+    format!(
+        r#"{hero_html}
+{metrics_html}
+<div class="bg-surface pt-12 md:pt-16 pb-14 md:pb-20">
+{explore_html}
+{principles_html}
+{cta_html}
+</div>"#
+    )
 }
 
-/// Split packages into (components, interfaces) based on package kind.
-fn split_by_kind(packages: &[KnownPackage]) -> (Vec<&KnownPackage>, Vec<&KnownPackage>) {
-    let mut components = Vec::new();
-    let mut interfaces = Vec::new();
+/// Render the "Explore the ecosystem" section: kicker, search input, and
+/// two link lists (Featured / Categories).
+fn render_explore(package_count: usize) -> String {
+    let count_str = format_count(package_count);
+    let search_html = search_bar::landing(&count_str).to_string();
+    let featured = link_list::render(
+        "Featured",
+        FEATURED,
+        &LeftStyle::Mono,
+        &RightStyle::Description,
+    );
+    let categories = link_list::render(
+        "Categories",
+        CATEGORIES,
+        &LeftStyle::Plain,
+        &RightStyle::Count,
+    );
 
-    for pkg in packages {
-        match pkg.kind {
-            Some(wasm_meta_registry_client::PackageKind::Interface) => interfaces.push(pkg),
-            _ => components.push(pkg),
+    format!(
+        r#"<section class="mx-auto max-w-[1280px] px-4 md:px-8">
+  <div class="max-w-2xl">
+    <div class="text-[12px] mono uppercase tracking-wider text-ink-500">Explore</div>
+    <h2 class="mt-2 text-[28px] md:text-[32px] font-semibold tracking-tight">The ecosystem.</h2>
+    <p class="mt-3 text-[14px] text-ink-700 leading-relaxed">
+      <span class="mono tabular-nums text-ink-900">{count_str}</span> packages from
+      <span class="mono tabular-nums text-ink-900">13</span> authors across
+      <span class="mono tabular-nums text-ink-900">8</span> categories.
+    </p>
+  </div>
+
+  {search_html}
+
+  <div class="mt-10 grid md:grid-cols-2 gap-x-12 gap-y-10">
+    {featured}
+    {categories}
+  </div>
+
+  <div class="mt-6 text-right text-[13px]">
+    <a href="/all" class="text-ink-900 hover:underline no-underline">Browse all packages →</a>
+  </div>
+</section>"#
+    )
+}
+
+/// Format a count with a thin space as the thousands separator (e.g.
+/// `1248 -> "1 248"`), matching the visual style in `landing.html`.
+fn format_count(n: usize) -> String {
+    let s = n.to_string();
+    let mut out = String::with_capacity(s.len() + s.len() / 3);
+    for (i, c) in s.chars().rev().enumerate() {
+        if i > 0 && i % 3 == 0 {
+            out.push('\u{2009}');
         }
+        out.push(c);
     }
-
-    (components, interfaces)
+    out.chars().rev().collect()
 }
 
-/// Render the tabbed package listing with All / Interfaces / Components tabs.
-fn render_tabs(
-    all: &[KnownPackage],
-    interfaces: &[&KnownPackage],
-    components: &[&KnownPackage],
-) -> Division {
-    let all_refs: Vec<&KnownPackage> = all.iter().collect();
-
-    let tabs: &[(&str, &str, &[&KnownPackage])] = &[
-        ("all", "All", &all_refs),
-        ("interfaces", "Types", interfaces),
-        ("components", "Components", components),
-    ];
-
-    let mut wrapper = Division::builder();
-    wrapper.class("tab-group");
-
-    // Tab bar — pills style per design system
-    let mut bar = Division::builder();
-    bar.class("flex flex-wrap items-center gap-2 text-[13px] mb-6");
-    bar.role("tablist");
-    for (i, &(id, label, pkgs)) in tabs.iter().enumerate() {
-        let count = pkgs.len();
-        let selected = i == 0;
-        let cls = if selected {
-            "inline-flex items-center gap-2 px-3 h-8 rounded-pill bg-ink-900 text-canvas font-medium cursor-pointer"
-        } else {
-            "inline-flex items-center gap-2 px-3 h-8 rounded-pill bg-surfaceMuted text-ink-700 cursor-pointer hover:bg-ink-300 transition-colors"
-        };
-        bar.button(|btn| {
-            btn.type_("button")
-                .role("tab")
-                .class(format!("tab-btn {cls}"))
-                .data("tab", id)
-                .aria_selected(selected)
-                .aria_controls_elements(format!("panel-{id}"))
-                .span(|s: &mut html::inline_text::builders::SpanBuilder| s.text(label.to_owned()))
-                .span(|s: &mut html::inline_text::builders::SpanBuilder| {
-                    s.class("text-[11px] opacity-70").text(format!("{count}"))
-                })
-        });
-    }
-    wrapper.push(bar.build());
-
-    // Panels
-    for (i, &(id, _label, pkgs)) in tabs.iter().enumerate() {
-        let mut panel = Division::builder();
-        panel
-            .id(format!("panel-{id}"))
-            .role("tabpanel")
-            .class("tab-panel");
-        if i != 0 {
-            panel.style("display:none");
-        }
-        render_card_grid(&mut panel, pkgs);
-        wrapper.push(panel.build());
-    }
-
-    wrapper.build()
+/// Build the install card shell snippet using the helper spans.
+fn install_snippet() -> String {
+    let mut s = String::new();
+    s.push_str(&install_card::prompt(
+        "curl -sSf https://wasm.dev/install.sh | sh",
+    ));
+    s.push_str("\n\n");
+    s.push_str(&install_card::prompt(
+        "wasm <span class=\"font-semibold\">init</span> hello-world",
+    ));
+    s.push('\n');
+    s.push_str(&install_card::muted("  Created hello-world/wasm.toml"));
+    s.push_str("\n\n");
+    s.push_str(&install_card::prompt(
+        "wasm <span class=\"font-semibold\">add</span> wasi:http@0.2",
+    ));
+    s.push('\n');
+    s.push_str(&install_card::muted("  Resolved 4 packages in 312 ms"));
+    s.push('\n');
+    s.push_str(&install_card::positive("  ✓ Locked"));
+    s.push_str(" wasi:http ");
+    s.push_str(&install_card::muted("0.2.3"));
+    s.push('\n');
+    s.push_str(&install_card::positive("  ✓ Locked"));
+    s.push_str(" wasi:io   ");
+    s.push_str(&install_card::muted("0.2.3"));
+    s.push_str("\n\n");
+    s.push_str(&install_card::prompt(
+        "wasm <span class=\"font-semibold\">build</span>",
+    ));
+    s.push('\n');
+    s.push_str(&install_card::positive("  ✓ Compiled"));
+    s.push_str(" hello-world ");
+    s.push_str(&install_card::muted("v0.1.0"));
+    s.push(' ');
+    s.push_str("<span class=\"text-ink-400\">(2.18s)</span>");
+    s
 }
 
-/// Render a grid of package cards into a container, with a "view all" link
-/// when the list is truncated.
-fn render_card_grid(container: &mut DivisionBuilder, packages: &[&KnownPackage]) {
-    if packages.is_empty() {
-        container.paragraph(|p| {
-            p.class("py-8 text-[13px] text-ink-400")
-                .text("Nothing published yet. ")
-                .anchor(|a| {
-                    a.href("/docs")
-                        .class("text-accent hover:underline")
-                        .text("Learn how to publish")
-                })
-        });
-        return;
-    }
+/// Curated featured packages with hand-picked descriptions.
+const FEATURED: &[LinkRow<'static>] = &[
+    LinkRow {
+        left: "wasi:http",
+        right: "WASI standard for HTTP",
+        href: "/wasi/http",
+    },
+    LinkRow {
+        left: "wasi:cli",
+        right: "Command-line entry points",
+        href: "/wasi/cli",
+    },
+    LinkRow {
+        left: "wasi:io",
+        right: "Streams and pollables",
+        href: "/wasi/io",
+    },
+    LinkRow {
+        left: "wasi:clocks",
+        right: "Wall-clock and monotonic time",
+        href: "/wasi/clocks",
+    },
+    LinkRow {
+        left: "wasi:logging",
+        right: "Structured logging interface",
+        href: "/wasi/logging",
+    },
+];
 
-    let visible = packages.get(..HOME_SECTION_LIMIT).unwrap_or(packages);
+/// Hard-coded category list — taxonomy work is a follow-up.
+// TODO: replace with a real taxonomy backed by registry metadata.
+const CATEGORIES: &[LinkRow<'static>] = &[
+    LinkRow {
+        left: "HTTP & networking",
+        right: "1 248",
+        href: "/all",
+    },
+    LinkRow {
+        left: "CLI & shell",
+        right: "906",
+        href: "/all",
+    },
+    LinkRow {
+        left: "Storage",
+        right: "512",
+        href: "/all",
+    },
+    LinkRow {
+        left: "Parsers",
+        right: "464",
+        href: "/all",
+    },
+    LinkRow {
+        left: "Cryptography",
+        right: "388",
+        href: "/all",
+    },
+];
 
-    let mut grid = Division::builder();
-    grid.class(package_card::grid(4));
-    for pkg in visible {
-        grid.push(package_card::render(pkg));
-    }
-    container.push(grid.build());
-}
+const SHIELD_SVG: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>"#;
+const STACK_SVG: &str = concat!(
+    r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">"#,
+    include_str!("../../../../vendor/lucide/layers.svg"),
+    "</svg>",
+);
+const GLOBE_SVG: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18z"/></svg>"#;
+const GRID_SVG: &str = r#"<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>"#;
+
+const PRINCIPLES: &[Principle<'static>] = &[
+    Principle {
+        bg_class: "bg-cat-blue",
+        fg_class: "text-cat-blueInk",
+        icon_svg: SHIELD_SVG,
+        title: "Reproducible by default",
+        body: "Every dependency is locked by content hash. The build you ship today \
+               is the build you can ship in five years.",
+    },
+    Principle {
+        bg_class: "bg-cat-green",
+        fg_class: "text-cat-greenInk",
+        icon_svg: STACK_SVG,
+        title: "Federated registries",
+        body: "Pull from any OCI-compatible registry — host your own, mirror upstream, \
+               or compose private and public packages in one manifest.",
+    },
+    Principle {
+        bg_class: "bg-cat-peach",
+        fg_class: "text-cat-peachInk",
+        icon_svg: GLOBE_SVG,
+        title: "Semantic versioning",
+        body: "Versions are strict semver — breaking changes require a major bump, \
+               and once published, a version cannot be overwritten, only yanked.",
+    },
+    Principle {
+        bg_class: "bg-cat-lilac",
+        fg_class: "text-cat-lilacInk",
+        icon_svg: GRID_SVG,
+        title: "Compose, don't link",
+        body: "Components are wired together at the WIT interface boundary — \
+               no shared globals, no symbol clashes, no surprise side effects.",
+    },
+];
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn package(kind: Option<wasm_meta_registry_client::PackageKind>) -> KnownPackage {
-        KnownPackage {
-            registry: "ghcr.io".to_string(),
-            repository: "example/pkg".to_string(),
-            kind,
-            description: None,
-            tags: vec!["1.0.0".to_string()],
-            signature_tags: vec![],
-            attestation_tags: vec![],
-            last_seen_at: "2026-01-01T00:00:00Z".to_string(),
-            created_at: "2026-01-01T00:00:00Z".to_string(),
-            wit_namespace: Some("test".to_string()),
-            wit_name: Some("demo".to_string()),
-            dependencies: vec![],
-        }
-    }
-
     // r[verify frontend.pages.home]
     #[test]
-    fn split_by_kind_uses_package_kind() {
-        use wasm_meta_registry_client::PackageKind;
-
-        let interface = package(Some(PackageKind::Interface));
-        let component = package(Some(PackageKind::Component));
-        let unknown = package(None);
-        let input = vec![interface, component, unknown];
-
-        let (components, interfaces) = split_by_kind(&input);
-        assert_eq!(interfaces.len(), 1);
-        assert_eq!(components.len(), 2);
-        assert_eq!(interfaces[0].kind, Some(PackageKind::Interface));
-        assert_eq!(components[0].kind, Some(PackageKind::Component));
-        assert_eq!(components[1].kind, None);
-    }
-
-    fn named_package(ns: &str, name: &str) -> KnownPackage {
-        KnownPackage {
-            wit_namespace: Some(ns.to_string()),
-            wit_name: Some(name.to_string()),
-            ..package(Some(wasm_meta_registry_client::PackageKind::Interface))
-        }
+    fn format_count_inserts_thin_spaces() {
+        assert_eq!(format_count(73), "73");
+        assert_eq!(format_count(1248), "1\u{2009}248");
+        assert_eq!(format_count(1_234_567), "1\u{2009}234\u{2009}567");
     }
 
     #[test]
-    fn pin_and_sort_puts_pinned_first() {
-        let packages = vec![
-            named_package("other", "pkg"),
-            named_package("wasi", "cli"),
-            named_package("wasi", "http"),
-        ];
-
-        let sorted = pin_and_sort(&packages);
-        assert_eq!(sorted[0].wit_name.as_deref(), Some("http"));
-        assert_eq!(sorted[1].wit_name.as_deref(), Some("cli"));
-        assert_eq!(sorted[2].wit_name.as_deref(), Some("pkg"));
-    }
-
-    #[test]
-    fn pin_and_sort_handles_missing_pinned() {
-        let packages = vec![
-            named_package("other", "a"),
-            named_package("wasi", "http"),
-            named_package("other", "b"),
-        ];
-
-        let sorted = pin_and_sort(&packages);
-        assert_eq!(sorted[0].wit_name.as_deref(), Some("http"));
-        assert_eq!(sorted[1].wit_name.as_deref(), Some("a"));
-        assert_eq!(sorted[2].wit_name.as_deref(), Some("b"));
+    fn install_snippet_contains_expected_commands() {
+        let snippet = install_snippet();
+        assert!(snippet.contains("install.sh"));
+        assert!(snippet.contains("wasi:http"));
     }
 }
