@@ -68,7 +68,7 @@ pub(crate) fn render_type(
     let header = page_header::page_header_block(
         kind_label,
         &ty.name,
-        ty.docs.as_deref().unwrap_or("No description available."),
+        &crate::markdown::render_inline(ty.docs.as_deref().unwrap_or("No description available.")),
         Some(&code_block),
     )
     .to_string();
@@ -76,7 +76,7 @@ pub(crate) fn render_type(
     // Type body content (fields, variants, etc.)
     let body = render_type_body(&ty.kind).to_string();
 
-    let content = format!("<div class=\"max-w-3xl\">{body}</div>");
+    let content = format!("<div class=\"pt-8\">{body}</div>");
 
     let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
         display_name: &display_name,
@@ -138,7 +138,9 @@ pub(crate) fn render_function(
     let header = page_header::page_header_block(
         "Function",
         &func.name,
-        func.docs.as_deref().unwrap_or("No description available."),
+        &crate::markdown::render_inline(
+            func.docs.as_deref().unwrap_or("No description available."),
+        ),
         Some(&code_block),
     )
     .to_string();

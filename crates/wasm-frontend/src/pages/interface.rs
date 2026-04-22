@@ -32,7 +32,7 @@ pub(crate) fn render(
 
     // Grouped type and function sections
     let mut content = Division::builder();
-    content.class("space-y-6 max-w-3xl");
+    content.class("space-y-10 pt-8");
     let mut toc: Vec<(String, String)> = Vec::new();
 
     let resources: Vec<&TypeDoc> = iface
@@ -193,7 +193,6 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
         })
         .collect();
     let mut div = Division::builder();
-    div.class("pt-6 first:pt-0");
     div.push(item_list::render_dyn_item_list(heading, &items));
     div.build()
 }
@@ -222,7 +221,6 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
         })
         .collect();
     let mut div = Division::builder();
-    div.class("pt-6 first:pt-0");
     div.push(item_list::render_dyn_item_list("Functions", &items));
     div.build()
 }

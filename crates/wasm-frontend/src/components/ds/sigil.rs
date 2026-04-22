@@ -13,17 +13,17 @@ pub(crate) struct Sigil {
     pub text: &'static str,
 }
 
-/// World — green "W".
+/// World — cream "W".
 pub(crate) const WORLD: Sigil = Sigil {
-    bg: "var(--c-cat-green)",
-    color: "var(--c-cat-green-ink)",
+    bg: "var(--c-cat-cream)",
+    color: "var(--c-cat-cream-ink)",
     text: "W",
 };
 
-/// Interface — lilac "I".
+/// Interface — rust "I".
 pub(crate) const IFACE: Sigil = Sigil {
-    bg: "var(--c-cat-lilac)",
-    color: "var(--c-cat-lilac-ink)",
+    bg: "var(--c-cat-rust)",
+    color: "var(--c-cat-rust-ink)",
     text: "I",
 };
 
@@ -55,10 +55,10 @@ pub(crate) const RECORD: Sigil = Sigil {
     text: "R",
 };
 
-/// Variant — lilac "V".
+/// Variant — teal "V".
 pub(crate) const VARIANT: Sigil = Sigil {
-    bg: "var(--c-cat-lilac)",
-    color: "var(--c-cat-lilac-ink)",
+    bg: "var(--c-cat-teal)",
+    color: "var(--c-cat-teal-ink)",
     text: "V",
 };
 
@@ -69,17 +69,130 @@ pub(crate) const ENUM: Sigil = Sigil {
     text: "E",
 };
 
-/// Flags — teal "F".
+/// Flags — lilac "F".
 pub(crate) const FLAGS: Sigil = Sigil {
-    bg: "var(--c-cat-teal)",
-    color: "var(--c-cat-teal-ink)",
+    bg: "var(--c-cat-lilac)",
+    color: "var(--c-cat-lilac-ink)",
     text: "F",
 };
 
-/// Package / root — slate "·".
+/// Package / root — plum "·".
 #[allow(dead_code)]
 pub(crate) const ROOT: Sigil = Sigil {
-    bg: "var(--c-cat-slate)",
-    color: "var(--c-cat-slate-ink)",
+    bg: "var(--c-cat-plum)",
+    color: "var(--c-cat-plum-ink)",
     text: "\u{00b7}",
 };
+
+/// Module — pink "M".
+pub(crate) const MODULE: Sigil = Sigil {
+    bg: "var(--c-cat-pink)",
+    color: "var(--c-cat-pink-ink)",
+    text: "M",
+};
+
+// ── Design-system showcase ──────────────────────────────────────────
+
+use html::text_content::Division;
+
+/// All sigils for the design-system gallery: (label, sigil ref).
+pub(crate) const ALL: &[(&str, &Sigil)] = &[
+    ("World", &WORLD),
+    ("Interface", &IFACE),
+    ("Function", &FUNC),
+    ("Type", &TYPE),
+    ("Resource", &RESOURCE),
+    ("Record", &RECORD),
+    ("Flags", &FLAGS),
+    ("Variant", &VARIANT),
+    ("Enum", &ENUM),
+    ("Module", &MODULE),
+    ("Root", &ROOT),
+];
+
+/// Render the sigils design-system section.
+pub(crate) fn render(
+    section_id: &str,
+    num: &str,
+    title: &str,
+    desc: &str,
+    sigils: &[(&str, &Sigil)],
+) -> String {
+    let mut wrapper = Division::builder();
+    wrapper.class("space-y-6");
+
+    // Gallery grid
+    wrapper.division(|lbl| lbl.class("text-[12px] text-ink-500 mb-3").text("Legend"));
+    wrapper.division(|gallery| {
+        gallery.class("flex flex-wrap gap-4");
+        for (label, sigil) in sigils {
+            let label = (*label).to_owned();
+            // Raw HTML: Span::style() creates a <style> child, not an inline style attribute.
+            let sigil_html = format!(
+                r#"<span class="sigil" style="background:{};color:{};">{}</span>"#,
+                sigil.bg, sigil.color, sigil.text,
+            );
+            gallery.division(|cell| {
+                cell.class("flex flex-col items-center gap-2")
+                    .text(sigil_html)
+                    .span(|s| s.class("text-[11px] text-ink-500").text(label))
+            });
+        }
+        gallery
+    });
+
+    // Inline usage example — body text
+    wrapper.division(|demo| {
+        let world_sigil = format!(
+            r#"<span class="sigil" style="background:{};color:{};">{}</span>"#,
+            WORLD.bg, WORLD.color, WORLD.text,
+        );
+        demo.division(|lbl| {
+            lbl.class("text-[12px] text-ink-500 mb-3")
+                .text("Inline with text")
+        })
+        .division(|row| {
+            row.class("flex items-center gap-2 text-[14px] text-ink-700")
+                .text(world_sigil)
+                .span(|s| s.class("font-medium").text("wasi:http/handler"))
+        })
+    });
+
+    // Inline usage example — heading text
+    wrapper.division(|demo| {
+        let iface_sigil = format!(
+            r#"<span class="sigil" style="background:{};color:{};width:22px;height:22px;font-size:12px;">{}</span>"#,
+            IFACE.bg, IFACE.color, IFACE.text,
+        );
+        demo.division(|lbl| {
+            lbl.class("text-[12px] text-ink-500 mb-3")
+                .text("Inline with heading")
+        })
+        .division(|row| {
+            row.class(
+                "flex items-center gap-[6px] text-[24px] font-semibold tracking-tight text-ink-900",
+            )
+            .text(iface_sigil)
+            .span(|s| s.text("wasi:http/handler"))
+        })
+    });
+
+    let content = wrapper.build().to_string();
+    super::section(section_id, num, title, desc, &content)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn snapshot() {
+        insta::assert_snapshot!(crate::components::ds::pretty_html(&render(
+            "sigils",
+            "25",
+            "Sigils",
+            "18\u{00d7}18px rounded squares with a single monospace letter, used to classify items by kind in sidebars, item lists, and detail pages. Each sigil pairs a categorical background with its ink counterpart for 4.5:1 contrast.",
+            ALL,
+        )));
+    }
+}

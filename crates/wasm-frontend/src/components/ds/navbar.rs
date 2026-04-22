@@ -126,12 +126,11 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
         .build()
         .to_string();
 
-    // Center: search trigger
-    let search = search_button(SVG_SEARCH_SM, "Search\u{2026}", true);
-
-    // Right: nav links + theme toggle
+    // Right: search + nav links + theme toggle
+    let search = search_button(SVG_SEARCH_SM, "Type / to search", true);
     let mut right = Division::builder();
     right.class("flex items-center gap-1 text-[12px] text-ink-500");
+    right.division(|d| d.class("hidden sm:block").text(search));
     for link in links {
         let href = link.href.to_owned();
         let label = link.label.to_owned();
@@ -156,9 +155,9 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
         .class("sticky top-0 z-20 bg-canvas/90 backdrop-blur border-b hairline")
         .division(|inner| {
             inner
-                .class("px-4 md:px-6 h-12 max-w-[1440px] grid grid-cols-[240px_1fr_auto] items-center gap-8 lg:gap-10")
+                .class("px-4 md:px-6 h-12 max-w-[1440px] flex items-center gap-8 lg:gap-10")
                 .text(left)
-                .division(|center| center.class("hidden sm:block").text(search))
+                .division(|spacer| spacer.class("flex-1"))
                 .text(right)
         })
         .build();
@@ -233,13 +232,15 @@ fn search_button(svg: &str, placeholder: &str, show_hint: bool) -> String {
     let placeholder = placeholder.to_owned();
     let mut btn = html::forms::Button::builder();
     btn.type_("button");
-    btn.class("w-full h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors");
+    btn.class("flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors");
     btn.text(svg);
     btn.span(|s| s.class("truncate").text(placeholder));
     if show_hint {
         btn.span(|s| {
-            s.class("ml-auto mono text-[10px] text-ink-500 border border-lineSoft rounded-sm px-1.5 py-0.5 bg-surfaceMuted")
-                .text("⌘K")
+            s.class(
+                "ml-auto mono text-[11px] text-ink-400 border border-line rounded px-1.5 leading-5",
+            )
+            .text("/")
         });
     }
     btn.build().to_string()

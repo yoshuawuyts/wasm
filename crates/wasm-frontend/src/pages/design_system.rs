@@ -38,6 +38,7 @@ const TOC_ENTRIES: &[(&str, &str)] = &[
     ("#regions", "22 \u{2014} Regions"),
     ("#motion", "23 \u{2014} Motion"),
     ("#details", "24 \u{2014} Details"),
+    ("#sigils", "25 \u{2014} Sigils"),
 ];
 
 /// TOC entries for composed components.
@@ -286,8 +287,16 @@ pub(crate) fn render() -> String {
         ds::details::SIDEBAR_PRIMARY,
         ds::details::SIDEBAR_SECONDARY,
     ));
+    html.push_str(RULE_MT);
+    html.push_str(&ds::sigil::render(
+        "sigils",
+        "25",
+        "Sigils",
+        "18\u{00d7}18px rounded squares with a single monospace letter, used to classify items by kind in sidebars, item lists, and detail pages. Each sigil pairs a categorical background with its ink counterpart for 4.5:1 contrast.",
+        ds::sigil::ALL,
+    ));
 
-    // Part Two — Components
+    // Part Two \u{2014} Components
     html.push_str(&ds::part_two::render("Part Two",
             "Components",
             "Composed patterns built from the foundations above. Each component documents its anchor markup and the variants it supports.",));

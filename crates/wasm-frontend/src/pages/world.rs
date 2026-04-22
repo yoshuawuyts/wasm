@@ -29,7 +29,7 @@ pub(crate) fn render(
     .to_string();
 
     let mut content = Division::builder();
-    content.class("space-y-10 max-w-3xl");
+    content.class("space-y-10 pt-8");
 
     // Build a doc lookup from the API's enriched world data (has cross-package docs).
     let api_docs = build_api_doc_lookup(version_detail, &world.name);
