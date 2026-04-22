@@ -91,6 +91,7 @@ pub(crate) const BODY_CLASS: &str = "text-ink-700 leading-relaxed";
 pub(crate) const SECTION_CLASS: &str = "text-[16px] font-semibold tracking-tight mb-3";
 
 /// Class string for a section heading with bottom border.
+#[allow(dead_code)]
 pub(crate) const SECTION_BORDERED_CLASS: &str =
     "text-[16px] font-semibold tracking-tight mb-3 pb-2 border-b border-lineSoft";
 

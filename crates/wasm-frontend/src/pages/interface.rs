@@ -1,6 +1,6 @@
 //! Interface detail page.
 
-use crate::components::ds::{page_header, section_group};
+use crate::components::ds::{item_list, page_header, section_group};
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
@@ -170,51 +170,64 @@ pub(crate) fn render(
 
 /// Render a section of types grouped by kind.
 fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
+    let items: Vec<item_list::DynItemRow> = types
+        .iter()
+        .map(|ty| {
+            let desc = ty
+                .docs
+                .as_deref()
+                .map(|d| crate::markdown::render_inline(&first_sentence(d)))
+                .unwrap_or_default();
+            item_list::DynItemRow {
+                sigil_bg: wit_kind_sigil_bg(&ty.kind).to_owned(),
+                sigil_color: wit_kind_sigil_color(&ty.kind).to_owned(),
+                sigil_text: wit_kind_sigil_text(&ty.kind).to_owned(),
+                name: ty.name.clone(),
+                href: ty.url.clone(),
+                desc,
+                meta: String::new(),
+                deprecated: false,
+                id: None,
+            }
+        })
+        .collect();
     let mut div = Division::builder();
     div.class("pt-6 first:pt-0");
-    div.push(section_group::header(heading, types.len()));
-
-    for ty in types {
-        let desc = ty
-            .docs
-            .as_deref()
-            .map(|d| crate::markdown::render_inline(&first_sentence(d)))
-            .unwrap_or_default();
-        div.push(section_group::item_row(
-            &ty.name,
-            &ty.url,
-            &wit_kind_to_color(&ty.kind),
-            &wit_stability(&ty.stability),
-            &desc,
-        ));
-    }
+    div.push(item_list::render_dyn_item_list(heading, &items));
     div.build()
 }
 
 /// Render the freestanding functions section.
 fn render_function_section(functions: &[FunctionDoc]) -> Division {
+    let items: Vec<item_list::DynItemRow> = functions
+        .iter()
+        .map(|func| {
+            let desc = func
+                .docs
+                .as_deref()
+                .map(|d| crate::markdown::render_inline(&first_sentence(d)))
+                .unwrap_or_default();
+            item_list::DynItemRow {
+                sigil_bg: "var(--c-cat-green)".to_owned(),
+                sigil_color: "var(--c-cat-green-ink)".to_owned(),
+                sigil_text: "f".to_owned(),
+                name: func.name.clone(),
+                href: func.url.clone(),
+                desc,
+                meta: String::new(),
+                deprecated: false,
+                id: None,
+            }
+        })
+        .collect();
     let mut div = Division::builder();
     div.class("pt-6 first:pt-0");
-    div.push(section_group::header("Functions", functions.len()));
-
-    for func in functions {
-        let desc = func
-            .docs
-            .as_deref()
-            .map(|d| crate::markdown::render_inline(&first_sentence(d)))
-            .unwrap_or_default();
-        div.push(section_group::item_row(
-            &func.name,
-            &func.url,
-            &section_group::ItemColor::Func,
-            &wit_stability(&func.stability),
-            &desc,
-        ));
-    }
+    div.push(item_list::render_dyn_item_list("Functions", &items));
     div.build()
 }
 
 /// Convert a WIT stability to the component enum.
+#[allow(dead_code)]
 fn wit_stability(stability: &crate::wit_doc::Stability) -> section_group::Stability {
     match stability {
         crate::wit_doc::Stability::Stable { .. } => section_group::Stability::Stable,
@@ -231,12 +244,45 @@ fn wit_stability(stability: &crate::wit_doc::Stability) -> section_group::Stabil
 /// - Resources: amber (hue 70) — managed handles
 /// - Aliases: default accent — pass-through types
 /// - Functions: indigo (hue 240) — callable items
+#[allow(dead_code)]
 fn wit_kind_to_color(kind: &TypeKind) -> section_group::ItemColor {
     match kind {
         TypeKind::Record { .. } | TypeKind::Variant { .. } => section_group::ItemColor::Struct,
         TypeKind::Enum { .. } | TypeKind::Flags { .. } => section_group::ItemColor::Enum,
         TypeKind::Resource { .. } => section_group::ItemColor::Resource,
         TypeKind::Alias(_) => section_group::ItemColor::Accent,
+    }
+}
+
+/// Sigil background color for a WIT type kind.
+fn wit_kind_sigil_bg(kind: &TypeKind) -> &'static str {
+    match kind {
+        TypeKind::Record { .. } | TypeKind::Variant { .. } => "var(--c-cat-lilac)",
+        TypeKind::Enum { .. } | TypeKind::Flags { .. } => "var(--c-cat-teal)",
+        TypeKind::Resource { .. } => "var(--c-cat-peach)",
+        TypeKind::Alias(_) => "var(--c-cat-blue)",
+    }
+}
+
+/// Sigil text color for a WIT type kind.
+fn wit_kind_sigil_color(kind: &TypeKind) -> &'static str {
+    match kind {
+        TypeKind::Record { .. } | TypeKind::Variant { .. } => "var(--c-cat-lilac-ink)",
+        TypeKind::Enum { .. } | TypeKind::Flags { .. } => "var(--c-cat-teal-ink)",
+        TypeKind::Resource { .. } => "var(--c-cat-peach-ink)",
+        TypeKind::Alias(_) => "var(--c-cat-blue-ink)",
+    }
+}
+
+/// Sigil character for a WIT type kind.
+fn wit_kind_sigil_text(kind: &TypeKind) -> &'static str {
+    match kind {
+        TypeKind::Record { .. } => "R",
+        TypeKind::Variant { .. } => "V",
+        TypeKind::Enum { .. } => "E",
+        TypeKind::Flags { .. } => "F",
+        TypeKind::Resource { .. } => "r",
+        TypeKind::Alias(_) => "T",
     }
 }
 

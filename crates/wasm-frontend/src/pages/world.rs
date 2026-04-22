@@ -1,8 +1,8 @@
 //! World detail page.
 
-use crate::components::ds::page_header;
+use crate::components::ds::{item_list, page_header};
 use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
-use html::text_content::{Division, ListItem, UnorderedList};
+use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
 use super::package_shell;
@@ -122,53 +122,54 @@ fn render_item_section(
     _is_import: bool,
     api_docs: &std::collections::HashMap<String, String>,
 ) -> Division {
-    // Separate interface items (shared rendering) from non-interface items
-    let mut iface_entries: Vec<package_shell::ImportExportEntry> = Vec::new();
-    let mut other_items: Vec<&WorldItemDoc> = Vec::new();
-
-    for item in items {
-        match item {
+    let rows: Vec<item_list::DynItemRow> = items
+        .iter()
+        .map(|item| match item {
             WorldItemDoc::Interface { name, url, docs } => {
-                // Use WIT-parsed docs first, fall back to API-enriched docs.
                 let name_no_ver = strip_version(name);
-                let effective_docs = docs.clone().or_else(|| api_docs.get(name_no_ver).cloned());
-                iface_entries.push(package_shell::ImportExportEntry {
-                    label: name.clone(),
-                    url: url.clone(),
-                    docs: effective_docs,
-                    item_kind: package_shell::WorldItemKind::Interface,
-                });
+                let desc = docs
+                    .clone()
+                    .or_else(|| api_docs.get(name_no_ver).cloned())
+                    .unwrap_or_default();
+                let short = short_interface_name(name);
+                item_list::DynItemRow {
+                    sigil_bg: "var(--c-cat-lilac)".to_owned(),
+                    sigil_color: "var(--c-cat-lilac-ink)".to_owned(),
+                    sigil_text: "I".to_owned(),
+                    name: short,
+                    href: url.clone().unwrap_or_default(),
+                    desc,
+                    meta: String::new(),
+                    deprecated: false,
+                    id: None,
+                }
             }
-            _ => other_items.push(item),
-        }
-    }
+            WorldItemDoc::Function(func) => item_list::DynItemRow {
+                sigil_bg: "var(--c-cat-green)".to_owned(),
+                sigil_color: "var(--c-cat-green-ink)".to_owned(),
+                sigil_text: "f".to_owned(),
+                name: func.name.clone(),
+                href: func.url.clone(),
+                desc: func.docs.clone().unwrap_or_default(),
+                meta: String::new(),
+                deprecated: false,
+                id: None,
+            },
+            WorldItemDoc::Type(ty) => item_list::DynItemRow {
+                sigil_bg: "var(--c-cat-blue)".to_owned(),
+                sigil_color: "var(--c-cat-blue-ink)".to_owned(),
+                sigil_text: "T".to_owned(),
+                name: ty.name.clone(),
+                href: ty.url.clone(),
+                desc: ty.docs.clone().unwrap_or_default(),
+                meta: String::new(),
+                deprecated: false,
+                id: None,
+            },
+        })
+        .collect();
 
-    // If everything is an interface, use the shared renderer directly.
-    if other_items.is_empty() {
-        return package_shell::render_import_export_section(heading, &iface_entries);
-    }
-
-    // Mixed content: render heading + interfaces via shared code, then
-    // append functions/types with custom rendering.
-    let mut div = Division::builder();
-    if iface_entries.is_empty() {
-        div.heading_2(|h2| {
-            h2.class(crate::components::ds::typography::SECTION_BORDERED_CLASS)
-                .text(heading.to_owned())
-        });
-    } else {
-        div.push(package_shell::render_import_export_section(
-            heading,
-            &iface_entries,
-        ));
-    }
-
-    let mut ul = UnorderedList::builder();
-    for item in other_items {
-        ul.push(render_world_item_row(item));
-    }
-    div.push(ul.build());
-    div.build()
+    item_list::render_dyn_item_list(heading, &rows)
 }
 
 /// Strip version suffix from a qualified name.
@@ -178,125 +179,14 @@ fn strip_version(name: &str) -> &str {
     name.split('@').next().unwrap_or(name)
 }
 
-/// Render a single world item row.
-fn render_world_item_row(item: &WorldItemDoc) -> ListItem {
-    let mut li = ListItem::builder();
-    li.class("py-1");
-
-    match item {
-        WorldItemDoc::Interface {
-            name,
-            url: Some(url),
-            ..
-        } => {
-            li.anchor(|a| {
-                a.href(url.clone())
-                    .class("block font-mono text-wit-iface hover:underline text-[15px]")
-                    .text(name.to_owned())
-            });
-        }
-        WorldItemDoc::Interface {
-            name, url: None, ..
-        } => {
-            li.span(|s| {
-                s.class("block font-mono text-ink-900 text-[15px]")
-                    .text(name.to_owned())
-            });
-        }
-        WorldItemDoc::Function(func) => {
-            let sig = format_function_signature(func);
-            li.code(|c| {
-                c.class("block font-mono text-[14px] text-wit-func")
-                    .text(sig)
-            });
-            if let Some(docs) = &func.docs {
-                li.paragraph(|p| {
-                    p.class("text-[15px] text-ink-700 mt-1")
-                        .text(crate::markdown::render_inline(&first_sentence(docs)))
-                });
-            }
-        }
-        WorldItemDoc::Type(ty) => {
-            li.span(|s| {
-                s.class("block font-mono text-[14px]")
-                    .span(|s2| s2.class("text-ink-500").text("type "))
-                    .span(|s2| s2.class("text-accent").text(ty.name.clone()))
-            });
-            if let Some(docs) = &ty.docs {
-                li.paragraph(|p| {
-                    p.class("text-[15px] text-ink-700 mt-1")
-                        .text(crate::markdown::render_inline(&first_sentence(docs)))
-                });
-            }
-        }
-    }
-
-    li.build()
-}
-
-/// Format a function signature.
-fn format_function_signature(func: &crate::wit_doc::FunctionDoc) -> String {
-    let params: Vec<String> = func
-        .params
-        .iter()
-        .filter(|p| p.name != "self")
-        .map(|p| format!("{}: {}", p.name, format_type_ref_short(&p.ty)))
-        .collect();
-    let ret = func
-        .result
-        .as_ref()
-        .map(|r| format!(" -> {}", format_type_ref_short(r)))
-        .unwrap_or_default();
-    format!("{}({}){ret}", func.name, params.join(", "))
-}
-
-/// Format a `TypeRef` as a short inline string.
-fn format_type_ref_short(ty: &crate::wit_doc::TypeRef) -> String {
-    match ty {
-        crate::wit_doc::TypeRef::Primitive { name }
-        | crate::wit_doc::TypeRef::Named { name, .. } => name.clone(),
-        crate::wit_doc::TypeRef::List { ty } => {
-            format!("list<{}>", format_type_ref_short(ty))
-        }
-        crate::wit_doc::TypeRef::Option { ty } => {
-            format!("option<{}>", format_type_ref_short(ty))
-        }
-        crate::wit_doc::TypeRef::Result { ok, err } => {
-            let ok_s = ok
-                .as_ref()
-                .map_or_else(|| "_".to_owned(), |t| format_type_ref_short(t));
-            let err_s = err
-                .as_ref()
-                .map_or_else(|| "_".to_owned(), |t| format_type_ref_short(t));
-            format!("result<{ok_s}, {err_s}>")
-        }
-        crate::wit_doc::TypeRef::Tuple { types } => {
-            let inner: Vec<String> = types.iter().map(format_type_ref_short).collect();
-            format!("tuple<{}>", inner.join(", "))
-        }
-        crate::wit_doc::TypeRef::Handle {
-            handle_kind,
-            resource_name,
-            ..
-        } => match handle_kind {
-            crate::wit_doc::HandleKind::Own => resource_name.clone(),
-            crate::wit_doc::HandleKind::Borrow => format!("borrow<{resource_name}>"),
-        },
-        crate::wit_doc::TypeRef::Future { ty } => match ty {
-            Some(t) => format!("future<{}>", format_type_ref_short(t)),
-            None => "future".to_owned(),
-        },
-        crate::wit_doc::TypeRef::Stream { ty } => match ty {
-            Some(t) => format!("stream<{}>", format_type_ref_short(t)),
-            None => "stream".to_owned(),
-        },
-    }
-}
-
-/// Extract the first sentence from a doc comment.
-fn first_sentence(text: &str) -> String {
-    text.split_once("\n\n").map_or_else(
-        || text.trim().to_owned(),
-        |(first, _)| first.trim().to_owned(),
-    )
+/// Extract the short interface name from a fully-qualified WIT name.
+///
+/// `"wasi:http/types@0.2.11"` → `"types"`
+fn short_interface_name(name: &str) -> String {
+    let without_version = name.split('@').next().unwrap_or(name);
+    without_version
+        .rsplit('/')
+        .next()
+        .unwrap_or(without_version)
+        .to_owned()
 }

@@ -131,16 +131,22 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         );
         let mut children = Vec::new();
         for ty in &iface.types {
+            let (bg, color, text) = if matches!(ty.kind, crate::wit_doc::TypeKind::Resource { .. })
+            {
+                ("var(--c-cat-peach)", "var(--c-cat-peach-ink)", "R")
+            } else {
+                ("var(--c-cat-blue)", "var(--c-cat-blue-ink)", "T")
+            };
             children.push(SidebarEntry {
-                sigil_bg: "var(--c-cat-blue)",
-                sigil_color: "var(--c-cat-blue-ink)",
-                sigil_text: "T",
+                sigil_bg: bg,
+                sigil_color: color,
+                sigil_text: text,
                 name: ty.name.clone(),
                 href: ty.url.clone(),
                 meta: String::new(),
                 active: matches!(
                     ctx.active,
-                    SidebarActive::Item(_, item_name) if item_name == ty.name
+                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == ty.name
                 ),
             });
         }
@@ -148,13 +154,13 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
             children.push(SidebarEntry {
                 sigil_bg: "var(--c-cat-green)",
                 sigil_color: "var(--c-cat-green-ink)",
-                sigil_text: "f",
+                sigil_text: "F",
                 name: func.name.clone(),
                 href: func.url.clone(),
                 meta: String::new(),
                 active: matches!(
                     ctx.active,
-                    SidebarActive::Item(_, item_name) if item_name == func.name
+                    SidebarActive::Item(iface_name, item_name) if iface_name == iface.name && item_name == func.name
                 ),
             });
         }
@@ -237,14 +243,22 @@ fn build_project_section(ctx: &SidebarContext<'_>) -> Option<String> {
         if let Some(url) = &ann.url
             && ann.source.as_deref() != Some(url)
         {
-            let icon = if is_github_url(url) { SVG_GITHUB } else { SVG_HOUSE };
+            let icon = if is_github_url(url) {
+                SVG_GITHUB
+            } else {
+                SVG_HOUSE
+            };
             rows.push(project_link(url, icon, "Homepage"));
         }
         if let Some(source) = &ann.source {
             rows.push(project_link(source, SVG_GIT_FORK, "Repository"));
         }
         if let Some(docs) = &ann.documentation {
-            let icon = if is_github_url(docs) { SVG_GITHUB } else { SVG_BOOK };
+            let icon = if is_github_url(docs) {
+                SVG_GITHUB
+            } else {
+                SVG_BOOK
+            };
             rows.push(project_link(docs, icon, "Documentation"));
         }
 

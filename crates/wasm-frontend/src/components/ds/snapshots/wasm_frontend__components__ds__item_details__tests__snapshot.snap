@@ -1,6 +1,6 @@
 ---
-source: crates/wasm-frontend/src/components/ds/c05_item_details.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/item_details.rs
+expression: "crate::components::ds::pretty_html(&render(\"c-item-details\", \"C05\",\n\"Item Details\",\nr##\"Reference page for a single endpoint, RPC, schema, or command. A method/kind pill anchors the symbol below the title; a one-sentence tagline explains it; an optional structured request-body table, a responses list, and paired example panels stack below in fixed order. Used as the destination from <a href=\"#c-item-list\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900\">Item List</a> rows.\"##,\nANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-item-details">
   <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">

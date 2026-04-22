@@ -233,13 +233,13 @@ fn render_function_definition(func: &FunctionDoc) -> Division {
 
 /// Render a function signature inline (no border/box), like docs.rs style.
 fn render_function_signature(func: &FunctionDoc) -> Division {
-    use super::wit_render;
+    use super::wit_render::{self, CODE_BLOCK_CLASS};
 
     Division::builder()
-        .class("mb-2 bg-surface px-3 py-2")
+        .class("mb-2")
         .push(
             html::text_content::PreformattedText::builder()
-                .class("text-[14px] font-mono text-ink-900 overflow-x-auto")
+                .class(CODE_BLOCK_CLASS)
                 .code(|c| {
                     wit_render::render_func_in_code(c, func, "");
                     c
@@ -395,67 +395,43 @@ fn render_resource_body(
     div.class("space-y-6");
 
     if let Some(ctor) = constructor {
-        div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class(crate::components::ds::typography::SECTION_CLASS)
-                    .text("Constructor")
-            })
-            .push(render_function_signature(ctor));
-            if let Some(docs) = &ctor.docs {
-                d.text(crate::markdown::render_block(
-                    docs,
-                    "text-[15px] text-ink-700 leading-relaxed prose-doc",
-                ));
-            }
-            d
-        });
+        div.push(render_function_detail_block(ctor));
     }
-    if !methods.is_empty() {
-        div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class(crate::components::ds::typography::SECTION_CLASS)
-                    .text("Methods")
-            });
-            for func in methods {
-                d.division(|m| {
-                    m.class("py-3 border-b border-lineSoft");
-                    m.push(render_function_signature(func));
-                    if let Some(docs) = &func.docs {
-                        m.text(crate::markdown::render_block(
-                            docs,
-                            "text-[15px] text-ink-700 leading-relaxed prose-doc",
-                        ));
-                    }
-                    m
-                });
-            }
-            d
-        });
+    for func in methods {
+        div.push(render_function_detail_block(func));
     }
-    if !statics.is_empty() {
-        div.division(|d| {
-            d.heading_2(|h2| {
-                h2.class(crate::components::ds::typography::SECTION_CLASS)
-                    .text("Static Functions")
-            });
-            for func in statics {
-                d.division(|m| {
-                    m.class("py-3 border-b border-lineSoft");
-                    m.push(render_function_signature(func));
-                    if let Some(docs) = &func.docs {
-                        m.text(crate::markdown::render_block(
-                            docs,
-                            "text-[15px] text-ink-700 leading-relaxed prose-doc",
-                        ));
-                    }
-                    m
-                });
-            }
-            d
-        });
+    for func in statics {
+        div.push(render_function_detail_block(func));
     }
 
     div.build()
+}
+
+/// Render a function detail block using the DS C05 Item Details component.
+fn render_function_detail_block(func: &FunctionDoc) -> html::content::Article {
+    use crate::components::ds::item_details::{self, ItemDetailEntry};
+
+    let code = render_function_signature(func).to_string();
+    let docs = func
+        .docs
+        .as_deref()
+        .map(|d| crate::markdown::render_block(d, "id-page-tagline mt-3"));
+
+    item_details::item_detail_entry(
+        &ItemDetailEntry {
+            sigil_bg: "var(--c-cat-green)".to_owned(),
+            sigil_color: "var(--c-cat-green-ink)".to_owned(),
+            sigil_text: "f".to_owned(),
+            name: func.name.clone(),
+            anchor_href: None,
+            since: None,
+            aux_links: Vec::new(),
+            header_html: Some(code),
+            tagline: None,
+            body_html: docs,
+        },
+        true,
+    )
 }
 
 /// Render a type alias (no-op — the code block already shows the definition).

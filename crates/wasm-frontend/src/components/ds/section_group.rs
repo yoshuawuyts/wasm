@@ -46,6 +46,7 @@ impl ItemColor {
 }
 
 /// Stability badge for a WIT item.
+#[allow(dead_code)]
 pub(crate) enum Stability {
     /// Stable API — green badge.
     Stable,

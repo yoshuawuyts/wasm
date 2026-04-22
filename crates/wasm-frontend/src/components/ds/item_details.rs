@@ -3,6 +3,115 @@
 use html::content::{Article, Header};
 use html::text_content::Division;
 
+/// An auxiliary link shown next to the title (e.g. "source", "spec").
+pub(crate) struct AuxLink {
+    /// Link text.
+    pub label: String,
+    /// Link href.
+    pub href: String,
+}
+
+/// Configuration for rendering a single item detail entry.
+pub(crate) struct ItemDetailEntry {
+    /// Sigil background color CSS value.
+    pub sigil_bg: String,
+    /// Sigil text color CSS value.
+    pub sigil_color: String,
+    /// Sigil character.
+    pub sigil_text: String,
+    /// Item name (displayed as heading).
+    pub name: String,
+    /// Optional anchor href for the § link.
+    pub anchor_href: Option<String>,
+    /// Optional "since" version tag (e.g. "v1.4.0").
+    pub since: Option<String>,
+    /// Auxiliary links (source, spec, etc.).
+    pub aux_links: Vec<AuxLink>,
+    /// Optional header/signature bar HTML (method pill + path, or code sig).
+    pub header_html: Option<String>,
+    /// Optional tagline / description text.
+    pub tagline: Option<String>,
+    /// Optional body content HTML (code block, docs, etc.).
+    pub body_html: Option<String>,
+}
+
+/// Render a single item detail entry using the DS C05 pattern.
+///
+/// Produces an `<article>` with:
+/// - Title heading (sigil + name) with optional aux row
+/// - Optional header/signature bar
+/// - Optional tagline paragraph
+/// - Optional body content
+///
+/// When `in_list` is true, adds `py-5 border-b border-lineSoft` for stacking
+/// in a list of entries. When false, uses `space-y-5` for standalone display.
+pub(crate) fn item_detail_entry(entry: &ItemDetailEntry, in_list: bool) -> Article {
+    let sigil_prefix = if entry.sigil_text.is_empty() {
+        String::new()
+    } else {
+        format!(
+            r#"<span class="sigil" style="background:{};color:{};">{}</span> "#,
+            entry.sigil_bg, entry.sigil_color, entry.sigil_text,
+        )
+    };
+
+    let cls = if in_list {
+        "py-5 border-b border-lineSoft"
+    } else {
+        "space-y-5"
+    };
+
+    let mut article = Article::builder();
+    article.class(cls);
+
+    // Title row with optional aux
+    let mut header = Header::builder();
+    header.division(|d| {
+        d.class("id-title-head");
+        d.heading_2(|h| {
+            h.text(sigil_prefix);
+            h.span(|s| s.text(entry.name.clone()));
+            if let Some(href) = &entry.anchor_href {
+                h.anchor(|a| a.href(href.clone()).class("id-anchor").text("\u{00a7}"));
+            }
+            h
+        });
+        if entry.since.is_some() || !entry.aux_links.is_empty() {
+            d.division(|aux| {
+                aux.class("id-aux");
+                if let Some(since) = &entry.since {
+                    aux.span(|s| s.class("id-since-tag").text(since.clone()));
+                }
+                for link in &entry.aux_links {
+                    let href = link.href.clone();
+                    let label = link.label.clone();
+                    aux.anchor(|a| a.href(href).class("id-src-link").text(label));
+                }
+                aux
+            });
+        }
+        d
+    });
+    article.push(header.build());
+
+    // Header / signature bar
+    if let Some(header_html) = &entry.header_html {
+        article.text(header_html.clone());
+    }
+
+    // Tagline
+    if let Some(tagline) = &entry.tagline {
+        article.paragraph(|p| p.class("id-page-tagline").text(tagline.clone()));
+    }
+
+    // Body content
+    if let Some(body) = &entry.body_html {
+        article.text(body.clone());
+    }
+
+    article.build()
+}
+
 /// Anatomy list items — each contains rich inline HTML with `<strong>`,
 /// `<code>`, and `<em>` mixed into prose. Kept as raw strings since
 /// converting every inline element would make the code unreadable.
@@ -23,53 +132,50 @@ const PILL_DESC: &str = r#"Method pill (<code class="mono text-[12px]">.id-metho
 
 /// Build the live demo card: article with title, method pill, path, and tagline.
 pub(crate) fn build_demo() -> Division {
-    let article = Article::builder()
-        .class("space-y-5")
-        .push(
-            Header::builder()
-                .division(|d| {
-                    d.class("id-title-head")
-                        .heading_2(|h| {
-                            h.span(|s| s.text("publish a package version")).anchor(|a| {
-                                a.href("#c-item-details".to_owned())
-                                    .class("id-anchor")
-                                    .text("\u{00a7}")
-                            })
-                        })
-                        .division(|aux| {
-                            aux.class("id-aux")
-                                .span(|s| s.class("id-since-tag").text("v1.4.0"))
-                                .anchor(|a| {
-                                    a.href("#".to_owned()).class("id-src-link").text("source")
-                                })
-                                .anchor(|a| {
-                                    a.href("#".to_owned()).class("id-src-link").text("spec")
-                                })
-                        })
-                })
-                .build(),
-        )
-        .division(|d| {
-            d.class("id-header")
-                .span(|s| s.class("id-method id-method-post").text("POST"))
-                .span(|s| {
-                    s.class("id-path")
-                        .span(|seg| seg.class("seg").text("/v1/packages"))
-                        .span(|sl| sl.class("sl").text("/"))
-                        .span(|par| par.class("par").text("{registry}"))
-                        .span(|sl| sl.class("sl").text("/"))
-                        .span(|par| par.class("par").text("{*repository}"))
-                })
-                .span(|s| s.class("id-auth-tag").text("Auth required"))
+    // Build the header bar HTML (method pill + path + auth tag)
+    let header_html = Division::builder()
+        .class("id-header")
+        .span(|s| s.class("id-method id-method-post").text("POST"))
+        .span(|s| {
+            s.class("id-path")
+                .span(|seg| seg.class("seg").text("/v1/packages"))
+                .span(|sl| sl.class("sl").text("/"))
+                .span(|par| par.class("par").text("{registry}"))
+                .span(|sl| sl.class("sl").text("/"))
+                .span(|par| par.class("par").text("{*repository}"))
         })
-        .paragraph(|p| {
-            p.class("id-page-tagline").text(
-                "Push a new version of a package to a registry. The body \
-                 references an OCI manifest already uploaded via the standard \
-                 distribution endpoints.",
-            )
-        })
-        .build();
+        .span(|s| s.class("id-auth-tag").text("Auth required"))
+        .build()
+        .to_string();
+
+    let entry = ItemDetailEntry {
+        sigil_bg: String::new(),
+        sigil_color: String::new(),
+        sigil_text: String::new(),
+        name: "publish a package version".to_owned(),
+        anchor_href: Some("#c-item-details".to_owned()),
+        since: Some("v1.4.0".to_owned()),
+        aux_links: vec![
+            AuxLink {
+                label: "source".to_owned(),
+                href: "#".to_owned(),
+            },
+            AuxLink {
+                label: "spec".to_owned(),
+                href: "#".to_owned(),
+            },
+        ],
+        header_html: Some(header_html),
+        tagline: Some(
+            "Push a new version of a package to a registry. The body \
+             references an OCI manifest already uploaded via the standard \
+             distribution endpoints."
+                .to_owned(),
+        ),
+        body_html: None,
+    };
+
+    let detail = item_detail_entry(&entry, false);
 
     Division::builder()
         .division(|l| {
@@ -78,7 +184,7 @@ pub(crate) fn build_demo() -> Division {
         })
         .division(|card| {
             card.class("rounded-lg border border-line bg-canvas p-5 md:p-6")
-                .push(article)
+                .push(detail)
         })
         .build()
 }

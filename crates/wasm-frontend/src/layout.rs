@@ -536,7 +536,7 @@ fn document_inner(
     .motion-target.t-spring {{ transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }}
     @media (prefers-reduced-motion: reduce) {{ .motion-target {{ transition: none !important; }} }}
     /* Sigil */
-    .sigil {{ display: inline-grid; place-items: center; height: 18px; width: 18px; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 600; line-height: 1; flex-shrink: 0; }}
+    .sigil {{ display: inline-grid; place-items: center; height: 18px; width: 18px; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 600; line-height: 1; flex-shrink: 0; text-transform: uppercase; }}
     /* Tree-link */
     .tree-link {{ display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 0; border-radius: 4px; font-size: 13px; color: var(--c-ink-700); text-decoration: none; line-height: 1.4; }}
     .tree-link .mono {{ font-size: 12.5px; }}
