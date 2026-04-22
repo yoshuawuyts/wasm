@@ -4,12 +4,14 @@
 
 use crate::components::ds::wit_item::{self, WitItem, WitItemKind};
 use crate::components::ds::{page_header, section_group};
+use crate::components::page_sidebar::SidebarActive;
 use crate::wit_doc::WitDocument;
 use html::content::Section;
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use super::package_shell;
+use super::detail::{self, DetailSpec};
+use crate::components::page_shell;
 
 /// Render the package detail page for a given package and version.
 #[must_use]
@@ -20,8 +22,8 @@ pub(crate) fn render(
     importers: &[KnownPackage],
     exporters: &[KnownPackage],
 ) -> String {
-    let display_name = package_shell::display_name_for(pkg);
-    let url_base = package_shell::url_base_for(pkg, version);
+    let display_name = page_shell::display_name_for(pkg);
+    let url_base = page_shell::url_base_for(pkg, version);
     let wit_doc = version_detail.and_then(|d| try_parse_wit(d, &url_base));
 
     // Package heading
@@ -120,40 +122,20 @@ pub(crate) fn render(
     };
 
     // Build nav card showing interfaces/worlds (or modules/components when no WIT)
-    let nav_html = {
-        let nav_ctx = super::sidebar::SidebarContext {
-            display_name: &display_name,
-            version,
-            versions: &pkg.tags,
-            doc: wit_doc.as_ref(),
-            components: version_detail.map_or(&[][..], |d| &d.components),
-            url_base: &url_base,
-            active: super::sidebar::SidebarActive::Interface(""),
-            annotations: version_detail.and_then(|d| d.annotations.as_ref()),
-            kind_label: package_shell::kind_label_for(pkg),
-            description: pkg.description.as_deref(),
-            registry: &pkg.registry,
-            repository: &pkg.repository,
-            digest: version_detail.map(|d| d.digest.as_str()),
-        };
-        Some(super::sidebar::render_sidebar(&nav_ctx).to_string())
-    };
-
-    let shell_ctx = package_shell::SidebarContext {
+    detail::render(&DetailSpec {
         pkg,
         version,
         version_detail,
+        wit_doc: wit_doc.as_ref(),
+        title: &display_name,
+        header_html: &header,
+        body_html: &body_html,
+        sidebar_active: SidebarActive::Interface(""),
+        extra_crumbs: &[],
+        toc_html: toc_html.as_deref(),
         importers,
         exporters,
-        nav_html,
-    };
-    package_shell::render_page(
-        &shell_ctx,
-        &display_name,
-        &header,
-        &body_html,
-        toc_html.as_deref(),
-    )
+    })
 }
 
 /// Render the WIT content section for a package version.
@@ -239,7 +221,7 @@ fn render_wit_content_with_doc(
 
     // Component children: list modules and nested components as navigable sections.
     for comp in &detail.components {
-        let url_base = package_shell::url_base_for(pkg, version);
+        let url_base = page_shell::url_base_for(pkg, version);
 
         // Modules section
         let modules: Vec<&wasm_meta_registry_client::ComponentSummary> = comp

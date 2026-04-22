@@ -5,3 +5,6 @@
 //! writing raw class strings.
 
 pub(crate) mod ds;
+pub(crate) mod page_shell;
+pub(crate) mod page_sidebar;
+pub(crate) mod wit_render;

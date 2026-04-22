@@ -1,12 +1,13 @@
 //! Item detail page (type or function within an interface).
 
 use crate::components::ds::page_header;
+use crate::components::page_sidebar::SidebarActive;
 use crate::wit_doc::{FunctionDoc, TypeDoc, TypeKind, TypeRef, WitDocument};
 use html::tables::{Table, TableRow};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use super::package_shell;
+use super::detail::{self, DetailSpec};
 
 // ── Table styling constants ──────────────────────────────
 
@@ -55,7 +56,7 @@ pub(crate) fn render_type(
     ty: &TypeDoc,
     doc: &WitDocument,
 ) -> String {
-    let display_name = package_shell::display_name_for(pkg);
+    let display_name = crate::components::page_shell::display_name_for(pkg);
     let title = format!("{display_name} \u{2014} {iface_name}::{}", ty.name);
 
     let kind_label = type_kind_label(&ty.kind);
@@ -78,35 +79,11 @@ pub(crate) fn render_type(
 
     let content = format!("<div class=\"pt-8\">{body}</div>");
 
-    let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
-        display_name: &display_name,
-        version,
-        versions: &pkg.tags,
-        doc: Some(doc),
-        components: version_detail.map_or(&[][..], |d| &d.components),
-        url_base: &package_shell::url_base_for(pkg, version),
-        active: super::sidebar::SidebarActive::Item(iface_name, &ty.name),
-        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
-        kind_label: package_shell::kind_label_for(pkg),
-        description: pkg.description.as_deref(),
-        registry: &pkg.registry,
-        repository: &pkg.repository,
-        digest: version_detail.map(|d| d.digest.as_str()),
-    });
-
-    let ctx = package_shell::SidebarContext {
-        pkg,
-        version,
-        version_detail,
-        importers: &[],
-        exporters: &[],
-        nav_html: Some(nav.to_string()),
-    };
     let iface_url = format!(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![
+    let extra = [
         crate::components::ds::breadcrumb::Crumb {
             label: iface_name.to_owned(),
             href: Some(iface_url),
@@ -116,7 +93,20 @@ pub(crate) fn render_type(
             href: None,
         },
     ];
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
+    detail::render(&DetailSpec {
+        pkg,
+        version,
+        version_detail,
+        wit_doc: Some(doc),
+        title: &title,
+        header_html: &header,
+        body_html: &content,
+        sidebar_active: SidebarActive::Item(iface_name, &ty.name),
+        extra_crumbs: &extra,
+        toc_html: None,
+        importers: &[],
+        exporters: &[],
+    })
 }
 
 /// Render the item detail page for a freestanding function.
@@ -129,7 +119,7 @@ pub(crate) fn render_function(
     func: &FunctionDoc,
     doc: &WitDocument,
 ) -> String {
-    let display_name = package_shell::display_name_for(pkg);
+    let display_name = crate::components::page_shell::display_name_for(pkg);
     let title = format!("{display_name} \u{2014} {iface_name}::{}", func.name);
 
     // Code block
@@ -149,35 +139,11 @@ pub(crate) fn render_function(
 
     let content = String::new();
 
-    let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
-        display_name: &display_name,
-        version,
-        versions: &pkg.tags,
-        doc: Some(doc),
-        components: version_detail.map_or(&[][..], |d| &d.components),
-        url_base: &package_shell::url_base_for(pkg, version),
-        active: super::sidebar::SidebarActive::Item(iface_name, &func.name),
-        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
-        kind_label: package_shell::kind_label_for(pkg),
-        description: pkg.description.as_deref(),
-        registry: &pkg.registry,
-        repository: &pkg.repository,
-        digest: version_detail.map(|d| d.digest.as_str()),
-    });
-
-    let ctx = package_shell::SidebarContext {
-        pkg,
-        version,
-        version_detail,
-        importers: &[],
-        exporters: &[],
-        nav_html: Some(nav.to_string()),
-    };
     let iface_url = format!(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![
+    let extra = [
         crate::components::ds::breadcrumb::Crumb {
             label: iface_name.to_owned(),
             href: Some(iface_url),
@@ -187,7 +153,20 @@ pub(crate) fn render_function(
             href: None,
         },
     ];
-    package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
+    detail::render(&DetailSpec {
+        pkg,
+        version,
+        version_detail,
+        wit_doc: Some(doc),
+        title: &title,
+        header_html: &header,
+        body_html: &content,
+        sidebar_active: SidebarActive::Item(iface_name, &func.name),
+        extra_crumbs: &extra,
+        toc_html: None,
+        importers: &[],
+        exporters: &[],
+    })
 }
 
 /// Get the display label for a type kind.
@@ -215,7 +194,7 @@ fn type_kind_color(kind: &TypeKind) -> &'static str {
 
 /// Render the WIT definition code block for a type, with linked type refs.
 fn render_type_definition(ty: &TypeDoc) -> Division {
-    use super::wit_render::{self, CODE_BLOCK_CLASS};
+    use crate::components::wit_render::{self, CODE_BLOCK_CLASS};
 
     Division::builder()
         .class("mb-4")
@@ -233,7 +212,7 @@ fn render_type_definition(ty: &TypeDoc) -> Division {
 
 /// Render the WIT definition code block for a function, with linked type refs.
 fn render_function_definition(func: &FunctionDoc) -> Division {
-    use super::wit_render::{self, CODE_BLOCK_CLASS};
+    use crate::components::wit_render::{self, CODE_BLOCK_CLASS};
 
     Division::builder()
         .class("mb-4")
@@ -251,7 +230,7 @@ fn render_function_definition(func: &FunctionDoc) -> Division {
 
 /// Render a function signature inline (no border/box), like docs.rs style.
 fn render_function_signature(func: &FunctionDoc) -> Division {
-    use super::wit_render::{self, CODE_BLOCK_CLASS};
+    use crate::components::wit_render::{self, CODE_BLOCK_CLASS};
 
     Division::builder()
         .class("mb-2")
@@ -312,7 +291,7 @@ fn render_field_row(name: &str, ty: &TypeRef, docs: Option<&str>) -> TableRow {
         .table_cell(|td| td.class(NAME_CELL_CLASS).text(name.to_owned()))
         .table_cell(|td| {
             td.class(VALUE_CELL_CLASS)
-                .push(super::wit_render::render_type_ref(ty))
+                .push(crate::components::wit_render::render_type_ref(ty))
         })
         .table_cell(|td| {
             td.class(DESC_CELL_CLASS)
@@ -339,7 +318,7 @@ fn render_variant_table(cases: &[crate::wit_doc::CaseDoc]) -> Division {
                 .table_cell(|td| {
                     td.class(VALUE_CELL_CLASS);
                     if let Some(t) = &case.ty {
-                        td.push(super::wit_render::render_type_ref(t));
+                        td.push(crate::components::wit_render::render_type_ref(t));
                     } else {
                         td.text("\u{2014}".to_owned());
                     }

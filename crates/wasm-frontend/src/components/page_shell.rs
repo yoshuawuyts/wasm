@@ -29,18 +29,10 @@ pub(crate) struct SidebarContext<'a> {
 
 /// Render the shared page shell: two-column layout with sidebar,
 /// wrapped in the HTML document layout.
-#[must_use]
-pub(crate) fn render_page(
-    ctx: &SidebarContext<'_>,
-    title: &str,
-    header: &str,
-    body_content: &str,
-    toc_html: Option<&str>,
-) -> String {
-    render_page_inner(ctx, title, header, body_content, &[], true, toc_html)
-}
-
-/// Render the page shell with extra breadcrumb segments after the package name.
+///
+/// Uses a "golden layout": left sidebar with navigation and metadata,
+/// right column for main content. The top nav bar is replaced by the
+/// sidebar's own logo, breadcrumbs, and search.
 #[must_use]
 pub(crate) fn render_page_with_crumbs(
     ctx: &SidebarContext<'_>,
@@ -48,31 +40,6 @@ pub(crate) fn render_page_with_crumbs(
     header: &str,
     body_content: &str,
     extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
-    toc_html: Option<&str>,
-) -> String {
-    render_page_inner(
-        ctx,
-        title,
-        header,
-        body_content,
-        extra_crumbs,
-        false,
-        toc_html,
-    )
-}
-
-/// Inner page shell renderer.
-///
-/// Uses a "golden layout": left sidebar with navigation and metadata,
-/// right column for main content. The top nav bar is replaced by the
-/// sidebar's own logo, breadcrumbs, and search.
-fn render_page_inner(
-    ctx: &SidebarContext<'_>,
-    title: &str,
-    header: &str,
-    body_content: &str,
-    extra_crumbs: &[crate::components::ds::breadcrumb::Crumb],
-    _is_root: bool,
     toc_html: Option<&str>,
 ) -> String {
     use crate::components::ds::breadcrumb::Crumb;

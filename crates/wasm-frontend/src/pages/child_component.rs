@@ -3,10 +3,11 @@
 use crate::components::ds::page_header;
 use crate::components::ds::section_group;
 use crate::components::ds::wit_item::{self, WitItem};
+use crate::components::page_sidebar::SidebarActive;
 use html::text_content::{Division, UnorderedList};
 use wasm_meta_registry_client::{ComponentSummary, KnownPackage, PackageVersion};
 
-use super::package_shell;
+use super::detail::{self, DetailSpec};
 
 /// Render the detail page for a child module or component.
 #[must_use]
@@ -17,7 +18,7 @@ pub(crate) fn render(
     child: &ComponentSummary,
     display_name: &str,
 ) -> String {
-    let pkg_display = package_shell::display_name_for(pkg);
+    let pkg_display = crate::components::page_shell::display_name_for(pkg);
     let kind = child.kind.as_deref().unwrap_or("module");
     let title = format!("{pkg_display} \u{2014} {display_name}");
 
@@ -77,46 +78,23 @@ pub(crate) fn render(
 
     body.push_str("</div>");
 
-    let pkg_display_full = package_shell::display_name_for(pkg);
-    let url_base = package_shell::url_base_for(pkg, version);
-    let nav_html = {
-        let nav_ctx = super::sidebar::SidebarContext {
-            display_name: &pkg_display_full,
-            version,
-            versions: &pkg.tags,
-            doc: None,
-            components: version_detail.map_or(&[][..], |d| &d.components),
-            url_base: &url_base,
-            active: super::sidebar::SidebarActive::Child(display_name),
-            annotations: version_detail.and_then(|d| d.annotations.as_ref()),
-            kind_label: package_shell::kind_label_for(pkg),
-            description: pkg.description.as_deref(),
-            registry: &pkg.registry,
-            repository: &pkg.repository,
-            digest: version_detail.map(|d| d.digest.as_str()),
-        };
-        Some(super::sidebar::render_sidebar(&nav_ctx).to_string())
-    };
-
-    let ctx = package_shell::SidebarContext {
+    detail::render(&DetailSpec {
         pkg,
         version,
         version_detail,
-        importers: &[],
-        exporters: &[],
-        nav_html,
-    };
-    package_shell::render_page_with_crumbs(
-        &ctx,
-        &title,
-        &header,
-        &body,
-        &[crate::components::ds::breadcrumb::Crumb {
+        wit_doc: None,
+        title: &title,
+        header_html: &header,
+        body_html: &body,
+        sidebar_active: SidebarActive::Child(display_name),
+        extra_crumbs: &[crate::components::ds::breadcrumb::Crumb {
             label: display_name.to_owned(),
             href: None,
         }],
-        None,
-    )
+        toc_html: None,
+        importers: &[],
+        exporters: &[],
+    })
 }
 
 /// Render producers as a list, excluding language entries (shown in subtitle).

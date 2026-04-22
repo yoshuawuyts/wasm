@@ -2,11 +2,12 @@
 
 use crate::components::ds::wit_item::{self, TypeTag, WitItem, WitItemKind};
 use crate::components::ds::{page_header, section_group};
+use crate::components::page_sidebar::SidebarActive;
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::text_content::Division;
 use wasm_meta_registry_client::{KnownPackage, PackageVersion};
 
-use super::package_shell;
+use super::detail::{self, DetailSpec};
 
 /// Render the interface detail page.
 #[must_use]
@@ -17,7 +18,7 @@ pub(crate) fn render(
     iface: &InterfaceDoc,
     doc: &WitDocument,
 ) -> String {
-    let display_name = package_shell::display_name_for(pkg);
+    let display_name = crate::components::page_shell::display_name_for(pkg);
     let title = format!("{display_name} — {}", iface.name);
 
     // Interface content — heading + docs in a two-column row
@@ -137,38 +138,20 @@ pub(crate) fn render(
     };
 
     // Build nav card with interface items for the sidebar
-    let nav = super::sidebar::render_sidebar(&super::sidebar::SidebarContext {
-        display_name: &display_name,
-        version,
-        versions: &pkg.tags,
-        doc: Some(doc),
-        components: version_detail.map_or(&[][..], |d| &d.components),
-        url_base: &package_shell::url_base_for(pkg, version),
-        active: super::sidebar::SidebarActive::Interface(&iface.name),
-        annotations: version_detail.and_then(|d| d.annotations.as_ref()),
-        kind_label: package_shell::kind_label_for(pkg),
-        description: pkg.description.as_deref(),
-        registry: &pkg.registry,
-        repository: &pkg.repository,
-        digest: version_detail.map(|d| d.digest.as_str()),
-    });
-
-    let ctx = package_shell::SidebarContext {
+    detail::render(&DetailSpec {
         pkg,
         version,
         version_detail,
+        wit_doc: Some(doc),
+        title: &title,
+        header_html: &header_row,
+        body_html: &body_html,
+        sidebar_active: SidebarActive::Interface(&iface.name),
+        extra_crumbs: &[],
+        toc_html: toc_html.as_deref(),
         importers: &[],
         exporters: &[],
-        nav_html: Some(nav.to_string()),
-    };
-    package_shell::render_page_with_crumbs(
-        &ctx,
-        &title,
-        &header_row,
-        &body_html,
-        &[],
-        toc_html.as_deref(),
-    )
+    })
 }
 
 /// Render a section of types grouped by kind.
@@ -234,7 +217,7 @@ fn first_sentence(text: &str) -> String {
 /// Render the full interface definition as a WIT code block.
 #[allow(dead_code)]
 fn render_interface_definition(iface: &InterfaceDoc) -> Division {
-    use super::wit_render::{self, CODE_BLOCK_CLASS};
+    use crate::components::wit_render::{self, CODE_BLOCK_CLASS};
 
     Division::builder()
         .class("mb-8")
