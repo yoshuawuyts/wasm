@@ -1,5 +1,6 @@
 //! World detail page.
 
+use crate::components::ds::sigil as s;
 use crate::components::ds::{item_list, page_header};
 use crate::wit_doc::{WitDocument, WorldDoc, WorldItemDoc};
 use html::text_content::Division;
@@ -133,9 +134,9 @@ fn render_item_section(
                     .unwrap_or_default();
                 let short = short_interface_name(name);
                 item_list::DynItemRow {
-                    sigil_bg: "var(--c-cat-lilac)".to_owned(),
-                    sigil_color: "var(--c-cat-lilac-ink)".to_owned(),
-                    sigil_text: "I".to_owned(),
+                    sigil_bg: s::IFACE.bg.to_owned(),
+                    sigil_color: s::IFACE.color.to_owned(),
+                    sigil_text: s::IFACE.text.to_owned(),
                     name: short,
                     href: url.clone().unwrap_or_default(),
                     desc,
@@ -145,9 +146,9 @@ fn render_item_section(
                 }
             }
             WorldItemDoc::Function(func) => item_list::DynItemRow {
-                sigil_bg: "var(--c-cat-green)".to_owned(),
-                sigil_color: "var(--c-cat-green-ink)".to_owned(),
-                sigil_text: "f".to_owned(),
+                sigil_bg: s::FUNC.bg.to_owned(),
+                sigil_color: s::FUNC.color.to_owned(),
+                sigil_text: s::FUNC.text.to_owned(),
                 name: func.name.clone(),
                 href: func.url.clone(),
                 desc: func.docs.clone().unwrap_or_default(),
@@ -156,9 +157,9 @@ fn render_item_section(
                 id: None,
             },
             WorldItemDoc::Type(ty) => item_list::DynItemRow {
-                sigil_bg: "var(--c-cat-blue)".to_owned(),
-                sigil_color: "var(--c-cat-blue-ink)".to_owned(),
-                sigil_text: "T".to_owned(),
+                sigil_bg: s::TYPE.bg.to_owned(),
+                sigil_color: s::TYPE.color.to_owned(),
+                sigil_text: s::TYPE.text.to_owned(),
                 name: ty.name.clone(),
                 href: ty.url.clone(),
                 desc: ty.docs.clone().unwrap_or_default(),

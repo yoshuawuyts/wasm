@@ -4,6 +4,7 @@
 //! package metadata, using the DS nested sidebar component (C01).
 
 use crate::components::ds::sidebar::{self, SidebarEntry, SidebarGroup, SidebarItem};
+use crate::components::ds::sigil as s;
 use crate::wit_doc::WitDocument;
 use html::content::Aside;
 use wasm_meta_registry_client::OciAnnotations;
@@ -98,9 +99,9 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
             } = item
             {
                 children.push(SidebarEntry {
-                    sigil_bg: "var(--c-cat-lilac)",
-                    sigil_color: "var(--c-cat-lilac-ink)",
-                    sigil_text: "I",
+                    sigil_bg: s::IFACE.bg,
+                    sigil_color: s::IFACE.color,
+                    sigil_text: s::IFACE.text,
                     name: short_interface_name(name),
                     href: url.clone(),
                     meta: String::new(),
@@ -111,9 +112,9 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         items.push(SidebarItem::Group(SidebarGroup {
             label: world.name.clone(),
             href: Some(world.url.clone()),
-            sigil_bg: Some("var(--c-cat-green)"),
-            sigil_color: Some("var(--c-cat-green-ink)"),
-            sigil_text: Some("W"),
+            sigil_bg: Some(s::WORLD.bg),
+            sigil_color: Some(s::WORLD.color),
+            sigil_text: Some(s::WORLD.text),
             open: is_active,
             count: None,
             children,
@@ -133,9 +134,9 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         for ty in &iface.types {
             let (bg, color, text) = if matches!(ty.kind, crate::wit_doc::TypeKind::Resource { .. })
             {
-                ("var(--c-cat-peach)", "var(--c-cat-peach-ink)", "R")
+                (s::RESOURCE.bg, s::RESOURCE.color, s::RESOURCE.text)
             } else {
-                ("var(--c-cat-blue)", "var(--c-cat-blue-ink)", "T")
+                (s::TYPE.bg, s::TYPE.color, s::TYPE.text)
             };
             children.push(SidebarEntry {
                 sigil_bg: bg,
@@ -152,9 +153,9 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         }
         for func in &iface.functions {
             children.push(SidebarEntry {
-                sigil_bg: "var(--c-cat-green)",
-                sigil_color: "var(--c-cat-green-ink)",
-                sigil_text: "F",
+                sigil_bg: s::FUNC.bg,
+                sigil_color: s::FUNC.color,
+                sigil_text: s::FUNC.text,
                 name: func.name.clone(),
                 href: func.url.clone(),
                 meta: String::new(),
@@ -167,9 +168,9 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
         items.push(SidebarItem::Group(SidebarGroup {
             label: iface.name.clone(),
             href: Some(iface.url.clone()),
-            sigil_bg: Some("var(--c-cat-lilac)"),
-            sigil_color: Some("var(--c-cat-lilac-ink)"),
-            sigil_text: Some("I"),
+            sigil_bg: Some(s::IFACE.bg),
+            sigil_color: Some(s::IFACE.color),
+            sigil_text: Some(s::IFACE.text),
             open: is_active,
             count: None,
             children,

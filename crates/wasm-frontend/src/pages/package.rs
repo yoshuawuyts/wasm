@@ -2,6 +2,7 @@
 
 // r[impl frontend.pages.package-detail]
 
+use crate::components::ds::sigil as s;
 use crate::components::ds::{item_list, page_header, section_group};
 use crate::wit_doc::WitDocument;
 use html::content::Section;
@@ -350,9 +351,9 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
         .interfaces
         .iter()
         .map(|iface| item_list::DynItemRow {
-            sigil_bg: "var(--c-cat-lilac)".to_owned(),
-            sigil_color: "var(--c-cat-lilac-ink)".to_owned(),
-            sigil_text: "I".to_owned(),
+            sigil_bg: s::IFACE.bg.to_owned(),
+            sigil_color: s::IFACE.color.to_owned(),
+            sigil_text: s::IFACE.text.to_owned(),
             name: iface.name.clone(),
             href: iface.url.clone(),
             desc: iface
@@ -374,9 +375,9 @@ fn render_world_overview(doc: &WitDocument) -> Division {
         .worlds
         .iter()
         .map(|world| item_list::DynItemRow {
-            sigil_bg: "var(--c-cat-green)".to_owned(),
-            sigil_color: "var(--c-cat-green-ink)".to_owned(),
-            sigil_text: "W".to_owned(),
+            sigil_bg: s::WORLD.bg.to_owned(),
+            sigil_color: s::WORLD.color.to_owned(),
+            sigil_text: s::WORLD.text.to_owned(),
             name: world.name.clone(),
             href: world.url.clone(),
             desc: world

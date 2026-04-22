@@ -1,5 +1,6 @@
 //! Interface detail page.
 
+use crate::components::ds::sigil as s;
 use crate::components::ds::{item_list, page_header, section_group};
 use crate::wit_doc::{FunctionDoc, InterfaceDoc, TypeDoc, TypeKind, WitDocument};
 use html::text_content::Division;
@@ -208,9 +209,9 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
                 .map(|d| crate::markdown::render_inline(&first_sentence(d)))
                 .unwrap_or_default();
             item_list::DynItemRow {
-                sigil_bg: "var(--c-cat-green)".to_owned(),
-                sigil_color: "var(--c-cat-green-ink)".to_owned(),
-                sigil_text: "f".to_owned(),
+                sigil_bg: s::FUNC.bg.to_owned(),
+                sigil_color: s::FUNC.color.to_owned(),
+                sigil_text: s::FUNC.text.to_owned(),
                 name: func.name.clone(),
                 href: func.url.clone(),
                 desc,
@@ -257,32 +258,36 @@ fn wit_kind_to_color(kind: &TypeKind) -> section_group::ItemColor {
 /// Sigil background color for a WIT type kind.
 fn wit_kind_sigil_bg(kind: &TypeKind) -> &'static str {
     match kind {
-        TypeKind::Record { .. } | TypeKind::Variant { .. } => "var(--c-cat-lilac)",
-        TypeKind::Enum { .. } | TypeKind::Flags { .. } => "var(--c-cat-teal)",
-        TypeKind::Resource { .. } => "var(--c-cat-peach)",
-        TypeKind::Alias(_) => "var(--c-cat-blue)",
+        TypeKind::Record { .. } => s::RECORD.bg,
+        TypeKind::Variant { .. } => s::VARIANT.bg,
+        TypeKind::Enum { .. } => s::ENUM.bg,
+        TypeKind::Flags { .. } => s::FLAGS.bg,
+        TypeKind::Resource { .. } => s::RESOURCE.bg,
+        TypeKind::Alias(_) => s::TYPE.bg,
     }
 }
 
 /// Sigil text color for a WIT type kind.
 fn wit_kind_sigil_color(kind: &TypeKind) -> &'static str {
     match kind {
-        TypeKind::Record { .. } | TypeKind::Variant { .. } => "var(--c-cat-lilac-ink)",
-        TypeKind::Enum { .. } | TypeKind::Flags { .. } => "var(--c-cat-teal-ink)",
-        TypeKind::Resource { .. } => "var(--c-cat-peach-ink)",
-        TypeKind::Alias(_) => "var(--c-cat-blue-ink)",
+        TypeKind::Record { .. } => s::RECORD.color,
+        TypeKind::Variant { .. } => s::VARIANT.color,
+        TypeKind::Enum { .. } => s::ENUM.color,
+        TypeKind::Flags { .. } => s::FLAGS.color,
+        TypeKind::Resource { .. } => s::RESOURCE.color,
+        TypeKind::Alias(_) => s::TYPE.color,
     }
 }
 
 /// Sigil character for a WIT type kind.
 fn wit_kind_sigil_text(kind: &TypeKind) -> &'static str {
     match kind {
-        TypeKind::Record { .. } => "R",
-        TypeKind::Variant { .. } => "V",
-        TypeKind::Enum { .. } => "E",
-        TypeKind::Flags { .. } => "F",
-        TypeKind::Resource { .. } => "r",
-        TypeKind::Alias(_) => "T",
+        TypeKind::Record { .. } => s::RECORD.text,
+        TypeKind::Variant { .. } => s::VARIANT.text,
+        TypeKind::Enum { .. } => s::ENUM.text,
+        TypeKind::Flags { .. } => s::FLAGS.text,
+        TypeKind::Resource { .. } => s::RESOURCE.text,
+        TypeKind::Alias(_) => s::TYPE.text,
     }
 }
 

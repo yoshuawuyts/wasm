@@ -104,10 +104,16 @@ pub(crate) fn render_type(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![crate::components::ds::breadcrumb::Crumb {
-        label: iface_name.to_owned(),
-        href: Some(iface_url),
-    }];
+    let extra = vec![
+        crate::components::ds::breadcrumb::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(iface_url),
+        },
+        crate::components::ds::breadcrumb::Crumb {
+            label: ty.name.clone(),
+            href: None,
+        },
+    ];
     package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
 }
 
@@ -165,10 +171,16 @@ pub(crate) fn render_function(
         "/{}/{version}/interface/{iface_name}",
         display_name.replace(':', "/")
     );
-    let extra = vec![crate::components::ds::breadcrumb::Crumb {
-        label: iface_name.to_owned(),
-        href: Some(iface_url),
-    }];
+    let extra = vec![
+        crate::components::ds::breadcrumb::Crumb {
+            label: iface_name.to_owned(),
+            href: Some(iface_url),
+        },
+        crate::components::ds::breadcrumb::Crumb {
+            label: func.name.clone(),
+            href: None,
+        },
+    ];
     package_shell::render_page_with_crumbs(&ctx, &title, &header, &content, &extra, None)
 }
 
@@ -410,6 +422,7 @@ fn render_resource_body(
 /// Render a function detail block using the DS C05 Item Details component.
 fn render_function_detail_block(func: &FunctionDoc) -> html::content::Article {
     use crate::components::ds::item_details::{self, ItemDetailEntry};
+    use crate::components::ds::sigil as s;
 
     let code = render_function_signature(func).to_string();
     let docs = func
@@ -419,9 +432,9 @@ fn render_function_detail_block(func: &FunctionDoc) -> html::content::Article {
 
     item_details::item_detail_entry(
         &ItemDetailEntry {
-            sigil_bg: "var(--c-cat-green)".to_owned(),
-            sigil_color: "var(--c-cat-green-ink)".to_owned(),
-            sigil_text: "f".to_owned(),
+            sigil_bg: s::FUNC.bg.to_owned(),
+            sigil_color: s::FUNC.color.to_owned(),
+            sigil_text: s::FUNC.text.to_owned(),
             name: func.name.clone(),
             anchor_href: None,
             since: None,

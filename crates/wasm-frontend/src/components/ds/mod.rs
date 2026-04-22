@@ -80,6 +80,7 @@ pub(crate) mod part_two;
 pub(crate) mod progress;
 pub(crate) mod regions;
 pub(crate) mod sidebar;
+pub(crate) mod sigil;
 pub(crate) mod spacing;
 pub(crate) mod table;
 pub(crate) mod tabs;
