@@ -84,6 +84,26 @@ irm https://github.com/yoshuawuyts/wasm-cli/releases/latest/download/install.ps1
 cargo install wasm
 ```
 
+## Local development
+
+To stand up the full stack (frontend, backend, and Postgres) locally using Docker:
+
+```sh
+docker compose up --build
+```
+
+| Service  | URL                       | Description                        |
+| -------- | ------------------------- | ---------------------------------- |
+| Frontend | http://localhost:8080     | WASM component served by wasmtime  |
+| Backend  | http://localhost:8081     | Meta-registry API (SQLite-backed)  |
+| Postgres | localhost:5432            | Ready for the SQLite→Postgres migration |
+
+To add a new registry namespace, add a `.toml` file to `registry/` then rebuild:
+
+```sh
+docker compose build backend
+docker compose up -d backend
+```
 
 ## Crates
 

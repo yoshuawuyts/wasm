@@ -1,0 +1,48 @@
+# ───── Stage 1: Build wasm-frontend as a wasm32-wasip2 component ─────
+FROM rust:1-slim-bookworm AS builder
+
+ARG API_BASE_URL=http://backend:8081
+
+WORKDIR /build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup target add wasm32-wasip2
+
+COPY .cargo/ .cargo/
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+
+ENV API_BASE_URL=${API_BASE_URL}
+RUN cargo build --package wasm-frontend --target wasm32-wasip2
+
+# ───── Stage 2: Runtime with wasmtime v44.0.0 ─────
+FROM debian:bookworm-slim AS runtime
+
+ARG WASMTIME_VERSION=v44.0.0
+ARG TARGETARCH
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN case "${TARGETARCH}" in \
+      "amd64") ARCH="x86_64" ;; \
+      "arm64") ARCH="aarch64" ;; \
+      *) echo "Unsupported architecture: ${TARGETARCH}" && exit 1 ;; \
+    esac \
+    && curl -fsSL \
+         "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux.tar.xz" \
+         -o /tmp/wasmtime.tar.xz \
+    && tar -xJf /tmp/wasmtime.tar.xz -C /tmp/ \
+    && mv "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux/wasmtime" /usr/local/bin/wasmtime \
+    && chmod +x /usr/local/bin/wasmtime \
+    && rm -rf /tmp/wasmtime.tar.xz "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux"
+
+COPY --from=builder /build/target/wasm32-wasip2/debug/wasm_frontend.wasm /app/wasm_frontend.wasm
+
+EXPOSE 8080
+
+CMD ["wasmtime", "serve", "--addr", "0.0.0.0:8080", "-Scli", "-Sinherit-network", "-Sallow-ip-name-lookup", "/app/wasm_frontend.wasm"]
