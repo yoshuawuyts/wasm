@@ -3,6 +3,8 @@
 //! A section with a header showing the title and item count,
 //! containing card-like item rows with colored dots and badges.
 
+#![allow(dead_code)]
+
 use html::text_content::Division;
 
 /// Semantic color for a WIT item type.

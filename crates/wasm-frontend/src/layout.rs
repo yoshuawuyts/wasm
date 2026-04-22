@@ -18,6 +18,7 @@ pub(crate) const ACCENT_COLOR: &str = "#18181B";
 ///
 /// Includes the shared navigation bar, Tailwind CSS via CDN, custom accent
 /// color CSS variables, and footer.
+#[allow(dead_code)]
 #[must_use]
 pub(crate) fn document(title: &str, body_content: &str) -> String {
     document_inner(title, body_content, "", MAIN_CLASS_CENTERED, true)
@@ -549,6 +550,13 @@ fn document_inner(
     .motion-target.t-slow {{ transition: transform 260ms cubic-bezier(0.2, 0, 0, 1); }}
     .motion-target.t-spring {{ transition: transform 360ms cubic-bezier(0.34, 1.56, 0.64, 1); }}
     @media (prefers-reduced-motion: reduce) {{ .motion-target {{ transition: none !important; }} }}
+    /* Search modal */
+    .search-modal {{ position: fixed; inset: 0; z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding-top: 4px; }}
+    .search-modal.hidden {{ display: none; }}
+    .search-scrim {{ position: absolute; inset: 0; background: rgba(15, 15, 17, 0.4); backdrop-filter: blur(2px); }}
+    .search-dialog {{ position: relative; width: 100%; max-width: 600px; margin: 0 16px; background: var(--c-surface); border: 1px solid var(--c-line); border-radius: 12px; box-shadow: 0 16px 48px rgba(0,0,0,.2); overflow: hidden; }}
+    .search-input-row {{ display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 48px; border-bottom: 1px solid var(--c-line-soft); }}
+    .search-hint {{ padding: 10px 16px; font-size: 12px; color: var(--c-ink-500); }}
     /* Sigil */
     .sigil {{ display: inline-grid; place-items: center; height: 18px; width: 18px; border-radius: 3px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 10px; font-weight: 600; line-height: 1; flex-shrink: 0; text-transform: uppercase; }}
     /* Tree-link */
@@ -682,18 +690,41 @@ fn document_inner(
     {body_content}
   </main>
   {footer}
+  {search_modal}
   <script>
-    // Focus search on / key (developer convention)
-    document.addEventListener('keydown', function(e) {{
-      if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {{
-        var el = document.activeElement;
-        var tag = el && el.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable)) return;
-        var search = document.getElementById('search-input');
-        if (search && search.offsetParent === null) search = document.getElementById('search-input-lg');
-        if (search) {{ e.preventDefault(); search.focus(); }}
+    /* Search command palette */
+    (function() {{
+      var modal = document.getElementById('search-modal');
+      if (!modal) return;
+      var input = document.getElementById('search-modal-input');
+      var scrim = modal.querySelector('.search-scrim');
+      var closeHint = document.getElementById('search-close-hint');
+      function open() {{
+        modal.classList.remove('hidden');
+        if (input) input.focus();
       }}
-    }});
+      function close() {{
+        modal.classList.add('hidden');
+        if (input) input.value = '';
+      }}
+      document.querySelectorAll('.search-trigger').forEach(function(btn) {{
+        btn.addEventListener('click', open);
+      }});
+      if (scrim) scrim.addEventListener('click', close);
+      if (closeHint) closeHint.addEventListener('click', close);
+      document.addEventListener('keydown', function(e) {{
+        if (modal.classList.contains('hidden')) {{
+          var el = document.activeElement;
+          var tag = el && el.tagName;
+          var inField = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (el && el.isContentEditable);
+          if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey && !inField) {{
+            e.preventDefault(); open();
+          }}
+        }} else {{
+          if (e.key === 'Escape' || e.key === '/') {{ e.preventDefault(); close(); }}
+        }}
+      }});
+    }})();
     // Click-to-copy for install hint
     document.addEventListener('click', function(e) {{
       var el = e.target.closest('.copy-hint');
@@ -910,6 +941,7 @@ fn document_inner(
             String::new()
         },
         body_content = body_content,
+        search_modal = crate::components::ds::navbar::render_search_modal(),
     )
 }
 

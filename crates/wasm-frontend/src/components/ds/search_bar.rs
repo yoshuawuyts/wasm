@@ -40,6 +40,7 @@ pub(crate) fn landing(placeholder_count: &str) -> Division {
 }
 
 /// Configuration for the search bar.
+#[allow(dead_code)]
 pub(crate) struct SearchBar {
     /// Current query value (empty for no pre-fill).
     pub query: String,
@@ -88,6 +89,7 @@ pub(crate) fn compact(input_id: &str) -> Division {
 }
 
 /// Render the hero search bar with carousel placeholder and submit button.
+#[allow(dead_code)]
 pub(crate) fn hero(cfg: &SearchBar) -> Division {
     let mut wrapper = Division::builder();
     wrapper.form(|form| {

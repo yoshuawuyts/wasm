@@ -37,12 +37,10 @@ fn push_cell(parent: &mut html::content::builders::SectionBuilder, metric: &Metr
     let verified = metric.verified;
 
     parent.division(|cell| {
-        let cell = cell
-            .class("p-6")
-            .division(|d| {
-                d.class("text-[12px] text-ink-500 mono uppercase tracking-wider")
-                    .text(label)
-            });
+        let cell = cell.class("p-6").division(|d| {
+            d.class("text-[12px] text-ink-500 mono uppercase tracking-wider")
+                .text(label)
+        });
         cell.division(|row| {
             let row = row.class("mt-2 flex items-baseline gap-2").span(|s| {
                 s.class("text-[28px] font-semibold tracking-tight tabular-nums")
@@ -50,15 +48,13 @@ fn push_cell(parent: &mut html::content::builders::SectionBuilder, metric: &Metr
             });
             match (delta, verified) {
                 (Some(d), true) => row.span(|s| {
-                    s.class(
-                        "inline-flex items-center gap-1 text-[12px] font-medium text-positive",
-                    )
-                    .span(|dot| dot.class("h-1.5 w-1.5 rounded-full bg-positive"))
-                    .text(d)
+                    s.class("inline-flex items-center gap-1 text-[12px] font-medium text-positive")
+                        .span(|dot| dot.class("h-1.5 w-1.5 rounded-full bg-positive"))
+                        .text(d)
                 }),
-                (Some(d), false) => row.span(|s| {
-                    s.class("text-[12px] font-medium text-positive").text(d)
-                }),
+                (Some(d), false) => {
+                    row.span(|s| s.class("text-[12px] font-medium text-positive").text(d))
+                }
                 (None, _) => row,
             }
         })

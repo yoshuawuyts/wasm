@@ -112,7 +112,7 @@ const THEME_SUN_MOON: &str = concat!(
 /// Render the theme dropdown (Auto / Light / Dark) with icons + labels.
 pub(crate) fn theme_dropdown() -> String {
     format!(
-        r##"<div class="relative" id="theme-dropdown">
+        r#"<div class="relative" id="theme-dropdown">
 <button type="button" id="theme-trigger" aria-label="Color theme" aria-haspopup="true" aria-expanded="false" class="inline-flex items-center justify-center h-7 w-7 rounded-md border border-line bg-surface text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 transition-colors">
 <span class="theme-icon theme-icon-auto">{THEME_SUN_MOON}</span>
 <span class="theme-icon theme-icon-light" style="display:none">{THEME_SUN}</span>
@@ -123,7 +123,7 @@ pub(crate) fn theme_dropdown() -> String {
 <button type="button" data-theme-value="light" class="theme-option w-full text-left px-3 h-8 flex items-center gap-2.5 text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 rounded-sm">{THEME_SUN} Light</button>
 <button type="button" data-theme-value="dark" class="theme-option w-full text-left px-3 h-8 flex items-center gap-2.5 text-ink-700 hover:bg-surfaceMuted hover:text-ink-900 rounded-sm">{THEME_MOON} Dark</button>
 </div>
-</div>"##
+</div>"#
     )
 }
 
@@ -142,9 +142,8 @@ pub(crate) fn render_bar(crumbs: &[Crumb], links: &[NavLink]) -> String {
         .class("flex items-center gap-2 min-w-0")
         .anchor(|a| {
             a.href("/")
-                .aria_label("Home")
-                .class("inline-flex items-center justify-center h-6 w-6 rounded-md text-ink-700 no-underline hover:text-ink-900 hover:bg-surfaceMuted transition-colors")
-                .text(SVG_HOME)
+                .class("text-[13px] font-semibold text-ink-900 no-underline hover:text-ink-700 transition-colors whitespace-nowrap")
+                .text("Component Registry")
         })
         .text(breadcrumb_html)
         .build()
@@ -248,7 +247,7 @@ fn search_button(svg: &str, placeholder: &str, show_hint: bool) -> String {
     let placeholder = placeholder.to_owned();
     let mut btn = html::forms::Button::builder();
     btn.type_("button");
-    btn.class("flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors");
+    btn.class("search-trigger flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors");
     btn.text(svg);
     btn.span(|s| s.class("truncate").text(placeholder));
     if show_hint {
@@ -260,6 +259,27 @@ fn search_button(svg: &str, placeholder: &str, show_hint: bool) -> String {
         });
     }
     btn.build().to_string()
+}
+
+/// Render the search command palette modal.
+///
+/// Hidden by default. Opened via JS when the search button is clicked or
+/// `/` is pressed. Overlays on top of the navbar with a centered input
+/// and results panel, dark scrim behind.
+pub(crate) fn render_search_modal() -> String {
+    format!(
+        r#"<div id="search-modal" class="search-modal hidden">
+<div class="search-scrim"></div>
+<div class="search-dialog">
+<form action="/search" method="get" class="search-input-row">
+{SVG_SEARCH_LG}
+<input id="search-modal-input" type="search" name="q" placeholder="Search packages…" autocomplete="off" class="flex-1 bg-transparent text-[15px] text-ink-900 placeholder:text-ink-400 outline-none" />
+<kbd class="mono text-[11px] text-ink-400 border border-line rounded px-1.5 py-0.5 cursor-pointer" id="search-close-hint">/</kbd>
+</form>
+<div class="search-hint">Type a query and press <kbd class="mono">Enter</kbd> to search.</div>
+</div>
+</div>"#
+    )
 }
 
 /// Build placeholder content lines.

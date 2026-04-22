@@ -42,9 +42,7 @@ pub(crate) fn render(
         LeftStyle::Mono => {
             "mono text-[14px] font-medium text-ink-900 group-hover:underline decoration-1 underline-offset-4"
         }
-        LeftStyle::Plain => {
-            "text-ink-900 group-hover:underline decoration-1 underline-offset-4"
-        }
+        LeftStyle::Plain => "text-ink-900 group-hover:underline decoration-1 underline-offset-4",
     };
     let right_class = match right_style {
         RightStyle::Description => "text-[13px] text-ink-500 truncate hidden sm:inline",

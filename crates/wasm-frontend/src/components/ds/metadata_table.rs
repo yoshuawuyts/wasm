@@ -34,7 +34,11 @@ pub(crate) fn render(child: &ComponentSummary) -> Option<Division> {
         .class("w-full text-[13px]")
         .push(tbody.build())
         .build();
-    div.push(table);
+    div.division(|wrapper| {
+        wrapper
+            .class("border border-line rounded-lg bg-canvas overflow-hidden")
+            .push(table)
+    });
     Some(div.build())
 }
 
@@ -70,6 +74,17 @@ fn collect_rows(child: &ComponentSummary) -> Vec<MetadataRow> {
         rows.push(MetadataRow::Text {
             label: "Size".into(),
             value: crate::pages::package::format_size(bytes),
+        });
+    }
+
+    if let (Some(start), Some(end)) = (child.range_start, child.range_end) {
+        rows.push(MetadataRow::Text {
+            label: "Range".into(),
+            value: format!(
+                "{}\u{2013}{}",
+                format_hex_offset(start),
+                format_hex_offset(end)
+            ),
         });
     }
 
@@ -124,24 +139,6 @@ fn collect_rows(child: &ComponentSummary) -> Vec<MetadataRow> {
         });
     }
 
-    if !child.targets.is_empty() {
-        let targets: Vec<String> = child
-            .targets
-            .iter()
-            .map(|t| {
-                if let Some(v) = &t.version {
-                    format!("{}:{}/{v}", t.package, t.world)
-                } else {
-                    format!("{}:{}", t.package, t.world)
-                }
-            })
-            .collect();
-        rows.push(MetadataRow::Text {
-            label: "Targets".into(),
-            value: targets.join(", "),
-        });
-    }
-
     // Producers (excluding language — already shown above)
     for entry in child.producers.iter().filter(|e| e.field != "language") {
         rows.push(MetadataRow::Producer {
@@ -157,6 +154,17 @@ fn collect_rows(child: &ComponentSummary) -> Vec<MetadataRow> {
     }
 
     rows
+}
+
+/// Format a byte offset as a hex string (e.g. `0x0000`, `0x1A3F`).
+fn format_hex_offset(offset: u64) -> String {
+    if offset <= 0xFFFF {
+        format!("0x{offset:04X}")
+    } else if offset <= 0xFF_FFFF {
+        format!("0x{offset:06X}")
+    } else {
+        format!("0x{offset:08X}")
+    }
 }
 
 /// Title-case a hyphenated field name (e.g. `"processed-by"` → `"Processed By"`).
@@ -198,21 +206,21 @@ fn dependency_row(dep: &BomEntry) -> MetadataRow {
 fn render_row(row: &MetadataRow) -> TableRow {
     match row {
         MetadataRow::Text { label, value } => TableRow::builder()
-            .class("border-b border-lineSoft")
+            .class("border-b border-lineSoft last:border-b-0")
             .table_cell(|td| {
-                td.class("py-2.5 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
+                td.class("py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
                     .text(label.clone())
             })
-            .table_cell(|td| td.class("py-2.5 align-baseline").text(value.clone()))
+            .table_cell(|td| td.class("py-2.5 px-4 align-baseline").text(value.clone()))
             .build(),
         MetadataRow::Link { label, text, href } => TableRow::builder()
-            .class("border-b border-lineSoft")
+            .class("border-b border-lineSoft last:border-b-0")
             .table_cell(|td| {
-                td.class("py-2.5 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
+                td.class("py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
                     .text(label.clone())
             })
             .table_cell(|td| {
-                td.class("py-2.5 align-baseline").anchor(|a| {
+                td.class("py-2.5 px-4 align-baseline").anchor(|a| {
                     a.href(href.clone())
                         .class("text-accent hover:underline truncate")
                         .text(text.clone())
@@ -228,14 +236,16 @@ fn render_row(row: &MetadataRow) -> TableRow {
                 .split_once(" (")
                 .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
             TableRow::builder()
-                .class("border-b border-lineSoft")
+                .class("border-b border-lineSoft last:border-b-0")
                 .table_cell(|td| {
-                    td.class("py-2.5 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
-                        .text(field.clone())
+                    td.class(
+                        "py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]",
+                    )
+                    .text(field.clone())
                 })
                 .table_cell(|td| {
                     let cell = td
-                        .class("py-2.5 align-baseline")
+                        .class("py-2.5 px-4 align-baseline")
                         .span(|s| s.class("text-accent").text(name.clone()));
                     if !display_version.is_empty() {
                         cell.span(|s| {
@@ -253,24 +263,32 @@ fn render_row(row: &MetadataRow) -> TableRow {
             href,
         } => {
             let purl_type = if href.is_some() { "cargo" } else { "generic" };
+            let dep_url = format!("pkg:{purl_type}/{name}");
             TableRow::builder()
-                .class("border-b border-lineSoft")
+                .class("border-b border-lineSoft last:border-b-0")
                 .table_cell(|td| {
-                    td.class("py-2.5 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
-                        .span(|s| s.class("text-ink-400").text(format!("pkg:{purl_type}/")))
-                        .span(|s| s.text(name.clone()))
+                    td.class(
+                        "py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]",
+                    )
+                    .text("Dependency".to_owned())
                 })
                 .table_cell(|td| {
-                    if let Some(url) = href {
-                        td.class("py-2.5 align-baseline").anchor(|a| {
+                    let cell = if let Some(url) = href {
+                        td.class("py-2.5 px-4 align-baseline").anchor(|a| {
                             a.href(url.clone())
                                 .class("text-accent hover:underline")
-                                .text(version.clone())
+                                .text(dep_url)
                         })
                     } else {
-                        td.class("py-2.5 align-baseline text-ink-700")
-                            .text(version.clone())
+                        td.class("py-2.5 px-4 align-baseline").text(dep_url)
+                    };
+                    if !version.is_empty() {
+                        cell.span(|s| {
+                            s.class("ml-2 text-[11px] text-ink-500")
+                                .text(format!("v{version}"))
+                        });
                     }
+                    cell
                 })
                 .build()
         }

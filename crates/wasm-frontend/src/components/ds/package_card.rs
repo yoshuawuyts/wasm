@@ -3,6 +3,8 @@
 //! Clickable card for package listings (home, namespace). Matches the
 //! design system's Card elevation (section 04) and Details card (section 23).
 
+#![allow(dead_code)]
+
 use html::text_content::Division;
 use wasm_meta_registry_client::KnownPackage;
 

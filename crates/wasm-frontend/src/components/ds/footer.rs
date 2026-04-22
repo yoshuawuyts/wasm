@@ -41,7 +41,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
     FooterEl::builder()
         .class("border-t border-lineSoft")
         .division(|grid| {
-            let mut grid = grid
+            let grid = grid
                 .class("mx-auto max-w-[1280px] px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-5 gap-8 text-[13px]")
                 .division(|brand_col| {
                     brand_col
@@ -60,7 +60,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
                         })
                 });
             for col in footer.columns {
-                push_column(&mut grid, col);
+                push_column(grid, col);
             }
             grid
         })
@@ -85,10 +85,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
         .to_string()
 }
 
-fn push_column(
-    parent: &mut html::text_content::builders::DivisionBuilder,
-    col: &FooterColumn,
-) {
+fn push_column(parent: &mut html::text_content::builders::DivisionBuilder, col: &FooterColumn) {
     let kicker = col.kicker.to_owned();
     parent.division(|d| {
         let d = d.division(|k| {
@@ -102,7 +99,9 @@ fn push_column(
                 let href = link.href.to_owned();
                 ul = ul.list_item(|li| {
                     li.anchor(|a| {
-                        a.href(href).class("hover:text-ink-900 no-underline").text(label)
+                        a.href(href)
+                            .class("hover:text-ink-900 no-underline")
+                            .text(label)
                     })
                 });
             }

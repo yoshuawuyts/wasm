@@ -50,7 +50,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-navbar\", \"C06\", \
                     </span>
                   </nav>
                 </div>
-                <button type="button" class="flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
+                <button type="button" class="search-trigger flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />
@@ -121,7 +121,7 @@ expression: "crate::components::ds::pretty_html(&render(\"c-navbar\", \"C06\", \
                     </span>
                   </nav>
                 </div>
-                <button type="button" class="flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
+                <button type="button" class="search-trigger flex-1 max-w-[280px] h-8 px-2.5 rounded-md border border-line bg-surface text-[13px] text-ink-500 flex items-center gap-2 hover:bg-surfaceMuted hover:text-ink-700 transition-colors">
                   <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.3-4.3" />

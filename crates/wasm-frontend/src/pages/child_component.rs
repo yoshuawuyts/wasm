@@ -130,6 +130,8 @@ mod tests {
             ],
             kind: Some(kind.into()),
             size_bytes: Some(4096),
+            range_start: Some(0),
+            range_end: Some(4096),
             languages: vec!["Rust".into()],
             children: vec![],
             source: None,
