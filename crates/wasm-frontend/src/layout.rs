@@ -263,7 +263,7 @@ fn render_document(title: &str, body_class: &str, body_children: &str) -> String
       /* Light mode — calm paper, near-black ink, pastel categoricals */
       --c-canvas:        #F4F4F5;
       --c-surface:       #FAFAFA;
-      --c-surface-muted: #E8E8EA;
+      --c-surface-muted: #EDEDEF;
       --c-ink-900:       {ACCENT_COLOR};
       --c-ink-700:       #3F3F46;
       --c-ink-500:       #71717A;
@@ -628,8 +628,8 @@ fn render_document(title: &str, body_class: &str, body_children: &str) -> String
     .toc-link.active {{ color: var(--c-ink-900); border-left-color: var(--c-ink-900); }}
     .toc-link.indent {{ padding-left: 22px; }}
     /* Item list */
-    .item-list {{ margin: 0; background: var(--c-surface); border: 1px solid var(--c-line); border-radius: 8px; overflow: hidden; }}
-    .item-row {{ display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; border-top: 1px solid var(--c-line-soft); color: inherit; text-decoration: none; }}
+    .item-list {{ margin: 0; background: var(--c-canvas); border-radius: 8px; overflow: hidden; }}
+    .item-row {{ display: flex; gap: 12px; align-items: baseline; padding: 12px 14px; border-top: 1px solid var(--c-surface-muted); color: inherit; text-decoration: none; }}
     .item-row:first-child {{ border-top: none; }}
     .item-row:hover {{ background: var(--c-surface-muted); }}
     .item-row.deprecated .name, .item-row.deprecated .desc {{ color: var(--c-ink-400); }}

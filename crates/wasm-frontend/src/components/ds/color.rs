@@ -107,7 +107,7 @@ pub(crate) fn render_group(
 pub(crate) const SURFACES: &[Swatch] = &[
     Swatch::new("bg-canvas", "Canvas", "#F4F4F5", "oklch(.967 .001 286)", "#1C1C20", "oklch(.178 .010 286)"),
     Swatch::new("bg-surface", "Surface", "#FAFAFA", "oklch(.985 0 0)", "#26262B", "oklch(.222 .009 286)"),
-    Swatch::new("bg-surfaceMuted", "Surface Muted", "#E8E8EA", "oklch(.928 .003 286)", "#2F2F35", "oklch(.261 .009 286)"),
+    Swatch::new("bg-surfaceMuted", "Surface Muted", "#EDEDEF", "oklch(.949 .002 286)", "#2F2F35", "oklch(.261 .009 286)"),
 ];
 
 pub(crate) const INK: &[Swatch] = &[

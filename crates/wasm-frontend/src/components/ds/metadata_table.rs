@@ -36,7 +36,7 @@ pub(crate) fn render(child: &ComponentSummary) -> Option<Division> {
         .build();
     div.division(|wrapper| {
         wrapper
-            .class("border border-line rounded-lg bg-canvas overflow-hidden")
+            .class("rounded-lg bg-canvas overflow-hidden")
             .push(table)
     });
     Some(div.build())
@@ -70,7 +70,7 @@ pub(crate) fn render_version(version: &PackageVersion) -> Option<Division> {
         .build();
     div.division(|wrapper| {
         wrapper
-            .class("border border-line rounded-lg bg-canvas overflow-hidden")
+            .class("rounded-lg bg-canvas overflow-hidden")
             .push(table)
     });
     Some(div.build())
@@ -288,7 +288,7 @@ fn dependency_row(dep: &BomEntry) -> MetadataRow {
 fn render_row(row: &MetadataRow) -> TableRow {
     match row {
         MetadataRow::Text { label, value } => TableRow::builder()
-            .class("border-b border-lineSoft last:border-b-0")
+            .class("border-b border-surfaceMuted last:border-b-0")
             .table_cell(|td| {
                 td.class("py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
                     .text(label.clone())
@@ -296,7 +296,7 @@ fn render_row(row: &MetadataRow) -> TableRow {
             .table_cell(|td| td.class("py-2.5 px-4 align-baseline").text(value.clone()))
             .build(),
         MetadataRow::Range { label, start, end } => TableRow::builder()
-            .class("border-b border-lineSoft last:border-b-0")
+            .class("border-b border-surfaceMuted last:border-b-0")
             .table_cell(|td| {
                 td.class("py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
                     .text(label.clone())
@@ -315,7 +315,7 @@ fn render_row(row: &MetadataRow) -> TableRow {
             })
             .build(),
         MetadataRow::Link { label, text, href } => TableRow::builder()
-            .class("border-b border-lineSoft last:border-b-0")
+            .class("border-b border-surfaceMuted last:border-b-0")
             .table_cell(|td| {
                 td.class("py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]")
                     .text(label.clone())
@@ -337,7 +337,7 @@ fn render_row(row: &MetadataRow) -> TableRow {
                 .split_once(" (")
                 .map_or_else(|| version.clone(), |(before, _)| before.to_owned());
             TableRow::builder()
-                .class("border-b border-lineSoft last:border-b-0")
+                .class("border-b border-surfaceMuted last:border-b-0")
                 .table_cell(|td| {
                     td.class(
                         "py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]",
@@ -373,7 +373,7 @@ fn render_row(row: &MetadataRow) -> TableRow {
             let purl_type = if href.is_some() { "cargo" } else { "generic" };
             let dep_url = format!("pkg:{purl_type}/{name}");
             TableRow::builder()
-                .class("border-b border-lineSoft last:border-b-0")
+                .class("border-b border-surfaceMuted last:border-b-0")
                 .table_cell(|td| {
                     td.class(
                         "py-2.5 px-4 pr-4 align-baseline text-ink-500 whitespace-nowrap w-[120px]",
