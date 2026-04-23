@@ -166,8 +166,10 @@ fn render_type_section(heading: &str, types: &[&TypeDoc]) -> Division {
                 .docs
                 .as_deref()
                 .map(|d| crate::markdown::render_inline(&first_sentence(d))),
-            meta: String::new(),
-            deprecated: false,
+            version: String::new(),
+            meta: ty.stability.meta_string(),
+            meta_title: ty.stability.meta_title(),
+            deprecated: ty.stability.is_deprecated(),
             id: None,
         })
         .collect();
@@ -186,8 +188,10 @@ fn render_function_section(functions: &[FunctionDoc]) -> Division {
                 .docs
                 .as_deref()
                 .map(|d| crate::markdown::render_inline(&first_sentence(d))),
-            meta: String::new(),
-            deprecated: false,
+            version: String::new(),
+            meta: func.stability.meta_string(),
+            meta_title: func.stability.meta_title(),
+            deprecated: func.stability.is_deprecated(),
             id: None,
         })
         .collect();

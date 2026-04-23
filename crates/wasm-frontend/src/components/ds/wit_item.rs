@@ -77,8 +77,12 @@ pub(crate) struct WitItem {
     pub href: String,
     /// Optional first-sentence description shown under the name.
     pub docs: Option<String>,
-    /// Optional right-aligned meta string (e.g. version).
+    /// Optional inline version badge shown next to the name.
+    pub version: String,
+    /// Optional right-aligned meta string (e.g. stability).
     pub meta: String,
+    /// Title / alt-text for the meta badge.
+    pub meta_title: String,
     /// Whether to render the row as deprecated (struck-through).
     pub deprecated: bool,
     /// Optional HTML id for anchor targeting.
@@ -115,7 +119,9 @@ impl WitItem {
             name: self.name.clone(),
             href: self.href.clone(),
             desc: self.docs.clone().unwrap_or_default(),
+            version: self.version.clone(),
             meta: self.meta.clone(),
+            meta_title: self.meta_title.clone(),
             deprecated: self.deprecated,
             id: self.id.clone(),
         }
@@ -152,12 +158,15 @@ pub(crate) fn iface_ref_to_item(iface: &wasm_meta_registry_client::WitInterfaceR
         name.push('/');
         name.push_str(iface_name);
     }
+    let version = iface.version.clone().unwrap_or_default();
     WitItem {
         kind: WitItemKind::Interface,
         name,
         href: build_iface_href(iface).unwrap_or_default(),
         docs: iface.docs.clone(),
+        version,
         meta: String::new(),
+        meta_title: String::new(),
         deprecated: false,
         id: None,
     }

@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s13_fields.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/fields.rs
+expression: "crate::components::ds::pretty_html(&render(\"fields\", \"13\", \"Form Fields\",\n\"Inputs sit on a surface with a 1px line border. Focus darkens the border to ink \\u{2014} no thickening, no glow. Two sizes: <strong>md</strong> (default) for primary forms, <strong>sm</strong> for dense contexts like sidebars, metadata strips, and toolbars.\",\nSTATES, COMMANDS,))"
 ---
 <section class="pt-12 md:pt-16" id="fields">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         13

@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s06_tabs.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/tabs.rs
+expression: "crate::components::ds::pretty_html(&render(\"tabs\", \"06\", \"Tabs & Pills\",\n\"Segmented controls for binary scoping; underline tabs for sub-views; pills for filterable chips.\",))"
 ---
 <section class="pt-12 md:pt-16" id="tabs">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         06

@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s20_empty.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/empty.rs
+expression: "crate::components::ds::pretty_html(&render(\"empty\", \"20\", \"Empty State\",\n\"Centered illustration glyph, title, body, and primary CTA. Used for empty tables, search misses, and first-run views.\",))"
 ---
 <section class="pt-12 md:pt-16" id="empty">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         20

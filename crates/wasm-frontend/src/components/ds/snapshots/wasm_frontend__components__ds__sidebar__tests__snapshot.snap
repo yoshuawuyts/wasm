@@ -3,7 +3,7 @@ source: crates/wasm-frontend/src/components/ds/sidebar.rs
 expression: "crate::components::ds::pretty_html(&render(\"c-sidebar\", \"C01\",\n\"Nested Sidebar\",\nr#\"Hierarchical navigation for reference docs. Top-level entries collapse with native <code class=\"mono text-[12px]\">&lt;details&gt;</code>; sigils classify each row by kind (command, group, flag, env, etc.).\"#,\nSIGIL_LEGEND, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-sidebar">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         C01

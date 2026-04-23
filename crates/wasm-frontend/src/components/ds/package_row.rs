@@ -5,36 +5,37 @@
 
 use html::inline_text::Span;
 use html::text_content::Division;
-use wasm_meta_registry_client::KnownPackage;
+use wasm_meta_registry_client::{KnownPackage, PackageKind};
+
+use super::badges;
 
 /// Render a package as a list row (name · version · description).
 pub(crate) fn render(pkg: &KnownPackage) -> Division {
     let (display_name, href) = identity(pkg);
     let description = pkg.description.as_deref().unwrap_or("");
     let version = pkg.tags.first().map_or("\u{2014}", String::as_str);
-    let name_color = if href.is_some() {
-        "text-accent"
-    } else {
-        "text-ink-900"
-    };
+    let name_color = "text-ink-900";
 
     let [name_span, version_span, description_span] =
         spans(&display_name, version, description, name_color);
+    let kind_span = kind_badge(pkg.kind);
 
     if let Some(href) = href {
         let mut row = Division::builder();
         row.anchor(|a| {
             a.href(href)
-                .class("flex flex-wrap sm:flex-nowrap items-baseline gap-x-3 gap-y-1 py-3 hover:bg-surfaceMuted -mx-2 px-2 transition-colors")
+                .class("flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1 py-3 hover:bg-surfaceMuted -mx-2 px-2 transition-colors")
                 .push(name_span)
+                .push(kind_span)
                 .push(version_span)
                 .push(description_span)
         });
         row.build()
     } else {
         let mut row = Division::builder();
-        row.class("flex flex-wrap sm:flex-nowrap items-baseline gap-x-3 gap-y-1 py-3 -mx-2 px-2")
+        row.class("flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-1 py-3 -mx-2 px-2")
             .push(name_span)
+            .push(kind_span)
             .push(version_span)
             .push(description_span);
         row.build()
@@ -59,7 +60,7 @@ fn spans(
     [
         Span::builder()
             .class(format!(
-                "sm:w-48 sm:shrink-0 font-medium {name_color_class} truncate"
+                "sm:w-96 sm:shrink-0 font-medium {name_color_class} truncate"
             ))
             .text(display_name.to_owned())
             .build(),
@@ -74,6 +75,32 @@ fn spans(
     ]
 }
 
+/// Build a color-coded kind badge for a package.
+fn kind_badge(kind: Option<PackageKind>) -> Span {
+    let (badge_class, dot_class, label) = match kind {
+        Some(PackageKind::Component) => (
+            "bg-cat-green text-cat-greenInk",
+            "bg-cat-greenInk",
+            "Component",
+        ),
+        Some(PackageKind::Interface) => (
+            "bg-cat-blue text-cat-blueInk",
+            "bg-cat-blueInk",
+            "Interface",
+        ),
+        None => (
+            "bg-cat-slate text-cat-slateInk",
+            "bg-cat-slateInk",
+            "Package",
+        ),
+    };
+    let badge = badges::status_badge(badge_class, dot_class, label);
+    Span::builder()
+        .class("sm:w-28 sm:shrink-0")
+        .push(badge)
+        .build()
+}
+
 /// Class string for the table header row above package rows.
 pub(crate) const HEADER_CLASS: &str =
-    "hidden sm:flex items-baseline gap-3 px-2 pb-2 text-[13px] text-ink-400";
+    "hidden sm:flex items-center gap-3 px-2 pb-2 text-[13px] text-ink-400";

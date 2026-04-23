@@ -2,7 +2,7 @@
 source: crates/wasm-frontend/src/components/ds/metrics_strip.rs
 expression: "crate::components::ds::pretty_html(&html)"
 ---
-<section class="max-w-[1280px] w-full px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-lineSoft border-y border-lineSoft">
+<section class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-lineSoft border-y border-lineSoft">
   <div class="p-6">
     <div class="text-[12px] text-ink-500 mono uppercase tracking-wider">
       Packages

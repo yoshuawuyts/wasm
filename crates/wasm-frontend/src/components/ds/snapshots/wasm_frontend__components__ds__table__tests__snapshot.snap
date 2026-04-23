@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s11_table.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/table.rs
+expression: "crate::components::ds::pretty_html(&render(\"table\", \"11\", \"Table\",\nr##\"Two patterns cover everything: a <strong>definition</strong> table (no <code class=\"mono text-[12px]\">&lt;thead&gt;</code>, identifier on the left, meaning on the right) and a <strong>tabular</strong> table (labeled columns, <code class=\"mono text-[12px]\">tabular-nums</code> for figures). 13px body, 1.5px soft row separators (<code class=\"mono text-[12px]\">border-lineSoft</code>), <code class=\"mono text-[12px]\">py-3</code> rows. When the leading column is a category, use the <a href=\"#c-item-details\" class=\"text-ink-700 underline decoration-line decoration-1 underline-offset-[3px] hover:text-ink-900\">.id-http-status</a> pill family.\"##,\nTAB_ENTRIES,))"
 ---
 <section class="pt-12 md:pt-16" id="table">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         11

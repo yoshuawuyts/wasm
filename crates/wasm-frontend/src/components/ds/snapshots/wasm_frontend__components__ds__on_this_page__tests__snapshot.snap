@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/c02_toc.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/on_this_page.rs
+expression: "crate::components::ds::pretty_html(&render(\"c-toc\", \"C02\", \"On This Page\",\n\"Right-rail table of contents for long reference pages. A 1.5px left border lights up on hover and active state \\u{2014} the only visual cue, no background fills.\",\nTOC_LINKS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-toc">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         C02

@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s02_typography.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/typography.rs
+expression: "crate::components::ds::pretty_html(&render(\"typography\", \"02\", \"Typography\",\n\"System UI stack for native rendering across platforms. Tight tracking on display sizes; relaxed for body.\",\nSAMPLES,))"
 ---
 <section class="pt-12 md:pt-16" id="typography">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         02

@@ -6,7 +6,7 @@
 use html::content::Section;
 
 /// Render a standard design-system section with the two-column
-/// `[200px | 1fr]` grid layout used by every numbered section.
+/// `[600px | 1fr]` grid layout used by every numbered section.
 ///
 /// `id` is the anchor, `num` the section number label (e.g. `"01"`),
 /// `title` the heading text, `desc` the synopsis paragraph, and `content_fn`
@@ -21,7 +21,7 @@ pub(crate) fn section(id: &str, num: &str, title: &str, desc: &str, content: &st
         .id(id)
         .class("pt-12 md:pt-16")
         .division(|grid| {
-            grid.class("grid md:grid-cols-[200px_1fr] gap-6 md:gap-12")
+            grid.class("grid md:grid-cols-[600px_1fr] gap-6 md:gap-12")
                 .division(|left| {
                     left.division(|n| {
                         n.class("text-[12px] mono uppercase tracking-wider text-ink-500")

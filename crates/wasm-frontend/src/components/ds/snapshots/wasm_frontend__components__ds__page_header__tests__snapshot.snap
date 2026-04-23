@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/c03_page_header.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/page_header.rs
+expression: "crate::components::ds::pretty_html(&render(\"c-page-header\", \"C03\",\n\"Page Header\",\n\"Top-of-page identification block: a kicker, a large title, an optional tagline, and an optional metadata strip. Used to anchor reference and documentation pages.\",\nANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-page-header">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         C03

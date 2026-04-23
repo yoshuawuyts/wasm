@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s19_progress.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/progress.rs
+expression: "crate::components::ds::pretty_html(&render(\"progress\", \"19\",\n\"Progress & Spinner\",\n\"Determinate progress as a 6px ink track. Indeterminate as a 16px spinner (CSS animation). Skeleton shimmer for placeholder content.\",))"
 ---
 <section class="pt-12 md:pt-16" id="progress">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         19

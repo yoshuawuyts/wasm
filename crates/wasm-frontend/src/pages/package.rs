@@ -302,7 +302,9 @@ fn render_children_overview(
                 name,
                 href,
                 docs: None,
+                version: String::new(),
                 meta: String::new(),
+                meta_title: String::new(),
                 deprecated: false,
                 id: None,
             }
@@ -344,8 +346,10 @@ fn render_interface_overview(doc: &WitDocument) -> Division {
             name: iface.name.clone(),
             href: iface.url.clone(),
             docs: iface.docs.as_deref().map(first_sentence),
-            meta: String::new(),
-            deprecated: false,
+            version: String::new(),
+            meta: iface.stability.meta_string(),
+            meta_title: iface.stability.meta_title(),
+            deprecated: iface.stability.is_deprecated(),
             id: Some(format!("iface-{}", iface.name)),
         })
         .collect();
@@ -362,8 +366,10 @@ fn render_world_overview(doc: &WitDocument) -> Division {
             name: world.name.clone(),
             href: world.url.clone(),
             docs: world.docs.as_deref().map(first_sentence),
-            meta: String::new(),
-            deprecated: false,
+            version: String::new(),
+            meta: world.stability.meta_string(),
+            meta_title: world.stability.meta_title(),
+            deprecated: world.stability.is_deprecated(),
             id: Some(format!("world-{}", world.name)),
         })
         .collect();

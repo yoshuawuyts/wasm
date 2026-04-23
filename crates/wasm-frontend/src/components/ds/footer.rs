@@ -37,7 +37,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
         .class("col-span-full")
         .division(|grid| {
             let grid = grid
-                .class("max-w-[1280px] w-full px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-x-8 gap-y-6 text-[13px]")
+                .class("max-w-[1280px] mx-auto w-full px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-x-8 gap-y-6 text-[13px]")
                 .division(|brand_col| {
                     brand_col
                         .class("col-span-2 md:col-span-1 flex flex-col")

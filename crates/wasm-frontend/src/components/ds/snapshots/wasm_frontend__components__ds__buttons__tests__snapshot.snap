@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s05_buttons.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/buttons.rs
+expression: "crate::components::ds::pretty_html(&render(\"buttons\", \"05\", \"Buttons\",\n\"Two variants: a soft gray fill or a 1.5px ink outline. The system reserves solid ink for typography only \\u{2014} buttons are never pure black. Two heights: 32px (compact toolbars) and 36px (mobile / primary CTAs).\",))"
 ---
 <section class="pt-12 md:pt-16" id="buttons">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         05

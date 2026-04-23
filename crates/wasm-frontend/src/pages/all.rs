@@ -45,7 +45,8 @@ fn render_packages(packages: &[KnownPackage], offset: u32, limit: u32) -> String
         // Table-style header
         body.division(|div| {
             div.class(package_row::HEADER_CLASS)
-                .span(|s| s.class("w-48 shrink-0").text("Package"))
+                .span(|s| s.class("w-96 shrink-0").text("Package"))
+                .span(|s| s.class("w-28 shrink-0").text("Kind"))
                 .span(|s| s.class("w-20 shrink-0").text("Version"))
                 .span(|s| s.text("Description"))
         });

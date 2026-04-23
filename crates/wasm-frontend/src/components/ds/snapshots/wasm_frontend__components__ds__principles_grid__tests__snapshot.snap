@@ -2,7 +2,7 @@
 source: crates/wasm-frontend/src/components/ds/principles_grid.rs
 expression: "crate::components::ds::pretty_html(&html)"
 ---
-<section class="max-w-[1280px] w-full px-4 md:px-8 pt-12 md:pt-16">
+<section class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-12 md:pt-16">
   <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">

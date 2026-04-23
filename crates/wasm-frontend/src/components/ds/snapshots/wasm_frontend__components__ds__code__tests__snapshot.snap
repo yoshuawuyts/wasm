@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s08_code.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/code.rs
+expression: "crate::components::ds::pretty_html(&render(\"code\", \"08\", \"Code Samples\",\n\"One panel \\u{2014} <code class=\\\"mono text-[12px]\\\">pre.id-code</code> \\u{2014} sitting on <code class=\\\"mono text-[12px]\\\">--c-surface</code>, with token colours pulled from the theme-aware <code class=\\\"mono text-[12px]\\\">--color-wit-*</code> palette so chroma stays balanced on both light and dark pages. Three forms: a plain block, a tabbed multi-language block, and a paired request / response grid.\",\nTOKENS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="code">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         08

@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s10_tooltip.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/tooltip.rs
+expression: "crate::components::ds::pretty_html(&render(\"tooltip\", \"10\", \"Tooltip\",\n\"Inverted surface with backdrop blur. Caption label above, key/value rows with right-aligned medium values.\",))"
 ---
 <section class="pt-12 md:pt-16" id="tooltip">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         10

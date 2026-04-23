@@ -3,7 +3,7 @@ source: crates/wasm-frontend/src/components/ds/navbar.rs
 expression: "crate::components::ds::pretty_html(&render(\"c-navbar\", \"C06\", \"Navbar\",\n\"Sticky page chrome: brand mark, command palette trigger, primary nav, theme toggle. Sits above all content with a translucent <code class=\\\"mono text-[12px]\\\">bg-canvas/90</code> + <code class=\\\"mono text-[12px]\\\">backdrop-blur</code> so scrolling content reads through without losing legibility.\",\nDRAWER_LINKS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-navbar">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         C06

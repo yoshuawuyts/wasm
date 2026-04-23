@@ -97,16 +97,26 @@ fn render_item_section(
     let rows: Vec<WitItem> = items
         .iter()
         .map(|item| match item {
-            WorldItemDoc::Interface { name, url, docs } => {
+            WorldItemDoc::Interface {
+                name,
+                url,
+                docs,
+                stability,
+            } => {
                 let name_no_ver = strip_version(name);
+                let ver_suffix = extract_version(name)
+                    .map(|v| v.to_owned())
+                    .unwrap_or_default();
                 let desc = docs.clone().or_else(|| api_docs.get(name_no_ver).cloned());
                 WitItem {
                     kind: WitItemKind::Interface,
                     name: name_no_ver.to_owned(),
                     href: url.clone().unwrap_or_default(),
                     docs: desc,
-                    meta: String::new(),
-                    deprecated: false,
+                    version: ver_suffix,
+                    meta: stability.meta_string(),
+                    meta_title: stability.meta_title(),
+                    deprecated: stability.is_deprecated(),
                     id: None,
                 }
             }
@@ -115,8 +125,10 @@ fn render_item_section(
                 name: func.name.clone(),
                 href: func.url.clone(),
                 docs: func.docs.clone(),
-                meta: String::new(),
-                deprecated: false,
+                version: String::new(),
+                meta: func.stability.meta_string(),
+                meta_title: func.stability.meta_title(),
+                deprecated: func.stability.is_deprecated(),
                 id: None,
             },
             WorldItemDoc::Type(ty) => WitItem {
@@ -124,8 +136,10 @@ fn render_item_section(
                 name: ty.name.clone(),
                 href: ty.url.clone(),
                 docs: ty.docs.clone(),
-                meta: String::new(),
-                deprecated: false,
+                version: String::new(),
+                meta: ty.stability.meta_string(),
+                meta_title: ty.stability.meta_title(),
+                deprecated: ty.stability.is_deprecated(),
                 id: None,
             },
         })
@@ -139,4 +153,11 @@ fn render_item_section(
 /// `"wasi:cli/environment@0.2.11"` → `"wasi:cli/environment"`
 fn strip_version(name: &str) -> &str {
     name.split('@').next().unwrap_or(name)
+}
+
+/// Extract the version suffix from a qualified name.
+///
+/// `"wasi:cli/environment@0.2.11"` → `Some("0.2.11")`
+fn extract_version(name: &str) -> Option<&str> {
+    name.split_once('@').map(|(_, ver)| ver)
 }

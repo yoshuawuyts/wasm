@@ -3,7 +3,7 @@ source: crates/wasm-frontend/src/components/ds/sigil.rs
 expression: "crate::components::ds::pretty_html(&render(\"sigils\", \"25\", \"Sigils\",\n\"18\\u{00d7}18px rounded squares with a single monospace letter, used to classify items by kind in sidebars, item lists, and detail pages. Each sigil pairs a categorical background with its ink counterpart for 4.5:1 contrast.\",\nALL,))"
 ---
 <section class="pt-12 md:pt-16" id="sigils">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         25

@@ -21,7 +21,9 @@ pub(crate) struct DynItemRow {
     pub(crate) name: String,
     pub(crate) href: String,
     pub(crate) desc: String,
+    pub(crate) version: String,
     pub(crate) meta: String,
+    pub(crate) meta_title: String,
     pub(crate) deprecated: bool,
     /// Optional HTML id for anchor targeting.
     pub(crate) id: Option<String>,
@@ -80,13 +82,25 @@ pub(crate) fn render_dyn_item_row(item: &DynItemRow) -> Anchor {
     if let Some(id) = &item.id {
         a.id(id.clone());
     }
+    let version_tag = if item.version.is_empty() {
+        String::new()
+    } else {
+        let v = &item.version;
+        format!(
+            r#" <span class="inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500 ml-2 align-middle">{v}</span>"#
+        )
+    };
+    let name_html = format!(r#"<span class="name">{name}</span>{version_tag}"#);
     a.text(sigil_html)
-        .division(|d| {
-            d.span(|s| s.class("name").text(name))
-                .division(|dd| dd.class("desc").text(desc))
-        })
-        .span(|s| s.class("meta").text(meta))
-        .build()
+        .division(|d| d.text(name_html).division(|dd| dd.class("desc").text(desc)));
+    if !meta.is_empty() {
+        let meta_title = &item.meta_title;
+        let meta_tag = format!(
+            r#"<span class="meta inline-flex items-center px-1.5 h-5 rounded border border-line text-[10px] mono text-ink-500" title="{meta_title}">{meta}</span>"#
+        );
+        a.text(meta_tag);
+    }
+    a.build()
 }
 
 /// Render a list of dynamic item rows.

@@ -33,9 +33,7 @@ pub(crate) fn render(child: &ComponentSummary) -> Option<Division> {
         .class("w-full text-[13px]")
         .push(tbody.build())
         .build();
-    let table_html = format!(
-        r#"<div class="rounded-lg bg-surface overflow-hidden">{table}</div>"#
-    );
+    let table_html = format!(r#"<div class="rounded-lg bg-surface overflow-hidden">{table}</div>"#);
 
     div.text(format!(
         r#"<details open class="group space-y-3"><summary class="flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden"><h2 class="text-[22px] font-semibold tracking-tight text-ink-700">Metadata</h2>{CHEVRON_SVG}</summary>{table_html}</details>"#
@@ -65,9 +63,7 @@ pub(crate) fn render_version(version: &PackageVersion) -> Option<Division> {
         .class("w-full text-[13px]")
         .push(tbody.build())
         .build();
-    let table_html = format!(
-        r#"<div class="rounded-lg bg-surface overflow-hidden">{table}</div>"#
-    );
+    let table_html = format!(r#"<div class="rounded-lg bg-surface overflow-hidden">{table}</div>"#);
 
     div.text(format!(
         r#"<details open class="group space-y-3"><summary class="flex items-center justify-between cursor-pointer list-none [&::-webkit-details-marker]:hidden"><h2 class="text-[22px] font-semibold tracking-tight text-ink-700">Metadata</h2>{CHEVRON_SVG}</summary>{table_html}</details>"#

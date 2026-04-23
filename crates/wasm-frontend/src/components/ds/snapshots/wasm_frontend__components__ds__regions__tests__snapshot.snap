@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s22_regions.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/regions.rs
+expression: "crate::components::ds::pretty_html(&render(\"regions\", \"22\", \"Regions\",\n\"Pages are composed of stacked <em>regions</em>. The primary region uses the canvas surface; secondary regions (supporting data, references, appendices) switch to the white surface. The surface swap signals \\u{201c}this is additional content\\u{201d} \\u{2014} no rules or borders are drawn between regions.\",\nRULES,))"
 ---
 <section class="pt-12 md:pt-16" id="regions">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         22

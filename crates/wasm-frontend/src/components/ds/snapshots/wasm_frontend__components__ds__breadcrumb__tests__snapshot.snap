@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s18_breadcrumb.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/breadcrumb.rs
+expression: "crate::components::ds::pretty_html(&render(\"breadcrumb\", \"19\",\n\"Breadcrumb &<br />Pagination\",\n\"Navigation context. Breadcrumb uses chevron separators and dims all but the current item. Pagination is square-buttoned for compact toolbars.\",))"
 ---
 <section class="pt-12 md:pt-16" id="breadcrumb">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         19

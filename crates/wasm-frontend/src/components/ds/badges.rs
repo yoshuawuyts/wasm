@@ -31,7 +31,9 @@ pub(crate) fn status_badge(
     dot_class: &str,
     label: &str,
 ) -> html::inline_text::Span {
-    let badge_cls = format!("inline-flex items-center gap-1.5 px-2 h-6 rounded-pill {badge_class}");
+    let badge_cls = format!(
+        "inline-flex items-center gap-1.5 px-2 h-6 rounded-pill text-[11px] font-medium {badge_class}"
+    );
     let dot_cls = format!("h-1.5 w-1.5 rounded-full {dot_class}");
     let label = label.to_owned();
     html::inline_text::Span::builder()

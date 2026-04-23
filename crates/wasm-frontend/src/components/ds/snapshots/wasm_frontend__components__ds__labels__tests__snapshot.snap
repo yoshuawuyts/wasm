@@ -1,9 +1,9 @@
 ---
-source: crates/wasm-frontend/src/components/ds/s09_labels.rs
-expression: "crate::components::ds::pretty_html(&render())"
+source: crates/wasm-frontend/src/components/ds/labels.rs
+expression: "crate::components::ds::pretty_html(&render(\"bars\", \"09\", \"Labels\",\n\"28px tall, 6px radius, label inset 12px. Pastel fill with paired ink for text \\u{2014} 4.5:1 contrast minimum.\",\nBARS,))"
 ---
 <section class="pt-12 md:pt-16" id="bars">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         09

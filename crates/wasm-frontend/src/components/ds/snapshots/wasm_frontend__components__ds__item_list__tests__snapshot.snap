@@ -3,7 +3,7 @@ source: crates/wasm-frontend/src/components/ds/item_list.rs
 expression: "crate::components::ds::pretty_html(&render(\"c-item-list\", \"C04\", \"Item List\",\n\"Compact index of a group\\u{2019}s children \\u{2014} subcommands, endpoints, schemas. Each row is a sigil, a name + one-line description, and trailing meta. Rows separate with hairline rules, no card chrome.\",\nCMD_ROWS, ENDPOINT_ROWS, ANATOMY_ITEMS,))"
 ---
 <section class="pt-12 md:pt-16" id="c-item-list">
-  <div class="grid md:grid-cols-[200px_1fr] gap-6 md:gap-12">
+  <div class="grid md:grid-cols-[600px_1fr] gap-6 md:gap-12">
     <div>
       <div class="text-[12px] mono uppercase tracking-wider text-ink-500">
         C04
