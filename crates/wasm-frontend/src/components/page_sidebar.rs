@@ -120,7 +120,7 @@ pub(crate) fn render_sidebar(ctx: &SidebarContext<'_>) -> Aside {
     let mut aside = Aside::builder();
     aside
         .aria_label("Package navigation")
-        .class("hidden md:block");
+        .class("hidden md:block bg-canvas");
     // Inner sticky wrapper — the <aside> stretches the full grid row so the
     // footer sits below; the inner div sticks within that space.
     aside.text(r#"<div class="sticky overflow-y-auto px-4 md:px-6 pt-8 pb-8 space-y-4" style="top: var(--navbar-offset); max-height: calc(100vh - var(--navbar-offset)); overscroll-behavior: contain;">"#.to_owned());

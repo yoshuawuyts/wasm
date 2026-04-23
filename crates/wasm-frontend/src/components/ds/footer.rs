@@ -34,7 +34,7 @@ pub(crate) fn render(footer: &Footer<'_>) -> String {
     let status = footer.status.to_owned();
 
     FooterEl::builder()
-        .class("col-span-full border-t border-lineSoft")
+        .class("col-span-full")
         .division(|grid| {
             let grid = grid
                 .class("max-w-[1280px] w-full px-4 md:px-8 py-10 grid grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1fr] gap-x-8 gap-y-6 text-[13px]")
