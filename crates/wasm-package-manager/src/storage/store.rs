@@ -3421,4 +3421,92 @@ mod tests {
             "child producers should survive round-trip"
         );
     }
+
+    /// Helper: insert a manifest with one layer and a tag pointing at it.
+    /// Returns the tag id so callers can backdate `updated_at` when needed.
+    fn insert_tag_with_layer(
+        conn: &Connection,
+        registry: &str,
+        repository: &str,
+        tag: &str,
+        digest: &str,
+    ) -> i64 {
+        let repo_id = OciRepository::upsert(conn, registry, repository).unwrap();
+        let annotations = HashMap::new();
+        let (manifest_id, _) = OciManifest::upsert(
+            conn,
+            repo_id,
+            digest,
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+        OciLayer::insert(
+            conn,
+            manifest_id,
+            "sha256:layer",
+            Some("application/vnd.wasm.content.layer.v1+wasm"),
+            Some(64),
+            0,
+        )
+        .unwrap();
+        OciTag::upsert(conn, repo_id, tag, digest).unwrap()
+    }
+
+    #[test]
+    fn is_tag_fresh_returns_false_when_tag_missing() {
+        let conn = setup_test_db();
+        let store = Store::from_conn(conn);
+        assert!(!store.is_tag_fresh("ghcr.io", "test/pkg", "0.1.0", 3600));
+    }
+
+    #[test]
+    fn is_tag_fresh_returns_false_when_tag_has_no_layers() {
+        let conn = setup_test_db();
+        let repo_id = OciRepository::upsert(&conn, "ghcr.io", "test/pkg").unwrap();
+        let annotations = HashMap::new();
+        let (_manifest_id, _) = OciManifest::upsert(
+            &conn,
+            repo_id,
+            "sha256:nolayers",
+            Some("application/vnd.oci.image.manifest.v1+json"),
+            Some("{}"),
+            Some(1024),
+            None,
+            None,
+            None,
+            &annotations,
+        )
+        .unwrap();
+        OciTag::upsert(&conn, repo_id, "0.1.0", "sha256:nolayers").unwrap();
+        let store = Store::from_conn(conn);
+        assert!(!store.is_tag_fresh("ghcr.io", "test/pkg", "0.1.0", 3600));
+    }
+
+    #[test]
+    fn is_tag_fresh_returns_true_for_recently_updated_tag() {
+        let conn = setup_test_db();
+        insert_tag_with_layer(&conn, "ghcr.io", "test/pkg", "0.1.0", "sha256:fresh");
+        let store = Store::from_conn(conn);
+        assert!(store.is_tag_fresh("ghcr.io", "test/pkg", "0.1.0", 3600));
+    }
+
+    #[test]
+    fn is_tag_fresh_returns_false_for_tag_older_than_max_age() {
+        let conn = setup_test_db();
+        let tag_id = insert_tag_with_layer(&conn, "ghcr.io", "test/pkg", "0.1.0", "sha256:stale");
+        // Backdate the tag's updated_at to two hours ago.
+        conn.execute(
+            "UPDATE oci_tag SET updated_at = datetime('now', '-7200 seconds') WHERE id = ?1",
+            [tag_id],
+        )
+        .unwrap();
+        let store = Store::from_conn(conn);
+        assert!(!store.is_tag_fresh("ghcr.io", "test/pkg", "0.1.0", 3600));
+    }
 }

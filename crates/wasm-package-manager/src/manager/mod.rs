@@ -24,6 +24,11 @@ pub use logic::{
 };
 pub use models::{InstallResult, PullResult, SyncPolicy, SyncResult};
 
+/// How long (in seconds) to skip re-pulling a tag during background indexing
+/// when its layers are already present in the local store.  Set to one hour
+/// so server restarts don't trigger a full re-fetch of every known version.
+const PULL_COOLDOWN_SECS: u64 = 3600;
+
 /// A cache on disk
 ///
 /// # Example
@@ -937,17 +942,42 @@ impl Manager {
 
         // Pull every semver-tagged version so that per-version WIT text,
         // worlds, components and dependency metadata are all available in the
-        // local database.  Non-semver tags (e.g. `latest`, hash-based
-        // signatures) are skipped — they typically duplicate a semver tag.
+        // local database.  Tags that are not valid semver (e.g. `latest`,
+        // hash-based signatures like `sha256-...`, or arbitrary strings such
+        // as `dev`/`nightly`) are skipped — they typically duplicate a semver
+        // tag and cannot be reasoned about by the resolver.
         //
-        // Tags that were already pulled recently (within 1 hour) are skipped
-        // to avoid redundant network traffic on server restarts.
+        // The semver tags are sorted in ascending order so that the highest
+        // stable version is pulled last.  Because `get_package_dependencies`
+        // selects the dependencies of the most recently inserted manifest
+        // (`ORDER BY om.id DESC`), this keeps that query reflecting the
+        // latest stable version.  Pre-release tags are pulled before stable
+        // ones so a stable manifest always wins when both exist.
+        //
+        // Tags that were already pulled recently (within `PULL_COOLDOWN_SECS`
+        // seconds) are skipped to avoid redundant network traffic on server
+        // restarts.
         // r[impl server.index.dependencies]
-        const PULL_COOLDOWN_SECS: u64 = 3600; // 1 hour
+        let mut semver_tags: Vec<(&String, semver::Version)> = Vec::with_capacity(tags.len());
         for tag in &tags {
-            if tag == "latest" || tag.starts_with("sha256-") {
-                continue;
+            match logic::parse_tag_as_semver(tag) {
+                Some(v) => semver_tags.push((tag, v)),
+                None => {
+                    tracing::debug!(
+                        registry = %reference.registry(),
+                        repository = %reference.repository(),
+                        tag = %tag,
+                        "Skipping pull — tag is not a valid semver version"
+                    );
+                }
             }
+        }
+        // Sort ascending: pre-releases first, then stable versions in order.
+        // The `cmp` impl on `semver::Version` already orders pre-releases
+        // before their corresponding stable release.
+        semver_tags.sort_by(|(_, a), (_, b)| a.cmp(b));
+
+        for (tag, _version) in &semver_tags {
             if !skip_cooldown
                 && self.store.is_tag_fresh(
                     reference.registry(),
