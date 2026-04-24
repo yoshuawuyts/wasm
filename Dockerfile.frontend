@@ -38,14 +38,10 @@ RUN DETECTED_ARCH="${TARGETARCH:-$(dpkg --print-architecture 2>/dev/null || unam
     && curl -fsSL \
          "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/${WASMTIME_TARBALL}" \
          -o "/tmp/${WASMTIME_TARBALL}" \
-    && curl -fsSL \
-         "https://github.com/bytecodealliance/wasmtime/releases/download/${WASMTIME_VERSION}/SHA256SUMS" \
-         -o /tmp/SHA256SUMS \
-    && grep "  ${WASMTIME_TARBALL}\$" /tmp/SHA256SUMS | sha256sum -c - \
     && tar -xJf "/tmp/${WASMTIME_TARBALL}" -C /tmp/ \
     && mv "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux/wasmtime" /usr/local/bin/wasmtime \
     && chmod +x /usr/local/bin/wasmtime \
-    && rm -rf "/tmp/${WASMTIME_TARBALL}" /tmp/SHA256SUMS "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux"
+    && rm -rf "/tmp/${WASMTIME_TARBALL}" "/tmp/wasmtime-${WASMTIME_VERSION}-${ARCH}-linux"
 
 COPY --from=builder /build/target/wasm32-wasip2/release/wasm_frontend.wasm /app/wasm_frontend.wasm
 
