@@ -4,7 +4,7 @@ Terminal user interface for the WebAssembly developer tools.
 
 ## Overview
 
-`wasm-tui` provides the interactive terminal UI for `wasm(1)`. It is driven by
+`wasm-tui` provides the interactive terminal UI for `component(1)`. It is driven by
 message-passing between the TUI thread and a background manager task, using
 `AppEvent` (TUI → manager) and `ManagerEvent` (manager → TUI) channels.
 

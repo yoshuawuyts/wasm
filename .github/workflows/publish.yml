@@ -39,7 +39,7 @@ jobs:
       - name: Verify version matches Cargo.toml
         run: |
           CARGO_VERSION=$(cargo metadata --no-deps --format-version 1 \
-            | jq -r '.packages[] | select(.name == "wasm") | .version')
+            | jq -r '.packages[] | select(.name == "component") | .version')
           if [ "$CARGO_VERSION" != "${{ steps.version.outputs.version }}" ]; then
             echo "::error::Branch version ${{ steps.version.outputs.version }} does not match Cargo.toml version $CARGO_VERSION"
             exit 1
@@ -85,26 +85,26 @@ jobs:
           echo "RUSTC_WRAPPER=sccache" >> $GITHUB_ENV
 
       - name: Build release binary
-        run: cargo build --release --package wasm
+        run: cargo build --release --package component
 
       - name: Package binary (unix)
         if: matrix.archive == 'tar.gz'
         run: |
           cd target/release
-          tar czf ../../wasm-${{ matrix.target }}.tar.gz wasm
+          tar czf ../../component-${{ matrix.target }}.tar.gz wasm
           cd ../..
 
       - name: Package binary (windows)
         if: matrix.archive == 'zip'
         shell: pwsh
         run: |
-          Compress-Archive -Path target/release/wasm.exe -DestinationPath wasm-${{ matrix.target }}.zip
+          Compress-Archive -Path target/release/component.exe -DestinationPath component-${{ matrix.target }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: wasm-${{ matrix.target }}
-          path: wasm-${{ matrix.target }}.${{ matrix.archive }}
+          name: component-${{ matrix.target }}
+          path: component-${{ matrix.target }}.${{ matrix.archive }}
 
   publish:
     name: Publish to crates.io
@@ -152,8 +152,8 @@ jobs:
         run: sleep 30
 
       # Tier 4: depends on wasm-detector + wasm-manifest + wasm-package-manager
-      - name: Publish wasm
-        run: cargo publish --package wasm
+      - name: Publish component
+        run: cargo publish --package component
 
   release:
     name: Create release

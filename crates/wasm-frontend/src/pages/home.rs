@@ -33,7 +33,7 @@ fn render_packages(packages: &[KnownPackage]) -> String {
 /// surface a small notice so visitors know the live data is unavailable.
 fn render_error(err: &ApiError) -> String {
     let notice = format!(
-        r#"<div class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-4"><div role="status" class="flex items-start gap-2 rounded-md border border-line bg-surfaceMuted px-3 py-2 text-[12px] text-ink-700"><span class="mono uppercase tracking-wider text-ink-500">Registry offline</span><span>Live package data is temporarily unavailable. Install the CLI below to get started — the registry is not required to use <code class="px-1 py-0.5 rounded-sm bg-surface text-ink-900 mono text-[0.875em]">wasm</code> locally. ({err})</span></div></div>"#,
+        r#"<div class="mx-auto mx-auto max-w-[1280px] w-full px-4 md:px-8 pt-4"><div role="status" class="flex items-start gap-2 rounded-md border border-line bg-surfaceMuted px-3 py-2 text-[12px] text-ink-700"><span class="mono uppercase tracking-wider text-ink-500">Registry offline</span><span>Live package data is temporarily unavailable. Install the CLI below to get started — the registry is not required to use <code class="px-1 py-0.5 rounded-sm bg-surface text-ink-900 mono text-[0.875em]">component</code> locally. ({err})</span></div></div>"#,
         err = html_escape(&err.to_string()),
     );
     let body = compose_body(&Stats::default(), Some(&notice));
@@ -166,7 +166,7 @@ fn compose_body(stats: &Stats, notice_html: Option<&str>) -> String {
         filename: "install.sh",
         snippet_html: &install_snippet(),
         sha: "9e4a…c0f1",
-        copy_command: "curl -sSf https://wasm.dev/install.sh | sh",
+        copy_command: "curl -sSf https://component.dev/install.sh | sh",
     });
 
     let hero_html = hero::render(&Hero {
@@ -228,7 +228,7 @@ fn compose_body(stats: &Stats, notice_html: Option<&str>) -> String {
     let explore_html = render_explore(stats);
 
     let principles_html = principles_grid::render(
-        "Why wasm",
+        "Why component",
         "Built for components.",
         "A package manager designed around the WebAssembly Component Model — not \
          retrofitted from an older ecosystem.",
@@ -239,7 +239,7 @@ fn compose_body(stats: &Stats, notice_html: Option<&str>) -> String {
         kicker: "For maintainers",
         title: "Publish your component.",
         body_html: "Add your namespace to a registry config and run \
-                    <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">wasm publish</code>. \
+                    <code class=\"px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]\">component publish</code>. \
                     The index is append-only and signed end-to-end.",
         primary_label: "Open the publishing guide",
         primary_href: "/docs",
@@ -343,17 +343,17 @@ fn format_count(n: usize) -> String {
 fn install_snippet() -> String {
     let mut s = String::new();
     s.push_str(&install_card::prompt(
-        "curl -sSf https://wasm.dev/install.sh | sh",
+        "curl -sSf https://component.dev/install.sh | sh",
     ));
     s.push_str("\n\n");
     s.push_str(&install_card::prompt(
-        "wasm <span class=\"font-semibold\">init</span> hello-world",
+        "component <span class=\"font-semibold\">init</span> hello-world",
     ));
     s.push('\n');
     s.push_str(&install_card::muted("  Created hello-world/wasm.toml"));
     s.push_str("\n\n");
     s.push_str(&install_card::prompt(
-        "wasm <span class=\"font-semibold\">add</span> wasi:http@0.2",
+        "component <span class=\"font-semibold\">add</span> wasi:http@0.2",
     ));
     s.push('\n');
     s.push_str(&install_card::muted("  Resolved 4 packages in 312 ms"));
@@ -367,7 +367,7 @@ fn install_snippet() -> String {
     s.push_str(&install_card::muted("0.2.3"));
     s.push_str("\n\n");
     s.push_str(&install_card::prompt(
-        "wasm <span class=\"font-semibold\">build</span>",
+        "component <span class=\"font-semibold\">build</span>",
     ));
     s.push('\n');
     s.push_str(&install_card::positive("  ✓ Compiled"));

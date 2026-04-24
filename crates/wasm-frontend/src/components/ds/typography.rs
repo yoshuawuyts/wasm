@@ -123,7 +123,7 @@ pub(crate) fn render(
                   class="text-ink-900 underline decoration-line decoration-1 underline-offset-[3px] hover:decoration-ink-900">installation
                   guide</a>,
                 then run <code
-                  class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">wasm install</code>.
+                  class="px-1 py-0.5 rounded-sm bg-surfaceMuted text-ink-900 mono text-[0.875em]">component install</code>.
                 Use <strong class="font-semibold text-ink-900">--strict</strong> for <em
                   class="italic">reproducible</em> builds.
                 Press <kbd

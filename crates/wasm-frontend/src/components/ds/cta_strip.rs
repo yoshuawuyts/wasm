@@ -75,11 +75,11 @@ mod tests {
         let html = render(&CtaStrip {
             kicker: "Ship",
             title: "Build with components today.",
-            body_html: r#"Install the CLI with <code class="mono text-[12px]">brew install wasm</code> and start composing."#,
+            body_html: r#"Install the CLI with <code class="mono text-[12px]">brew install component</code> and start composing."#,
             primary_label: "Get started",
             primary_href: "/docs",
             secondary_label: "View on GitHub",
-            secondary_href: "https://github.com/yoshuawuyts/wasm",
+            secondary_href: "https://github.com/yoshuawuyts/component-cli",
         });
         insta::assert_snapshot!(crate::components::ds::pretty_html(&html));
     }

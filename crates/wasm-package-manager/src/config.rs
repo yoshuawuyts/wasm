@@ -20,7 +20,7 @@ use crate::xdg_config_home;
 use crate::credential_helper::CredentialHelper;
 
 /// Default configuration file content with commented examples.
-const DEFAULT_CONFIG: &str = r#"# wasm(1) configuration file
+const DEFAULT_CONFIG: &str = r#"# component(1) configuration file
 # https://github.com/yoshuawuyts/wasm
 
 # Per-registry credential helpers allow secure authentication with container registries.

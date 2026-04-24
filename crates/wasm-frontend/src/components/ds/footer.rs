@@ -107,7 +107,7 @@ mod tests {
         const COMMUNITY: &[FooterLink] = &[
             FooterLink {
                 label: "GitHub",
-                href: "https://github.com/yoshuawuyts/wasm",
+                href: "https://github.com/yoshuawuyts/component-cli",
             },
             FooterLink {
                 label: "Spec",
@@ -125,7 +125,7 @@ mod tests {
             },
         ];
         let html = render(&Footer {
-            brand: "wasm",
+            brand: "component",
             lede: "The package manager for WebAssembly Components.",
             status: "All systems operational",
             columns: &[

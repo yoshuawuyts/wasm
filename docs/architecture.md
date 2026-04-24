@@ -1,11 +1,11 @@
 # Architecture
 
-This document describes the high-level architecture of `wasm(1)`. If you want to
+This document describes the high-level architecture of `component(1)`. If you want to
 familiarize yourself with the codebase, you are in the right place.
 
 ## Overview
 
-`wasm(1)` is a unified developer tool for WebAssembly. It can pull and install
+`component(1)` is a unified developer tool for WebAssembly. It can pull and install
 Wasm Components and WIT interfaces from OCI registries, run components via
 Wasmtime with sandboxed permissions, and manage local state through both a CLI
 and an interactive TUI.
@@ -14,7 +14,7 @@ The project is a Cargo workspace with six crates:
 
 ```
 crates/
-├── wasm-cli              # Binary — the `wasm(1)` command
+├── component-cli              # Binary — the `component(1)` command
 ├── wasm-package-manager  # Library — OCI registry interaction, caching, metadata
 ├── wasm-manifest         # Library — manifest and lockfile types
 ├── wasm-detector         # Library — local .wasm file discovery
@@ -25,7 +25,7 @@ crates/
 ## Crate Dependency Graph
 
 ```
-wasm-cli ──────────┬──► wasm-package-manager ──► wasm-manifest
+component-cli ──────────┬──► wasm-package-manager ──► wasm-manifest
                    │
                    ├──► wasm-manifest
                    │
@@ -34,7 +34,7 @@ wasm-cli ──────────┬──► wasm-package-manager ──�
 wasm-meta-registry ───► wasm-package-manager ──► wasm-manifest
 ```
 
-`wasm-cli` is the main entry point. It depends on `wasm-package-manager` for all
+`component-cli` is the main entry point. It depends on `wasm-package-manager` for all
 registry and storage operations, on `wasm-manifest` for reading project manifests
 and lockfiles, and on `wasm-detector` for finding local `.wasm` files.
 
@@ -43,9 +43,9 @@ and lockfiles, and on `wasm-detector` for finding local `.wasm` files.
 
 `xtask` is a development-only crate and is not depended on by any other crate.
 
-## wasm-cli
+## component-cli
 
-The `wasm(1)` binary lives in `crates/wasm-cli`. It uses [clap] for argument
+The `component(1)` binary lives in `crates/component-cli`. It uses [clap] for argument
 parsing and dispatches to one of the following command modules:
 
 | Command      | Module          | Purpose |
@@ -64,7 +64,7 @@ parsing and dispatches to one of the following command modules:
 
 ### TUI
 
-The interactive UI is built with [ratatui] and lives in `crates/wasm-cli/src/tui/`.
+The interactive UI is built with [ratatui] and lives in `crates/component-cli/src/tui/`.
 
 ```
 tui/
@@ -90,7 +90,7 @@ is `!Send`.
 
 ### Run Command and Permissions
 
-`wasm run` executes a Wasm Component using Wasmtime's WASIp2 implementation.
+`component run` executes a Wasm Component using Wasmtime's WASIp2 implementation.
 Permissions are resolved through a four-layer merge:
 
 1. **Global config** — `$XDG_CONFIG_HOME/wasm/config.toml` defaults
@@ -206,7 +206,7 @@ Key types:
   optional `permissions`. Bare versions use Cargo-style semver (`"1.0.0"` → `^1.0.0`).
 - **`Lockfile`** — lists resolved packages with digests for reproducible builds.
 - **`RunPermissions`** / **`ResolvedPermissions`** — sandbox controls for the
-  `wasm run` command.
+  `component run` command.
 
 ## wasm-detector
 
@@ -239,7 +239,7 @@ the full CI suite:
 3. `cargo clippy` — lint check (with `-D warnings`)
 4. `cargo fmt --check` — formatting check
 5. `cargo xtask sql check` — verify migrations are in sync with `schema.sql`
-6. README freshness check — ensures `README.md` matches `wasm --help` output
+6. README freshness check — ensures `README.md` matches `component --help` output
 
 [cargo-nextest]: https://nexte.st
 

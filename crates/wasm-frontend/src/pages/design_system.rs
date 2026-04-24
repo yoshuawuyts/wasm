@@ -566,7 +566,7 @@ fn render_landing_components() -> String {
 
     // C13 — Footer
     let footer_demo = footer::render(&Footer {
-        brand: "wasm",
+        brand: "component",
         lede: "A package manager and registry for WebAssembly components.",
         status: "All systems operational",
         columns: &[

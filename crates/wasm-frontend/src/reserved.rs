@@ -12,6 +12,7 @@ const RESERVED_NAMESPACES: &[&str] = &[
     "all",
     "api",
     "assets",
+    "component",
     "docs",
     "downloads",
     "explore",

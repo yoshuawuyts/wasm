@@ -138,17 +138,17 @@ mod tests {
     fn snapshot() {
         let snippet = format!(
             "{}\n{}\n{}\n{}",
-            muted("# install the wasm CLI"),
-            prompt("curl -sSf https://get.wasm.run | sh"),
+            muted("# install the component CLI"),
+            prompt("curl -sSf https://get.component.dev | sh"),
             muted("# verify"),
-            positive("\u{2713} wasm 0.4.0 installed"),
+            positive("\u{2713} component 0.4.0 installed"),
         );
         let html = render(&InstallCard {
             platforms: &["macOS", "Linux", "Windows"],
             filename: "install.sh",
             snippet_html: &snippet,
             sha: "9f3c\u{2026}a217",
-            copy_command: "curl -sSf https://get.wasm.run | sh",
+            copy_command: "curl -sSf https://get.component.dev | sh",
         });
         insta::assert_snapshot!(crate::components::ds::pretty_html(&html));
     }

@@ -363,7 +363,7 @@ pub(crate) fn render(
             sigil_bg: "var(--c-cat-plum)",
             sigil_color: "var(--c-cat-plum-ink)",
             sigil_text: "\u{00b7}",
-            name: "wasm".to_owned(),
+            name: "component".to_owned(),
             href: "#".to_owned(),
             meta: "root".to_owned(),
             active: false,

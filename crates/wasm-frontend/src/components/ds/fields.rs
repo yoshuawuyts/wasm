@@ -642,7 +642,7 @@ pub(crate) struct CommandEntry {
 pub(crate) const COMMANDS: &[CommandEntry] = &[
     CommandEntry {
         label: "Command \u{00b7} default",
-        cmd_text: "wasm install wasi:http-handler",
+        cmd_text: "component install wasi:http-handler",
         btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ink-900",
         btn_label: "Copy command",
         btn_svg: SVG_COPY,
@@ -654,7 +654,7 @@ pub(crate) const COMMANDS: &[CommandEntry] = &[
     },
     CommandEntry {
         label: "Command \u{00b7} copied (1.6s after click)",
-        cmd_text: "wasm install wasi:http-handler",
+        cmd_text: "component install wasi:http-handler",
         btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-positive",
         btn_label: "Copied",
         btn_svg: SVG_CHECK,
@@ -666,7 +666,7 @@ pub(crate) const COMMANDS: &[CommandEntry] = &[
     },
     CommandEntry {
         label: "Command \u{00b7} long (horizontal overflow)",
-        cmd_text: "wasm install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain",
+        cmd_text: "component install wasi:http-handler@0.4.2 --registry https://registry.example.com --keychain",
         btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-ink-500 hover:text-ink-900 hover:bg-surfaceMuted",
         btn_label: "Copy command",
         btn_svg: SVG_COPY_LONG,
@@ -678,7 +678,7 @@ pub(crate) const COMMANDS: &[CommandEntry] = &[
     },
     CommandEntry {
         label: "Command \u{00b7} copy failed",
-        cmd_text: "wasm install wasi:http-handler",
+        cmd_text: "component install wasi:http-handler",
         btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-line bg-surface text-negative",
         btn_label: "Copy failed",
         btn_svg: SVG_FAIL,
@@ -690,7 +690,7 @@ pub(crate) const COMMANDS: &[CommandEntry] = &[
     },
     CommandEntry {
         label: "Command \u{00b7} disabled",
-        cmd_text: "wasm install wasi:http-handler",
+        cmd_text: "component install wasi:http-handler",
         btn_class: "inline-flex items-center justify-center w-9 h-9 rounded-r-md border border-l-0 border-dashed border-line bg-surfaceMuted text-ink-400 cursor-not-allowed",
         btn_label: "Copy command",
         btn_svg: SVG_COPY_DISABLED,

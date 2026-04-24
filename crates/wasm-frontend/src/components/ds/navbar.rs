@@ -619,7 +619,7 @@ fn mobile_search() -> String {
                                     hdr.class("px-2 pt-2 pb-1.5 mono uppercase tracking-wider text-[10px] text-ink-500")
                                         .text("Commands")
                                 })
-                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">c</span><span class="mono text-ink-700">wasm <span class="font-semibold">http</span> serve</span></a>"##)
+                                .text(r##"<a href="#" class="flex items-center gap-2.5 px-3 py-1.5 hover:bg-surfaceMuted no-underline"><span class="sigil" style="background:var(--c-cat-green);color:var(--c-cat-green-ink);">c</span><span class="mono text-ink-700">component <span class="font-semibold">http</span> serve</span></a>"##)
                         })
                 })
         })

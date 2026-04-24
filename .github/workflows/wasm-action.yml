@@ -1,10 +1,10 @@
-name: wasm Action Example
+name: component Action Example
 
 on:
   workflow_dispatch:
 
 jobs:
-  run-wasm-component:
+  run-component:
     name: Run a Wasm Component
     runs-on: ubuntu-latest
     permissions:
@@ -24,7 +24,7 @@ jobs:
 
       # Run a local Wasm Component with network access disabled (default).
       - name: Run Wasm Component
-        id: wasm-run
+        id: component-run
         uses: ./
         with:
           command: run
@@ -32,9 +32,9 @@ jobs:
           inherit-network: 'false'
 
       - name: Show exit code
-        run: echo "wasm exited with code ${{ steps.wasm-run.outputs.exit-code }}"
+        run: echo "component exited with code ${{ steps.component-run.outputs.exit-code }}"
 
-  run-wasm-component-with-permissions:
+  run-component-with-permissions:
     name: Run a Wasm Component with permissions
     runs-on: ubuntu-latest
     permissions:
@@ -47,7 +47,7 @@ jobs:
 
       # Run a component with environment variables and network access.
       - name: Run component with permissions
-        id: wasm-run-perms
+        id: component-run-perms
         uses: ./
         with:
           command: run
@@ -57,4 +57,4 @@ jobs:
           args: '--env API_URL=https://example.com --env DEBUG=1'
 
       - name: Check result
-        run: echo "Component exited with ${{ steps.wasm-run-perms.outputs.exit-code }}"
+        run: echo "Component exited with ${{ steps.component-run-perms.outputs.exit-code }}"

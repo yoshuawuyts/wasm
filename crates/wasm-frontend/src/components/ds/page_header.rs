@@ -108,7 +108,7 @@ pub(crate) fn render(
                                                 })
                                                 .code(|c| {
                                                     c.class("inline-flex items-center px-2.5 h-7 border border-line bg-surface mono text-[12.5px] text-ink-900 whitespace-nowrap")
-                                                        .text("wasm install wasi:http-handler")
+                                                        .text("component install wasi:http-handler")
                                                 })
                                                 .button(|b| {
                                                     b.type_("button")

@@ -15,7 +15,7 @@ pub(crate) fn render() -> String {
         })
         .paragraph(|p| {
             p.class(crate::components::ds::typography::BODY_CLASS)
-                .text("Install the wasm CLI to manage WebAssembly components from your terminal.")
+                .text("Install the component CLI to manage WebAssembly components from your terminal.")
         })
         .heading_2(|h2| {
             h2.class(crate::components::ds::typography::H2_CLASS)
@@ -32,7 +32,7 @@ pub(crate) fn render() -> String {
                             html::text_content::PreformattedText::builder()
                                 .class(crate::components::ds::code::CODE_BLOCK_CLASS)
                                 .code(|c| {
-                                    c.text("curl -fsSL https://raw.githubusercontent.com/yoshuawuyts/wasm-cli/main/scripts/install.sh | sh")
+                                    c.text("curl -fsSL https://raw.githubusercontent.com/yoshuawuyts/component-cli/main/scripts/install.sh | sh")
                                 })
                                 .build(),
                         )
@@ -46,7 +46,7 @@ pub(crate) fn render() -> String {
                             html::text_content::PreformattedText::builder()
                                 .class(crate::components::ds::code::CODE_BLOCK_CLASS)
                                 .code(|c| {
-                                    c.text("irm https://raw.githubusercontent.com/yoshuawuyts/wasm-cli/main/scripts/install.ps1 | iex")
+                                    c.text("irm https://raw.githubusercontent.com/yoshuawuyts/component-cli/main/scripts/install.ps1 | iex")
                                 })
                                 .build(),
                         )
@@ -59,7 +59,7 @@ pub(crate) fn render() -> String {
         .push(
             html::text_content::PreformattedText::builder()
                 .class(crate::components::ds::code::CODE_BLOCK_CLASS)
-                .code(|c| c.text("cargo install wasm-cli"))
+                .code(|c| c.text("cargo install component-cli"))
                 .build(),
         )
         .build();

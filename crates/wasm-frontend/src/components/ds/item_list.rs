@@ -255,7 +255,7 @@ pub(crate) fn render(
             d.division(|l| {
                 l.class("text-[12px] text-ink-500 mb-3")
                     .text("Subcommands of ")
-                    .span(|s| s.class("mono").text("wasm registry"))
+                    .span(|s| s.class("mono").text("component registry"))
             })
             .push(render_item_list(cmd_rows))
         })

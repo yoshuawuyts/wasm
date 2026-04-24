@@ -142,7 +142,7 @@ mod tests {
                 },
                 HeroCta {
                     label: "View on GitHub",
-                    href: "https://github.com/yoshuawuyts/wasm",
+                    href: "https://github.com/yoshuawuyts/component-cli",
                     style: HeroCtaStyle::Ghost,
                 },
             ],
