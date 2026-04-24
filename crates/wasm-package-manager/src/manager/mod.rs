@@ -902,27 +902,41 @@ impl Manager {
                 })?;
         }
 
-        // Best-effort: pull the wasm layer for the latest stable tag so that
-        // WIT dependency metadata is extracted and stored in the database.
-        // Using the latest stable tag ensures `KnownPackage.dependencies` always
-        // reflects the most recent stable version rather than an arbitrary tag.
+        // Pull every semver-tagged version so that per-version WIT text,
+        // worlds, components and dependency metadata are all available in the
+        // local database.  Non-semver tags (e.g. `latest`, hash-based
+        // signatures) are skipped — they typically duplicate a semver tag.
         // r[impl server.index.dependencies]
-        let dep_tag = pick_latest_stable_tag(&tags).unwrap_or_else(|| meta_tag.to_string());
-        let dep_ref: Reference = format!(
-            "{}/{}:{}",
-            reference.registry(),
-            reference.repository(),
-            dep_tag
-        )
-        .parse()?;
-        if let Err(e) = self.pull(dep_ref).await {
-            tracing::debug!(
+        for tag in &tags {
+            if tag == "latest" || tag.starts_with("sha256-") {
+                continue;
+            }
+            tracing::info!(
                 registry = %reference.registry(),
                 repository = %reference.repository(),
-                tag = %dep_tag,
-                error = %e,
-                "Could not pull wasm layer during index; dependency metadata unavailable"
+                tag = %tag,
+                "Pulling version for indexing"
             );
+            let tag_ref: Reference = match format!(
+                "{}/{}:{}",
+                reference.registry(),
+                reference.repository(),
+                tag
+            )
+            .parse()
+            {
+                Ok(r) => r,
+                Err(_) => continue,
+            };
+            if let Err(e) = self.pull(tag_ref).await {
+                tracing::debug!(
+                    registry = %reference.registry(),
+                    repository = %reference.repository(),
+                    tag = %tag,
+                    error = %e,
+                    "Could not pull wasm layer during index"
+                );
+            }
         }
 
         // Return the indexed package with its now-populated dependencies.
