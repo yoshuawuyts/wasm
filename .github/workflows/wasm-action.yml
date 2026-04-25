@@ -1,4 +1,4 @@
-name: component Action Example
+name: wasm Action Example
 
 on:
   workflow_dispatch:

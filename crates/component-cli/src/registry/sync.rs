@@ -1,7 +1,7 @@
 //! `wasm registry sync` subcommand.
 
 use anyhow::Result;
-use wasm_package_manager::manager::{Manager, SyncPolicy, SyncResult};
+use component_package_manager::manager::{Manager, SyncPolicy, SyncResult};
 
 /// Default meta-registry URL.
 const REGISTRY_URL: &str = Manager::DEFAULT_REGISTRY_URL;

@@ -125,33 +125,33 @@ jobs:
         uses: rust-lang/crates-io-auth-action@v1
 
       # Tier 1: leaf crates with no inter-workspace dependencies
-      - name: Publish wasm-detector
-        run: cargo publish --package wasm-detector
+      - name: Publish component-detector
+        run: cargo publish --package component-detector
 
-      - name: Publish wasm-manifest
-        run: cargo publish --package wasm-manifest
+      - name: Publish component-manifest
+        run: cargo publish --package component-manifest
 
-      - name: Publish wasm-meta-registry-client
-        run: cargo publish --package wasm-meta-registry-client
-
-      - name: Wait for crates.io indexing
-        run: sleep 30
-
-      # Tier 2: depends on wasm-manifest + wasm-meta-registry-client
-      - name: Publish wasm-package-manager
-        run: cargo publish --package wasm-package-manager
+      - name: Publish component-meta-registry-client
+        run: cargo publish --package component-meta-registry-client
 
       - name: Wait for crates.io indexing
         run: sleep 30
 
-      # Tier 3: depends on wasm-package-manager
-      - name: Publish wasm-meta-registry
-        run: cargo publish --package wasm-meta-registry
+      # Tier 2: depends on component-manifest + component-meta-registry-client
+      - name: Publish component-package-manager
+        run: cargo publish --package component-package-manager
 
       - name: Wait for crates.io indexing
         run: sleep 30
 
-      # Tier 4 (component): depends on wasm-detector + wasm-manifest + wasm-package-manager
+      # Tier 3: depends on component-package-manager
+      - name: Publish component-meta-registry
+        run: cargo publish --package component-meta-registry
+
+      - name: Wait for crates.io indexing
+        run: sleep 30
+
+      # Tier 4: depends on component-detector + component-manifest + component-package-manager
       - name: Publish component
         run: cargo publish --package component
 

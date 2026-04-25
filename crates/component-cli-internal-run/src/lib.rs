@@ -79,7 +79,7 @@ pub fn validate_component(bytes: &[u8]) -> miette::Result<()> {
 /// context setup fails.
 pub fn execute_cli_component(
     bytes: &[u8],
-    permissions: &wasm_manifest::ResolvedPermissions,
+    permissions: &component_manifest::ResolvedPermissions,
 ) -> miette::Result<Result<(), ()>> {
     let engine = Engine::default();
     let component = Component::new(&engine, bytes)

@@ -19,8 +19,8 @@ use std::path::PathBuf;
 use errors::RunError;
 use miette::{Context, IntoDiagnostic};
 
-use wasm_manifest::RunPermissions;
-use wasm_package_manager::manager::Manager;
+use component_manifest::RunPermissions;
+use component_package_manager::manager::Manager;
 
 /// Options for the `component run` command.
 #[derive(clap::Parser)]
@@ -159,10 +159,10 @@ impl Opts {
     /// 4. CLI flags
     fn resolve_permissions(
         &self,
-        reference: Option<&wasm_package_manager::Reference>,
-    ) -> wasm_manifest::ResolvedPermissions {
+        reference: Option<&component_package_manager::Reference>,
+    ) -> component_manifest::ResolvedPermissions {
         let cli = self.cli_permissions();
-        wasm_package_manager::permissions::resolve_permissions(reference, cli)
+        component_package_manager::permissions::resolve_permissions(reference, cli)
     }
 }
 
@@ -178,7 +178,7 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
     let Ok(manifest_str) = std::fs::read_to_string(&manifest_path) else {
         return Ok(None);
     };
-    let Ok(manifest) = toml::from_str::<wasm_manifest::Manifest>(&manifest_str) else {
+    let Ok(manifest) = toml::from_str::<component_manifest::Manifest>(&manifest_str) else {
         return Ok(None);
     };
 
@@ -190,7 +190,7 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
     let Ok(lockfile_str) = std::fs::read_to_string(&lockfile_path) else {
         return Ok(None);
     };
-    let Ok(lockfile) = toml::from_str::<wasm_manifest::Lockfile>(&lockfile_str) else {
+    let Ok(lockfile) = toml::from_str::<component_manifest::Lockfile>(&lockfile_str) else {
         return Ok(None);
     };
 
@@ -214,7 +214,7 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
                 name: input.to_string(),
             })?;
 
-    let filename = wasm_package_manager::manager::vendor_filename(
+    let filename = component_package_manager::manager::vendor_filename(
         registry_host,
         repository,
         Some(package.version.as_str()),
@@ -235,7 +235,7 @@ fn resolve_manifest_key(input: &str) -> miette::Result<Option<PathBuf>> {
 
 /// Fetch component bytes from an OCI registry.
 async fn fetch_oci_bytes(
-    oci_ref: &wasm_package_manager::Reference,
+    oci_ref: &component_package_manager::Reference,
     offline: bool,
 ) -> miette::Result<Vec<u8>> {
     let manager = if offline {
@@ -249,7 +249,7 @@ async fn fetch_oci_bytes(
         .await
         .map_err(crate::util::into_miette)?;
     let manifest = pull_result.manifest.as_ref().ok_or(RunError::NoManifest)?;
-    let wasm_layers = wasm_package_manager::oci::filter_wasm_layers(&manifest.layers);
+    let wasm_layers = component_package_manager::oci::filter_wasm_layers(&manifest.layers);
     let layer = wasm_layers.first().ok_or(RunError::NoWasmLayer)?;
     let key = &layer.digest;
     manager

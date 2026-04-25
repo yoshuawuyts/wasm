@@ -30,9 +30,9 @@ enum Xtask {
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
-    /// Run the `wasm-meta-registry` server
+    /// Run the `component-meta-registry` server
     RunRegistry {
-        /// Arguments to pass to the wasm-meta-registry binary
+        /// Arguments to pass to the component-meta-registry binary
         #[arg(trailing_var_arg = true, allow_hyphen_values = true)]
         args: Vec<String>,
     },
@@ -102,7 +102,7 @@ fn main() -> Result<()> {
             let registry_dir_str = registry_dir
                 .to_str()
                 .expect("workspace root path is valid UTF-8");
-            let mut cargo_args = vec!["run", "--package", "wasm-meta-registry", "--"];
+            let mut cargo_args = vec!["run", "--package", "component-meta-registry", "--"];
             if args.is_empty() {
                 cargo_args.push(registry_dir_str);
             } else {
