@@ -136,8 +136,8 @@ impl DependencyProvider for DbDependencyProvider<'_> {
             .get_package_dependencies_by_name(package, Some(&ver_str))
             .map_err(|e| ResolveError::Db(e.to_string()))?;
 
-        let mut constraints: DependencyConstraints<String, WitVersionRange> =
-            DependencyConstraints::default();
+        // Use a HashMap to merge duplicate constraints, then convert to DependencyConstraints.
+        let mut merged: HashMap<String, WitVersionRange> = HashMap::new();
         for dep in raw_deps {
             let range = match dep.version.as_deref() {
                 Some(v) => {
@@ -158,19 +158,21 @@ impl DependencyProvider for DbDependencyProvider<'_> {
             // Merge duplicate constraints for the same dependency by intersection.
             // This handles the (rare) case of multiple declared edges to the same
             // package; the resolver must satisfy *all* of them, not just the last one.
-            if let Some(existing) = constraints.get_mut(&dep.package) {
-                let merged = existing.intersection(&range);
-                if merged.is_empty() {
+            if let Some(existing) = merged.get_mut(&dep.package) {
+                let merged_range = existing.intersection(&range);
+                if merged_range.is_empty() {
                     return Err(ResolveError::NoSolution(format!(
                         "conflicting version constraints for dependency `{}` of `{package}@{version}`",
                         dep.package
                     )));
                 }
-                *existing = merged;
+                *existing = merged_range;
             } else {
-                constraints.insert(dep.package, range);
+                merged.insert(dep.package, range);
             }
         }
+        let constraints: DependencyConstraints<String, WitVersionRange> =
+            merged.into_iter().collect();
         Ok(Dependencies::Available(constraints))
     }
 
@@ -222,7 +224,7 @@ pub(crate) fn resolve_from_db(
     version: WitVersion,
 ) -> Result<HashMap<String, WitVersion>, ResolveError> {
     let provider = DbDependencyProvider::new(store);
-    let selected: SelectedDependencies<DbDependencyProvider<'_>> =
+    let selected: SelectedDependencies<String, WitVersion> =
         pubgrub::resolve(&provider, package.into(), version).map_err(map_pubgrub_error)?;
 
     Ok(selected.into_iter().collect())
@@ -326,14 +328,13 @@ pub(crate) fn resolve_all_from_db(
         return Ok(HashMap::new());
     }
 
-    let mut root_deps: DependencyConstraints<String, WitVersionRange> =
-        DependencyConstraints::default();
+    let mut root_map: HashMap<String, WitVersionRange> = HashMap::new();
     let mut root_versions: HashMap<String, WitVersion> = HashMap::new();
     for (name, version) in roots {
         let new_range = Ranges::singleton(*version);
-        match root_deps.get(name) {
+        match root_map.get(name) {
             None => {
-                root_deps.insert(name.clone(), new_range);
+                root_map.insert(name.clone(), new_range);
                 root_versions.insert(name.clone(), *version);
             }
             Some(existing_range) => {
@@ -343,12 +344,13 @@ pub(crate) fn resolve_all_from_db(
                         "root package `{name}` has incompatible version requirements",
                     )));
                 }
-                root_deps.insert(name.clone(), intersection);
+                root_map.insert(name.clone(), intersection);
                 // For same-version duplicates the value is identical;
                 // `root_versions` retains the first insertion unchanged.
             }
         }
     }
+    let root_deps: DependencyConstraints<String, WitVersionRange> = root_map.into_iter().collect();
 
     let provider = VirtualRootProvider {
         inner: DbDependencyProvider::new(store),
@@ -356,7 +358,7 @@ pub(crate) fn resolve_all_from_db(
         root_versions,
     };
 
-    let selected: SelectedDependencies<VirtualRootProvider<'_>> = pubgrub::resolve(
+    let selected: SelectedDependencies<String, WitVersion> = pubgrub::resolve(
         &provider,
         VIRTUAL_ROOT.to_string(),
         WitVersion::new(0, 0, 0),
