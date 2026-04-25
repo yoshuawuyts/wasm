@@ -14,6 +14,7 @@
 //! and assert on the resolved set without going through OCI or the network.
 
 use std::collections::HashMap;
+use std::collections::hash_map::Entry;
 use std::fmt;
 
 use pubgrub::{
@@ -159,14 +160,14 @@ impl DependencyProvider for DbDependencyProvider<'_> {
             // This handles the (rare) case of multiple declared edges to the same
             // package; the resolver must satisfy *all* of them, not just the last one.
             if let Some(existing) = merged.get_mut(&dep.package) {
-                let merged_range = existing.intersection(&range);
-                if merged_range.is_empty() {
+                let intersected_range = existing.intersection(&range);
+                if intersected_range.is_empty() {
                     return Err(ResolveError::NoSolution(format!(
                         "conflicting version constraints for dependency `{}` of `{package}@{version}`",
                         dep.package
                     )));
                 }
-                *existing = merged_range;
+                *existing = intersected_range;
             } else {
                 merged.insert(dep.package, range);
             }
@@ -332,19 +333,19 @@ pub(crate) fn resolve_all_from_db(
     let mut root_versions: HashMap<String, WitVersion> = HashMap::new();
     for (name, version) in roots {
         let new_range = Ranges::singleton(*version);
-        match root_map.get(name) {
-            None => {
-                root_map.insert(name.clone(), new_range);
+        match root_map.entry(name.clone()) {
+            Entry::Vacant(e) => {
+                e.insert(new_range);
                 root_versions.insert(name.clone(), *version);
             }
-            Some(existing_range) => {
-                let intersection = existing_range.intersection(&new_range);
+            Entry::Occupied(mut e) => {
+                let intersection = e.get().intersection(&new_range);
                 if intersection.is_empty() {
                     return Err(ResolveError::NoSolution(format!(
                         "root package `{name}` has incompatible version requirements",
                     )));
                 }
-                root_map.insert(name.clone(), intersection);
+                e.insert(intersection);
                 // For same-version duplicates the value is identical;
                 // `root_versions` retains the first insertion unchanged.
             }
