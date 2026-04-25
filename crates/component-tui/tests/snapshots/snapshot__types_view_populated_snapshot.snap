@@ -1,5 +1,5 @@
 ---
-source: crates/wasm-tui/tests/snapshot.rs
+source: crates/component-tui/tests/snapshot.rs
 expression: output
 ---
    Package                          Version             Component
