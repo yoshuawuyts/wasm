@@ -898,9 +898,11 @@ impl Manager {
         }
 
         // High priority so external notifications jump ahead of the routine
-        // sync backlog. Idempotent: a duplicate notify while a task is
-        // already pending is a no-op.
-        self.store.enqueue_pull(registry, repository, tag, -1)?;
+        // sync backlog. Use `enqueue_refetch` rather than `enqueue_pull` so a
+        // previous "completed" or "failed" queue entry for this tag is reset
+        // to "pending" instead of silently no-oping (which would happen with
+        // `enqueue_pull`'s `ON CONFLICT DO NOTHING`).
+        self.store.enqueue_refetch(registry, repository, tag, -1)?;
         Ok(NotifyOutcome::Enqueued)
     }
 

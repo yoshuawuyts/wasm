@@ -1015,6 +1015,12 @@ impl Store {
 
     /// Enqueue reindex tasks for all tags that have cached layers.
     ///
+    /// Skips tags that don't carry meaningful WIT metadata and would
+    /// always fail re-extraction:
+    /// - `latest` (mutable pointer)
+    /// - signature/attestation tags (`sha256-…`)
+    /// - bare 40-char hex tags (commit SHAs from CI builds)
+    ///
     /// Returns the number of tasks enqueued.
     pub(crate) fn enqueue_reindex_all(&self) -> anyhow::Result<u64> {
         let count = self.conn.execute(
@@ -1025,6 +1031,11 @@ impl Store {
                JOIN oci_manifest m ON m.oci_repository_id = r.id
                                   AND m.digest = t.manifest_digest
                JOIN oci_layer l ON l.oci_manifest_id = m.id
+              WHERE t.tag != 'latest'
+                AND t.tag NOT LIKE 'sha256-%'
+                AND NOT (length(t.tag) = 40
+                         AND t.tag GLOB '[0-9a-f]*'
+                         AND t.tag NOT GLOB '*[^0-9a-f]*')
               GROUP BY r.registry, r.repository, t.tag
              ON CONFLICT(registry, repository, tag, task) DO NOTHING",
             [],
@@ -1051,6 +1062,9 @@ impl Store {
                JOIN oci_layer l ON l.oci_manifest_id = m.id
               WHERE t.tag != 'latest'
                 AND t.tag NOT LIKE 'sha256-%'
+                AND NOT (length(t.tag) = 40
+                         AND t.tag GLOB '[0-9a-f]*'
+                         AND t.tag NOT GLOB '*[^0-9a-f]*')
               GROUP BY r.registry, r.repository, t.tag
              ON CONFLICT(registry, repository, tag, task) DO NOTHING",
             [],
@@ -1309,10 +1323,16 @@ impl Store {
         let store_dir = self.state_info.store_dir().to_path_buf();
         let bytes = cacache::read(&store_dir, &digest).await?;
 
-        // Delete old data and re-extract.
+        // Delete old WIT data, then re-extract from the cached layer bytes.
+        // A `false` return from `try_extract_wit_package` means the layer
+        // isn't a wasm component or carries no WIT package — that's a
+        // legitimate outcome (e.g. signed images, plain wasm modules), not
+        // a failure. The DELETEs still apply (the row is correctly empty)
+        // and we commit; reporting an error here would burn retry attempts
+        // and (depending on queue policy) block other tasks behind it.
         self.conn.execute_batch("SAVEPOINT reindex_tag")?;
 
-        let ok = self
+        let sql_ok = self
             .conn
             .execute(
                 "DELETE FROM wit_package WHERE oci_manifest_id = ?1",
@@ -1324,16 +1344,20 @@ impl Store {
                     [manifest_id],
                 )
             })
-            .is_ok_and(|_| self.try_extract_wit_package(manifest_id, Some(layer_id), &bytes));
+            .is_ok();
 
-        if ok {
-            self.conn.execute_batch("RELEASE SAVEPOINT reindex_tag")?;
-        } else {
+        if !sql_ok {
             self.conn.execute_batch(
                 "ROLLBACK TO SAVEPOINT reindex_tag; RELEASE SAVEPOINT reindex_tag",
             )?;
-            anyhow::bail!("failed to re-extract WIT for {registry}/{repository}:{tag}");
+            anyhow::bail!(
+                "failed to clear stale WIT data for {registry}/{repository}:{tag}"
+            );
         }
+
+        // Best-effort re-extract; logged via tracing inside the helper.
+        let _ = self.try_extract_wit_package(manifest_id, Some(layer_id), &bytes);
+        self.conn.execute_batch("RELEASE SAVEPOINT reindex_tag")?;
         Ok(())
     }
 

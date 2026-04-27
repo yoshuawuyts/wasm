@@ -405,15 +405,21 @@ mod tests {
             axum::serve(listener, app).await.expect("server error");
         });
 
+        // Use a time-suffixed repo to ensure no prior pull data exists in
+        // the user's real DB (which `Manager::open()` opens).
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
         let url = format!(
-            "http://{addr}/v1/packages/notify/ghcr.io/yoshuawuyts%2Fcomponents%2Fwordmark?tag=1.1.0"
+            "http://{addr}/v1/packages/notify/example.test/notify-test-{unique}?tag=0.0.1-test"
         );
         let resp = reqwest::Client::new()
             .post(&url)
             .send()
             .await
             .expect("request failed");
-        assert_eq!(resp.status(), reqwest::StatusCode::ACCEPTED);
+        assert_eq!(resp.status(), StatusCode::ACCEPTED);
         let outcome: NotifyOutcome = resp.json().await.expect("invalid json");
         assert_eq!(outcome, NotifyOutcome::Enqueued);
 

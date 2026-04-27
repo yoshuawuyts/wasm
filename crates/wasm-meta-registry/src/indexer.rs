@@ -166,31 +166,34 @@ impl Indexer {
     /// hammering upstream registries.
     async fn process_queue(&mut self) {
         let mut processed = 0u64;
-        let mut consecutive_errors = 0u64;
+        // Only counts queue-level errors (network/DB failures from
+        // `process_next_task` itself). Individual task failures (a single
+        // bad pull or reindex) do NOT count — those are isolated and the
+        // queue's own retry/backoff logic already handles them. Counting
+        // them here used to cause a few unrelated bad tasks at the head of
+        // the queue to block every other (working) task behind them.
+        let mut consecutive_queue_errors = 0u64;
         loop {
             match self.manager.process_next_task().await {
                 Ok(TaskOutcome::Succeeded) => {
                     processed += 1;
-                    consecutive_errors = 0;
+                    consecutive_queue_errors = 0;
                     // Brief pause between tasks to be a good citizen to
                     // upstream registries and let the HTTP server breathe.
                     tokio::time::sleep(Duration::from_millis(250)).await;
                 }
                 Ok(TaskOutcome::Failed) => {
                     processed += 1;
-                    consecutive_errors += 1;
-                    if consecutive_errors >= 5 {
-                        error!("Too many consecutive task failures, pausing until next cycle");
-                        break;
-                    }
-                    // Back off before processing the next task after a failure.
+                    // Back off briefly before processing the next task; the
+                    // failure is recorded in the queue with its own attempt
+                    // counter, so we don't need to gate the worker on it.
                     tokio::time::sleep(Duration::from_secs(2)).await;
                 }
                 Ok(TaskOutcome::Empty) => break, // queue is empty
                 Err(e) => {
-                    consecutive_errors += 1;
+                    consecutive_queue_errors += 1;
                     error!(error = %e, "Error processing fetch queue");
-                    if consecutive_errors >= 5 {
+                    if consecutive_queue_errors >= 5 {
                         error!("Too many consecutive queue errors, pausing until next cycle");
                         break;
                     }
