@@ -603,6 +603,11 @@ CREATE TABLE component_target (
     -- NULL if resolution has not been performed or if the world
     -- exists in multiple OCI sources and the choice is ambiguous.
     wit_world_id INTEGER,
+    -- True when declared_package matches the parent OCI repository's
+    -- WIT package (wit_namespace:wit_name).  Indicates the targeted
+    -- world is "native" to this component's own package, so consumers
+    -- should render it inline rather than as an external reference.
+    is_native_package INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (wasm_component_id) REFERENCES wasm_component(id)
         ON UPDATE NO ACTION ON DELETE CASCADE,
     FOREIGN KEY (wit_world_id) REFERENCES wit_world(id)

@@ -157,12 +157,14 @@ mod tests {
                 interface: Some("streams".into()),
                 version: Some("0.2.0".into()),
                 docs: None,
+                is_native: false,
             }],
             exports: vec![WitInterfaceRef {
                 package: "wasi:http".into(),
                 interface: Some("incoming-handler".into()),
                 version: Some("0.2.0".into()),
                 docs: None,
+                is_native: false,
             }],
         }
     }

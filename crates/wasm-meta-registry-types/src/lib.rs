@@ -384,6 +384,7 @@ pub struct WitWorldSummary {
 ///     interface: Some("streams".into()),
 ///     version: Some("0.2.2".into()),
 ///     docs: None,
+///     is_native: false,
 /// };
 ///
 /// assert_eq!(iface.package, "wasi:io");
@@ -402,6 +403,11 @@ pub struct WitInterfaceRef {
     /// First sentence of the interface's documentation, if available.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub docs: Option<String>,
+    /// True when this interface's package matches the parent component's
+    /// own package. Renderers should treat the interface as native and omit
+    /// any external package prefix or link.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_native: bool,
 }
 
 /// Summary of a compiled Wasm component found in an OCI manifest.
@@ -544,6 +550,7 @@ pub struct ProducerEntry {
 ///     package: "wasi:http".into(),
 ///     world: "proxy".into(),
 ///     version: Some("0.3.0".into()),
+///     is_native: false,
 /// };
 ///
 /// assert_eq!(target.world, "proxy");
@@ -557,6 +564,10 @@ pub struct ComponentTargetRef {
     /// Declared version (e.g. `"0.3.0"`).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub version: Option<String>,
+    /// True when `package` matches the parent component's own package.
+    /// Renderers should treat the world as native to the component.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_native: bool,
 }
 
 /// Well-known OCI manifest annotations promoted to structured fields.
@@ -808,12 +819,14 @@ mod tests {
                     interface: Some("streams".into()),
                     version: Some("0.2.2".into()),
                     docs: None,
+                    is_native: false,
                 }],
                 exports: vec![WitInterfaceRef {
                     package: "wasi:http".into(),
                     interface: Some("handler".into()),
                     version: Some("0.3.0".into()),
                     docs: None,
+                    is_native: false,
                 }],
             }],
             components: vec![ComponentSummary {
@@ -823,6 +836,7 @@ mod tests {
                     package: "wasi:http".into(),
                     world: "proxy".into(),
                     version: Some("0.3.0".into()),
+                    is_native: false,
                 }],
                 producers: vec![],
                 kind: None,

@@ -153,11 +153,22 @@ pub(crate) fn render_item_section(title: &str, items: &[WitItem]) -> Division {
 /// version suffix) so component imports/exports look identical to the
 /// rich-WIT world page.
 pub(crate) fn iface_ref_to_item(iface: &wasm_meta_registry_client::WitInterfaceRef) -> WitItem {
-    let mut name = iface.package.clone();
-    if let Some(iface_name) = &iface.interface {
-        name.push('/');
-        name.push_str(iface_name);
-    }
+    // When the interface lives in the parent component's own package, render
+    // it as native: drop the package prefix so it reads as a first-class
+    // member of this component.
+    let name = if iface.is_native {
+        iface
+            .interface
+            .clone()
+            .unwrap_or_else(|| iface.package.clone())
+    } else {
+        let mut name = iface.package.clone();
+        if let Some(iface_name) = &iface.interface {
+            name.push('/');
+            name.push_str(iface_name);
+        }
+        name
+    };
     let version = iface.version.clone().unwrap_or_default();
     WitItem {
         kind: WitItemKind::Interface,

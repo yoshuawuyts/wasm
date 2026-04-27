@@ -40,6 +40,11 @@ const MIGRATIONS: &[MigrationDef] = &[
         name: "create_fetch_queue",
         sql: include_str!("../migrations/06_create_fetch_queue.sql"),
     },
+    MigrationDef {
+        version: 7,
+        name: "component_target_native_package",
+        sql: include_str!("../migrations/07_component_target_native_package.sql"),
+    },
 ];
 
 /// Information about the current migration state.

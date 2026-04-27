@@ -555,14 +555,18 @@ impl Store {
 
             for world in &metadata.worlds {
                 let wit_world_id = world_ids.get(&world.name).copied();
+                let declared_package = package_name;
+                let is_native = parent_pkg_for_manifest(&self.conn, manifest_id).as_deref()
+                    == Some(declared_package);
 
                 if let Err(e) = ComponentTarget::insert(
                     &self.conn,
                     component_id,
-                    package_name,
+                    declared_package,
                     &world.name,
                     version,
                     wit_world_id,
+                    is_native,
                 ) {
                     tracing::warn!("Failed to insert ComponentTarget: {}", e);
                 }
@@ -1923,6 +1927,8 @@ impl Store {
             })?
             .collect::<Result<Vec<_>, _>>()?;
 
+        let parent_pkg = parent_pkg_for_manifest(&self.conn, manifest_id);
+
         let mut result = Vec::new();
         for (comp_id, name, description, metadata_json) in components {
             let targets = ComponentTarget::list_by_component(&self.conn, comp_id)?;
@@ -1932,6 +1938,7 @@ impl Store {
                     package: t.declared_package,
                     world: t.declared_world,
                     version: t.declared_version,
+                    is_native: t.is_native_package,
                 })
                 .collect();
 
@@ -1968,6 +1975,13 @@ impl Store {
             // Enrich imports/exports with docs from stored WIT packages.
             self.enrich_iface_docs(&mut summary.imports);
             self.enrich_iface_docs(&mut summary.exports);
+
+            // Mark interfaces as native when their package matches the
+            // parent OCI repository's WIT package. Recurses into children
+            // so nested components are flagged consistently.
+            if let Some(pkg) = parent_pkg.as_deref() {
+                mark_native_iface_refs(&mut summary, pkg);
+            }
 
             result.push(summary);
         }
@@ -2237,6 +2251,7 @@ impl Store {
                 interface: row.get(1)?,
                 version: row.get(2)?,
                 docs: None,
+                is_native: false,
             })
         })?;
 
@@ -2265,6 +2280,7 @@ impl Store {
                 interface: row.get(1)?,
                 version: row.get(2)?,
                 docs: None,
+                is_native: false,
             })
         })?;
 
@@ -2385,6 +2401,42 @@ fn resolve_dependency_foreign_keys(
         [wit_package_id],
     )?;
     Ok(updated)
+}
+
+/// Lookup the WIT package (`wit_namespace:wit_name`) of the OCI repository
+/// owning the given manifest, if both namespace and name are recorded.
+fn parent_pkg_for_manifest(conn: &Connection, manifest_id: i64) -> Option<String> {
+    conn.query_row(
+        "SELECT orep.wit_namespace, orep.wit_name
+         FROM oci_manifest om
+         JOIN oci_repository orep ON orep.id = om.oci_repository_id
+         WHERE om.id = ?1",
+        [manifest_id],
+        |row| {
+            let ns: Option<String> = row.get(0)?;
+            let name: Option<String> = row.get(1)?;
+            Ok(ns.zip(name).map(|(ns, n)| format!("{ns}:{n}")))
+        },
+    )
+    .ok()
+    .flatten()
+}
+
+/// Mark every `WitInterfaceRef` in the component's imports/exports (and
+/// recursively in children) as `is_native` when its package equals the
+/// parent component's own package (`wit_namespace:wit_name`).
+fn mark_native_iface_refs(
+    summary: &mut wasm_meta_registry_types::ComponentSummary,
+    parent_pkg: &str,
+) {
+    for iface in summary.imports.iter_mut().chain(summary.exports.iter_mut()) {
+        if iface.package == parent_pkg {
+            iface.is_native = true;
+        }
+    }
+    for child in &mut summary.children {
+        mark_native_iface_refs(child, parent_pkg);
+    }
 }
 
 /// Resolve `component_target.wit_world_id` for targets of components under
@@ -2661,6 +2713,7 @@ fn parse_component_extern_name(name: &str) -> wasm_meta_registry_types::WitInter
             interface: None,
             version: None,
             docs: None,
+            is_native: false,
         };
     }
 
@@ -2679,6 +2732,7 @@ fn parse_component_extern_name(name: &str) -> wasm_meta_registry_types::WitInter
         interface,
         version,
         docs: None,
+        is_native: false,
     }
 }
 
@@ -2693,6 +2747,7 @@ fn world_key_to_iface_ref(
             interface: None,
             version: None,
             docs: None,
+            is_native: false,
         }),
         wit_parser::WorldKey::Interface(id) => {
             let iface = resolve.interfaces.get(*id)?;
@@ -2704,6 +2759,7 @@ fn world_key_to_iface_ref(
                 interface: iface.name.clone(),
                 version: pkg.name.version.as_ref().map(ToString::to_string),
                 docs,
+                is_native: false,
             })
         }
     }
@@ -2895,6 +2951,7 @@ mod tests {
             "proxy",
             Some("0.2.0"),
             Some(world_id),
+            false,
         )
         .unwrap();
         assert!(target_id > 0);
@@ -3229,6 +3286,7 @@ mod tests {
             "proxy",
             Some("0.2.0"),
             None, // wit_world_id is NULL — needs resolution
+            false,
         )
         .unwrap();
 
