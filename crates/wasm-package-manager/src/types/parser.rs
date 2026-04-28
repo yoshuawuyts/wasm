@@ -136,20 +136,7 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
 #[must_use]
 pub fn extract_wit_text(wasm_bytes: &[u8]) -> Option<String> {
     let decoded = decode(wasm_bytes).ok()?;
-    match &decoded {
-        DecodedWasm::WitPackage(resolve, package_id) => {
-            let nested: Vec<_> = resolve
-                .packages
-                .iter()
-                .filter(|(id, _)| *id != *package_id)
-                .map(|(id, _)| id)
-                .collect();
-            let mut printer = WitPrinter::default();
-            printer.print(resolve, *package_id, &nested).ok()?;
-            Some(printer.output.to_string())
-        }
-        DecodedWasm::Component(..) => None,
-    }
+    wit_printer_text(&decoded)
 }
 
 /// Extract world metadata from all worlds in the decoded component.
@@ -282,23 +269,25 @@ fn extract_dependencies(
 
 /// Produce well-formed WIT text via `WitPrinter`.
 ///
-/// Returns `Some` only for WIT packages; components have no lossless
-/// textual representation.
+/// Works for WIT packages and for components: in both cases the decoded
+/// `Resolve` contains a primary package we can hand to the printer.
 fn wit_printer_text(decoded: &DecodedWasm) -> Option<String> {
-    match decoded {
-        DecodedWasm::WitPackage(resolve, package_id) => {
-            let nested: Vec<_> = resolve
-                .packages
-                .iter()
-                .filter(|(id, _)| *id != *package_id)
-                .map(|(id, _)| id)
-                .collect();
-            let mut printer = WitPrinter::default();
-            printer.print(resolve, *package_id, &nested).ok()?;
-            Some(printer.output.to_string())
+    let (resolve, package_id) = match decoded {
+        DecodedWasm::WitPackage(resolve, package_id) => (resolve, *package_id),
+        DecodedWasm::Component(resolve, world_id) => {
+            let world = resolve.worlds.get(*world_id)?;
+            (resolve, world.package?)
         }
-        DecodedWasm::Component(..) => None,
-    }
+    };
+    let nested: Vec<_> = resolve
+        .packages
+        .iter()
+        .filter(|(id, _)| *id != package_id)
+        .map(|(id, _)| id)
+        .collect();
+    let mut printer = WitPrinter::default();
+    printer.print(resolve, package_id, &nested).ok()?;
+    Some(printer.output.to_string())
 }
 
 /// Generate WIT text representation from decoded component.
@@ -982,15 +971,16 @@ mod tests {
     }
 
     #[test]
-    fn extract_wit_text_returns_none_for_component() {
-        // A minimal component header (not a WIT package)
+    fn extract_wit_text_works_for_minimal_component() {
+        // A minimal component header decodes successfully; we should now
+        // produce some WIT text from its inferred world rather than None.
         let minimal_component = [
             0x00, 0x61, 0x73, 0x6d, // \0asm magic
             0x0d, 0x00, 0x01, 0x00, // component version
         ];
         assert!(
-            extract_wit_text(&minimal_component).is_none(),
-            "components should return None"
+            extract_wit_text(&minimal_component).is_some(),
+            "components should now produce WIT text"
         );
     }
 

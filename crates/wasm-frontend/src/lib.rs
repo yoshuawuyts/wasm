@@ -373,9 +373,18 @@ async fn fetch_wit_doc(
         pkg.wit_name.as_deref().unwrap_or(&pkg.repository),
         version
     );
-    let doc =
-        wit_doc::parse_wit_doc_with_type_docs(wit_text, &url_base, &dep_urls, &detail.type_docs)
-            .ok()?;
+    let own_oci_package = match (pkg.wit_namespace.as_deref(), pkg.wit_name.as_deref()) {
+        (Some(ns), Some(n)) => Some(format!("{ns}:{n}")),
+        _ => None,
+    };
+    let doc = wit_doc::parse_wit_doc_with_type_docs(
+        wit_text,
+        &url_base,
+        &dep_urls,
+        &detail.type_docs,
+        own_oci_package.as_deref(),
+    )
+    .ok()?;
     Some((doc, detail))
 }
 

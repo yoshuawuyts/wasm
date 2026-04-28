@@ -1350,9 +1350,7 @@ impl Store {
             self.conn.execute_batch(
                 "ROLLBACK TO SAVEPOINT reindex_tag; RELEASE SAVEPOINT reindex_tag",
             )?;
-            anyhow::bail!(
-                "failed to clear stale WIT data for {registry}/{repository}:{tag}"
-            );
+            anyhow::bail!("failed to clear stale WIT data for {registry}/{repository}:{tag}");
         }
 
         // Best-effort re-extract; logged via tracing inside the helper.
@@ -1735,7 +1733,7 @@ impl Store {
             };
 
             let worlds = self.get_wit_worlds_for_manifest(m.id)?;
-            let components = self.get_components_for_manifest(m.id)?;
+            let components = self.get_components_for_manifest(m.id, tag.as_deref())?;
             let dependencies = self.get_dependencies_for_manifest(m.id)?;
             let referrers = self.get_referrers_for_manifest(m.id)?;
             let layers = self.get_layers_for_manifest(m.id)?;
@@ -1871,7 +1869,7 @@ impl Store {
         };
 
         let worlds = self.get_wit_worlds_for_manifest(m.id)?;
-        let components = self.get_components_for_manifest(m.id)?;
+        let components = self.get_components_for_manifest(m.id, Some(version_tag))?;
         let dependencies = self.get_dependencies_for_manifest(m.id)?;
         let referrers = self.get_referrers_for_manifest(m.id)?;
         let layers = self.get_layers_for_manifest(m.id)?;
@@ -1932,9 +1930,14 @@ impl Store {
     }
 
     /// Return all Wasm components (with targets) found in the given manifest.
+    ///
+    /// `parent_version` is the package version tag this manifest is being
+    /// served as; it is used to stamp a version onto native interface/world
+    /// refs that lack one, so URLs to same-package items resolve correctly.
     fn get_components_for_manifest(
         &self,
         manifest_id: i64,
+        parent_version: Option<&str>,
     ) -> anyhow::Result<Vec<wasm_meta_registry_types::ComponentSummary>> {
         use wasm_meta_registry_types::{ComponentSummary, ComponentTargetRef};
         type ComponentRow = (i64, Option<String>, Option<String>, Option<String>);
@@ -1959,9 +1962,13 @@ impl Store {
             let target_refs: Vec<ComponentTargetRef> = targets
                 .into_iter()
                 .map(|t| ComponentTargetRef {
+                    version: if t.is_native_package && t.declared_version.is_none() {
+                        parent_version.map(str::to_owned)
+                    } else {
+                        t.declared_version
+                    },
                     package: t.declared_package,
                     world: t.declared_world,
-                    version: t.declared_version,
                     is_native: t.is_native_package,
                 })
                 .collect();
@@ -2002,9 +2009,11 @@ impl Store {
 
             // Mark interfaces as native when their package matches the
             // parent OCI repository's WIT package. Recurses into children
-            // so nested components are flagged consistently.
+            // so nested components are flagged consistently. Native refs
+            // also inherit the parent's version when they lack one, so
+            // generated URLs include the version segment.
             if let Some(pkg) = parent_pkg.as_deref() {
-                mark_native_iface_refs(&mut summary, pkg);
+                mark_native_iface_refs(&mut summary, pkg, parent_version);
             }
 
             result.push(summary);
@@ -2448,18 +2457,23 @@ fn parent_pkg_for_manifest(conn: &Connection, manifest_id: i64) -> Option<String
 
 /// Mark every `WitInterfaceRef` in the component's imports/exports (and
 /// recursively in children) as `is_native` when its package equals the
-/// parent component's own package (`wit_namespace:wit_name`).
+/// parent component's own package (`wit_namespace:wit_name`). Native refs
+/// inherit `parent_version` when they lack their own.
 fn mark_native_iface_refs(
     summary: &mut wasm_meta_registry_types::ComponentSummary,
     parent_pkg: &str,
+    parent_version: Option<&str>,
 ) {
     for iface in summary.imports.iter_mut().chain(summary.exports.iter_mut()) {
         if iface.package == parent_pkg {
             iface.is_native = true;
+            if iface.version.is_none() {
+                iface.version = parent_version.map(str::to_owned);
+            }
         }
     }
     for child in &mut summary.children {
-        mark_native_iface_refs(child, parent_pkg);
+        mark_native_iface_refs(child, parent_pkg, parent_version);
     }
 }
 
@@ -3881,7 +3895,9 @@ mod tests {
 
         // Query it back via the store.
         let store = Store::from_conn(conn);
-        let components = store.get_components_for_manifest(manifest_id).unwrap();
+        let components = store
+            .get_components_for_manifest(manifest_id, None)
+            .unwrap();
 
         assert_eq!(components.len(), 1, "should have one component");
         let comp = &components[0];

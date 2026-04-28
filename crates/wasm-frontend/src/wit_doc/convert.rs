@@ -45,51 +45,90 @@ pub(crate) fn convert(
     url_base: &str,
     dep_urls: &HashMap<String, String>,
     type_docs: &HashMap<String, String>,
+    own_oci_package: Option<&str>,
 ) -> anyhow::Result<WitDocument> {
     let mut resolve = Resolve::default();
-    let package_id = resolve.push_str(Path::new("input.wit"), wit_text)?;
+    let primary_id = resolve.push_str(Path::new("input.wit"), wit_text)?;
 
-    let package = resolve
+    let primary = resolve
         .packages
-        .get(package_id)
+        .get(primary_id)
         .expect("just-inserted package should exist");
+    let primary_key = format!("{}:{}", primary.name.namespace, primary.name.name);
+
+    // Locate any additional package whose `ns:name` matches the OCI
+    // package this document represents. Components often place the
+    // user-facing package as a nested package under a synthetic
+    // `root:component` primary; we include its interfaces so they appear
+    // under this document's URL base.
+    let native_id = own_oci_package.and_then(|wanted| {
+        (wanted != primary_key).then(|| {
+            resolve.packages.iter().find_map(|(id, pkg)| {
+                let key = format!("{}:{}", pkg.name.namespace, pkg.name.name);
+                (key == wanted).then_some(id)
+            })
+        })?
+    });
+
+    // The package whose metadata (name, docs, version) describes this
+    // document. Prefer the OCI-native package when present.
+    let package = native_id
+        .and_then(|id| resolve.packages.get(id))
+        .unwrap_or(primary);
 
     let package_name = format!("{}:{}", package.name.namespace, package.name.name);
     let version = package.name.version.as_ref().map(ToString::to_string);
     let docs = package.docs.contents.clone();
 
+    // Native interfaces span both the primary and OCI-native packages so
+    // cross-references and URL resolution treat them uniformly.
+    let native_packages: Vec<&wit_parser::Package> = match native_id {
+        Some(id) => vec![
+            primary,
+            resolve.packages.get(id).expect("native pkg exists"),
+        ],
+        None => vec![primary],
+    };
+    let own_interfaces: HashSet<InterfaceId> = native_packages
+        .iter()
+        .flat_map(|p| p.interfaces.values().copied())
+        .collect();
+
     let mut converter = Converter {
         resolve: &resolve,
         url_base,
         dep_urls,
-        own_interfaces: package.interfaces.values().copied().collect(),
+        own_interfaces,
         type_urls: HashMap::new(),
         type_docs,
     };
 
-    // First pass: register all type URLs so cross-refs within this package
-    // resolve correctly.
-    for (iface_name, iface_id) in &package.interfaces {
-        let iface = resolve
-            .interfaces
-            .get(*iface_id)
-            .expect("interface id should be valid");
-        for (type_name, type_id) in &iface.types {
-            let url = format!("{url_base}/interface/{iface_name}/{type_name}");
-            converter
-                .type_urls
-                .insert(*type_id, (url, type_name.clone()));
+    // First pass: register type URLs for every native interface so
+    // intra-document type refs resolve.
+    for pkg in &native_packages {
+        for (iface_name, iface_id) in &pkg.interfaces {
+            let iface = resolve
+                .interfaces
+                .get(*iface_id)
+                .expect("interface id should be valid");
+            for (type_name, type_id) in &iface.types {
+                let url = format!("{url_base}/interface/{iface_name}/{type_name}");
+                converter
+                    .type_urls
+                    .insert(*type_id, (url, type_name.clone()));
+            }
         }
     }
 
-    // Second pass: build the full document.
-    let interfaces = package
-        .interfaces
+    // Second pass: build the full document. Interfaces come from all
+    // native packages; worlds come from the primary (per wit-parser).
+    let interfaces = native_packages
         .iter()
+        .flat_map(|p| p.interfaces.iter())
         .map(|(name, id)| converter.convert_interface(name, *id))
         .collect();
 
-    let worlds = package
+    let worlds = primary
         .worlds
         .iter()
         .map(|(name, id)| converter.convert_world(name, *id))
