@@ -25,6 +25,10 @@ struct Converter<'a> {
     type_urls: HashMap<TypeId, (String, String)>,
     /// Cross-package type docs from the API (e.g. `"wasi:io/poll/pollable"` → docs).
     type_docs: &'a HashMap<String, String>,
+    /// True when the primary package is the synthetic `root:component`
+    /// envelope produced by extracting bindings from a wasm component.
+    /// Its `root` world is then surfaced as synthetic.
+    primary_is_root_component: bool,
 }
 
 /// Parse WIT text into a [`WitDocument`].
@@ -101,6 +105,7 @@ pub(crate) fn convert(
         own_interfaces,
         type_urls: HashMap::new(),
         type_docs,
+        primary_is_root_component: primary_key == "root:component",
     };
 
     // First pass: register type URLs for every native interface so
@@ -576,6 +581,7 @@ impl Converter<'_> {
                 .collect(),
             stability: convert_stability(&world.stability),
             url,
+            is_synthetic: self.primary_is_root_component && name == "root",
         }
     }
 
@@ -606,11 +612,12 @@ impl Converter<'_> {
                 }
             }
             WorldItem::Function(func) => {
-                // Freestanding world functions live directly under their
-                // world page rather than an interface; route them as
-                // `/world/{world_name}/function/{func_name}`.
+                // Freestanding world functions live directly under the
+                // package page (component pages inline `world root`), so
+                // route them as `/function/{func_name}` to keep URLs short
+                // and avoid leaking the synthetic `root` world name.
                 let mut doc = self.convert_function(func, world_name);
-                doc.url = format!("{}/world/{world_name}/function/{}", self.url_base, doc.name);
+                doc.url = format!("{}/function/{}", self.url_base, doc.name);
                 WorldItemDoc::Function(doc)
             }
             WorldItem::Type { id: type_id, .. } => {

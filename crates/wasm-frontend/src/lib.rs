@@ -71,6 +71,10 @@ fn app() -> Router {
             get(world_function_detail),
         )
         .route(
+            "/{namespace}/{name}/{version}/function/{func_name}",
+            get(package_function_detail),
+        )
+        .route(
             "/{namespace}/{name}/{version}/module/{child_name}",
             get(module_detail),
         )
@@ -350,6 +354,10 @@ async fn world_detail(
     let Some(world_doc) = doc.worlds.iter().find(|w| w.name == world_name) else {
         return not_found_response();
     };
+    if world_doc.is_synthetic {
+        // Synthetic worlds are inlined into the package page; no detail page.
+        return not_found_response();
+    }
     let html = pages::world::render(&pkg, &version, Some(&version_detail), world_doc, &doc);
     with_cache_control(html, "public, max-age=300")
 }
@@ -397,6 +405,50 @@ async fn world_function_detail(
         Some(&version_detail),
         &world_name,
         &world_url,
+        func,
+        &doc,
+    );
+    with_cache_control(html, "public, max-age=300")
+}
+
+/// Detail page for a freestanding function inlined onto a package page,
+/// at `/<namespace>/<name>/<version>/function/<func>`. Searches every
+/// world's imports and exports for a function with the given name and
+/// returns the first match.
+async fn package_function_detail(
+    Path((namespace, name, version, func_name)): Path<(String, String, String, String)>,
+) -> Response {
+    use crate::wit_doc::WorldItemDoc;
+
+    let client = RegistryClient::from_env();
+    let pkg = match fetch_package_or_404(&client, &namespace, &name, &version).await {
+        Ok(Some(pkg)) => pkg,
+        Ok(None) => return not_found_response(),
+        Err(resp) => return resp,
+    };
+    let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
+        return not_found_response();
+    };
+    let func = doc.worlds.iter().find_map(|w| {
+        w.imports
+            .iter()
+            .chain(w.exports.iter())
+            .find_map(|item| match item {
+                WorldItemDoc::Function(f) if f.name == func_name => Some(f),
+                _ => None,
+            })
+    });
+    let Some(func) = func else {
+        return not_found_response();
+    };
+    let pkg_url = format!("/{namespace}/{name}/{version}");
+    let display_name = components::page_shell::display_name_for(&pkg);
+    let html = pages::item::render_function(
+        &pkg,
+        &version,
+        Some(&version_detail),
+        &display_name,
+        &pkg_url,
         func,
         &doc,
     );

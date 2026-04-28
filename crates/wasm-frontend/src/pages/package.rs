@@ -160,12 +160,7 @@ fn render_wit_content_with_doc(
         // `root` produced by extracting bindings from a wasm component,
         // inline its imports/exports as the component's own instead of
         // surfacing a single boring "Worlds → root" card.
-        let inline_root = doc.worlds.len() == 1
-            && doc.worlds[0].name == "root"
-            && detail
-                .components
-                .iter()
-                .any(|c| c.kind.as_deref() == Some("component"));
+        let inline_root = doc.worlds.len() == 1 && doc.worlds[0].is_synthetic;
         if inline_root {
             let world = &doc.worlds[0];
             let api_docs = super::world::build_api_doc_lookup(Some(detail), &world.name);

@@ -277,6 +277,12 @@ pub(crate) struct WorldDoc {
     pub stability: Stability,
     /// Pre-resolved URL for this world's detail page.
     pub url: String,
+    /// True when this world was synthesized by binding-extraction (the
+    /// `root` world of a `root:component` package) rather than being
+    /// authored. Synthetic worlds are inlined into the parent package
+    /// page and don't get their own detail page or sidebar entry.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_synthetic: bool,
 }
 
 /// An item imported or exported by a world.
