@@ -873,6 +873,8 @@ fn test_run_auto_creates_manifest_and_lockfile() {
     assert!(!dir.path().join("wasm.toml").exists());
     assert!(!dir.path().join("wasm.lock.toml").exists());
 
+    // The install attempt will fail in offline mode; we only care that
+    // the auto-install path runs and creates the project skeleton.
     let _ = run_cli_error(&["--offline", "run", "missing:component"], Some(dir.path()));
 
     assert!(
