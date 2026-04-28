@@ -56,10 +56,7 @@ pub(crate) struct Opts {
     #[arg(long, value_name = "ADDR", default_value = "127.0.0.1:8080")]
     listen: SocketAddr,
 
-    /// Run the component directly from the global cache, bypassing the
-    /// requirement that it be installed in the local project.
-    ///
-    /// Only meaningful when INPUT is a manifest key (`scope:component`).
+    /// Run from the global cache, bypassing local installation.
     #[arg(long, short = 'g')]
     global: bool,
 }
