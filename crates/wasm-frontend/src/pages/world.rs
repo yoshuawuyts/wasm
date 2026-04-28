@@ -72,7 +72,7 @@ pub(crate) fn render(
 
 /// Build a lookup map of interface name → doc string from the API's enriched
 /// world data. This provides cross-package docs that the WIT parser can't.
-fn build_api_doc_lookup(
+pub(crate) fn build_api_doc_lookup(
     version_detail: Option<&PackageVersion>,
     world_name: &str,
 ) -> std::collections::HashMap<String, String> {
@@ -99,7 +99,7 @@ fn build_api_doc_lookup(
 }
 
 /// Render an imports or exports section, grouped by package namespace.
-fn render_item_section(
+pub(crate) fn render_item_section(
     heading: &str,
     items: &[WorldItemDoc],
     api_docs: &std::collections::HashMap<String, String>,

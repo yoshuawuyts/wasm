@@ -25,6 +25,7 @@ use std::hash::BuildHasher;
 /// # Errors
 ///
 /// Returns an error if the WIT text fails to parse.
+#[cfg(test)]
 pub(crate) fn parse_wit_doc<S: BuildHasher>(
     wit_text: &str,
     url_base: &str,
