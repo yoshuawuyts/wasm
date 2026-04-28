@@ -10,3 +10,4 @@ pub use config::StateInfo;
 pub use known_package::{KnownPackage, KnownPackageParams};
 pub use models::Migrations;
 pub(crate) use store::Store;
+pub use store::{FetchTask, FetchTaskKind};

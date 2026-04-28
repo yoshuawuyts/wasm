@@ -25,6 +25,15 @@ pub(crate) struct WitDocument {
     pub interfaces: Vec<InterfaceDoc>,
     /// All worlds defined in this package.
     pub worlds: Vec<WorldDoc>,
+    /// True when this document was produced by extracting WIT from a compiled
+    /// WebAssembly component (as opposed to a hand-authored WIT package).
+    ///
+    /// When `true`, the document contains exactly one world whose
+    /// [`WorldDoc::is_synthetic`] flag is also `true`; that world's exports
+    /// and imports are the component's own interface and are surfaced directly
+    /// on the package page rather than behind a "Worlds" section.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_component: bool,
 }
 
 /// Documentation for a single WIT interface.
@@ -277,6 +286,12 @@ pub(crate) struct WorldDoc {
     pub stability: Stability,
     /// Pre-resolved URL for this world's detail page.
     pub url: String,
+    /// True when this world was synthesized by binding-extraction (the
+    /// `root` world of a `root:component` package) rather than being
+    /// authored. Synthetic worlds are inlined into the parent package
+    /// page and don't get their own detail page or sidebar entry.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub is_synthetic: bool,
 }
 
 /// An item imported or exported by a world.

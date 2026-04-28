@@ -5,6 +5,7 @@ vendor/wasm
 examples/*/vendor
 Cargo.lock
 .DS_Store
+.env
 registry.toml
 .tracey/
 wasm.lock.toml

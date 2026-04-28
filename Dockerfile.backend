@@ -1,0 +1,33 @@
+# ───── Stage 1: Build wasm-meta-registry ─────
+FROM rust:1-slim-bookworm AS builder
+
+WORKDIR /build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY .cargo/ .cargo/
+COPY Cargo.toml Cargo.lock ./
+COPY crates/ crates/
+
+RUN cargo build --package wasm-meta-registry --release
+
+# ───── Stage 2: Runtime ─────
+FROM debian:bookworm-slim AS runtime
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/target/release/wasm-meta-registry /usr/local/bin/wasm-meta-registry
+
+# Bake the registry namespace TOML files into the image.
+# To add a new namespace, add a .toml file to registry/ and rebuild this image.
+COPY registry/ /registry/
+
+VOLUME ["/data"]
+
+EXPOSE 8081
+
+CMD ["wasm-meta-registry", "/registry", "--bind", "0.0.0.0:8081", "--data-dir", "/data"]

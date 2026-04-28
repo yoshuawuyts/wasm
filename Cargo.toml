@@ -121,10 +121,10 @@ dirs = "6.0.0"
 insta = "1.44.3"
 serde_json = { version = "1.0.145", features = ["alloc"] }
 termcolor = "1.4.1"
-wasm-metadata = "0.246.1"
-wasmtime = "43.0.0"
-wasmtime-wasi = "43.0.0"
-wasmtime-wasi-http = "43.0.0"
+wasm-metadata = "0.247.0"
+wasmtime = "44.0.0"
+wasmtime-wasi = "44.0.0"
+wasmtime-wasi-http = "44.0.0"
 hyper = { version = "1", features = ["http1", "server"] }
 ratatui = "0.30.0"
 crossterm = "0.29.0"
@@ -140,18 +140,18 @@ cacache = { version = "13.1.0", features = [
     "tokio-runtime",
     "tokio-stream",
 ], default-features = false }
-pubgrub = "0.3"
+pubgrub = "0.4"
 rusqlite = { version = "0.39.0", features = ["bundled"] }
 semver = { version = "1.0.27", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 toml = "1.0"
-wasmparser = "0.246"
-wit-component = "0.246"
-wit-parser = "0.246"
+wasmparser = "0.247"
+wit-component = "0.247"
+wit-parser = "0.247"
 
 # frontend dependencies
 html = "0.6"
-pulldown-cmark = { version = "0.12", default-features = false, features = [
+pulldown-cmark = { version = "0.13", default-features = false, features = [
     "html",
 ] }
 wstd = "0.6"
@@ -168,10 +168,10 @@ reqwest = { version = "0.13", default-features = false, features = [
 tower-http = { version = "0.6.8", features = ["cors", "trace"] }
 
 # composition dependencies
-wac-parser = "0.9.0"
-wac-graph = "0.9.0"
-wac-resolver = "0.9.0"
-wac-types = "0.9.0"
+wac-parser = "0.10.0"
+wac-graph = "0.10.0"
+wac-resolver = "0.10.0"
+wac-types = "0.10.0"
 
 # detector dependencies
 ignore = "0.4.25"

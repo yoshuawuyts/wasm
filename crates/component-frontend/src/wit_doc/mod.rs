@@ -25,26 +25,36 @@ use std::hash::BuildHasher;
 /// # Errors
 ///
 /// Returns an error if the WIT text fails to parse.
+#[cfg(test)]
 pub(crate) fn parse_wit_doc<S: BuildHasher>(
     wit_text: &str,
     url_base: &str,
     dep_urls: &HashMap<String, String, S>,
 ) -> anyhow::Result<WitDocument> {
-    parse_wit_doc_with_type_docs(wit_text, url_base, dep_urls, &HashMap::new())
+    parse_wit_doc_with_type_docs(wit_text, url_base, dep_urls, &HashMap::new(), None)
 }
 
 /// Parse WIT text with cross-package type documentation.
+///
+/// `own_oci_package` is the `ns:name` of the OCI package this document
+/// represents (e.g. `"yoshuawuyts:wordmark"`). When provided and the parsed
+/// `Resolve` contains a package with that name, that package is treated as
+/// the document's primary package — its interfaces are listed in the doc
+/// and rendered under `url_base`. This is needed for components whose
+/// extracted WIT places the user-facing package as a nested package under a
+/// synthetic `root:component` primary.
 pub(crate) fn parse_wit_doc_with_type_docs<S: BuildHasher>(
     wit_text: &str,
     url_base: &str,
     dep_urls: &HashMap<String, String, S>,
     type_docs: &HashMap<String, String>,
+    own_oci_package: Option<&str>,
 ) -> anyhow::Result<WitDocument> {
     let standard: HashMap<String, String> = dep_urls
         .iter()
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect();
-    convert::convert(wit_text, url_base, &standard, type_docs)
+    convert::convert(wit_text, url_base, &standard, type_docs, own_oci_package)
 }
 
 #[cfg(test)]

@@ -43,16 +43,6 @@ pub(crate) fn render(
 
     let mut body = String::from("<div class=\"space-y-10 pt-8\">");
 
-    // WIT imports
-    if !child.imports.is_empty() {
-        let entries: Vec<WitItem> = child
-            .imports
-            .iter()
-            .map(wit_item::iface_ref_to_item)
-            .collect();
-        body.push_str(&wit_item::render_item_section("Imports", &entries).to_string());
-    }
-
     // WIT exports
     if !child.exports.is_empty() {
         let entries: Vec<WitItem> = child
@@ -61,6 +51,16 @@ pub(crate) fn render(
             .map(wit_item::iface_ref_to_item)
             .collect();
         body.push_str(&wit_item::render_item_section("Exports", &entries).to_string());
+    }
+
+    // WIT imports
+    if !child.imports.is_empty() {
+        let entries: Vec<WitItem> = child
+            .imports
+            .iter()
+            .map(wit_item::iface_ref_to_item)
+            .collect();
+        body.push_str(&wit_item::render_item_section("Imports", &entries).to_string());
     }
 
     // Metadata table (producers, dependencies, languages, size, etc.)
@@ -157,12 +157,14 @@ mod tests {
                 interface: Some("streams".into()),
                 version: Some("0.2.0".into()),
                 docs: None,
+                is_native: false,
             }],
             exports: vec![WitInterfaceRef {
                 package: "wasi:http".into(),
                 interface: Some("incoming-handler".into()),
                 version: Some("0.2.0".into()),
                 docs: None,
+                is_native: false,
             }],
         }
     }

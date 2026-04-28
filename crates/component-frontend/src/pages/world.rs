@@ -29,22 +29,22 @@ pub(crate) fn render(
     )
     .to_string();
 
-    // Body sections: Imports + Exports (grouped by package).
+    // Body sections: Exports + Imports (grouped by package).
     let api_docs = build_api_doc_lookup(version_detail, &world.name);
     let mut body = Division::builder();
     body.class("space-y-10 pt-8");
-    if !world.imports.is_empty() {
-        body.push(render_item_section(
-            "Imports",
-            &world.imports,
-            &api_docs,
-            &display_name,
-        ));
-    }
     if !world.exports.is_empty() {
         body.push(render_item_section(
             "Exports",
             &world.exports,
+            &api_docs,
+            &display_name,
+        ));
+    }
+    if !world.imports.is_empty() {
+        body.push(render_item_section(
+            "Imports",
+            &world.imports,
             &api_docs,
             &display_name,
         ));
@@ -72,7 +72,7 @@ pub(crate) fn render(
 
 /// Build a lookup map of interface name → doc string from the API's enriched
 /// world data. This provides cross-package docs that the WIT parser can't.
-fn build_api_doc_lookup(
+pub(crate) fn build_api_doc_lookup(
     version_detail: Option<&PackageVersion>,
     world_name: &str,
 ) -> std::collections::HashMap<String, String> {
@@ -99,7 +99,7 @@ fn build_api_doc_lookup(
 }
 
 /// Render an imports or exports section, grouped by package namespace.
-fn render_item_section(
+pub(crate) fn render_item_section(
     heading: &str,
     items: &[WorldItemDoc],
     api_docs: &std::collections::HashMap<String, String>,

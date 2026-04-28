@@ -138,34 +138,15 @@ impl RawKnownPackage {
             tracing::warn!("Failed to update description for repo {repo_id}: {e}");
         }
 
-        // If a tag was provided and a manifest exists that it could reference,
-        // upsert the tag.  During index/sync there may be no manifest yet, so
-        // this is best-effort.
-        if let Some(tag) = params.tag {
-            // Try to find the most recent manifest for this repo.
-            let digest: Option<String> = conn
-                .query_row(
-                    "SELECT digest FROM oci_manifest
-                     WHERE oci_repository_id = ?1
-                     ORDER BY created_at DESC LIMIT 1",
-                    [repo_id],
-                    |row| row.get(0),
-                )
-                .ok();
-
-            if let Some(digest) = digest
-                && let Err(e) = conn.execute(
-                    "INSERT INTO oci_tag (oci_repository_id, tag, manifest_digest)
-                     VALUES (?1, ?2, ?3)
-                     ON CONFLICT(oci_repository_id, tag) DO UPDATE SET
-                         manifest_digest = ?3,
-                         updated_at = CURRENT_TIMESTAMP",
-                    rusqlite::params![repo_id, tag, digest],
-                )
-            {
-                tracing::warn!("Failed to upsert tag '{tag}' for repo {repo_id}: {e}");
-            }
-        }
+        // Note: a `tag` may be passed in by the sync/discovery path, but we
+        // intentionally do NOT write it to `oci_tag` here. Tag→digest
+        // mappings are authoritative only when produced by an actual pull
+        // (`Store::insert` → `OciTag::upsert`), where we know the real
+        // manifest digest. Inventing a placeholder mapping (e.g. by guessing
+        // "the most recent manifest in this repo") historically caused
+        // different versions to appear to share the same content. The tag is
+        // still discoverable via the indexer's pull queue.
+        let _ = params.tag;
 
         Ok(())
     }
@@ -1052,5 +1033,80 @@ mod tests {
         let packages = RawKnownPackage::get_all(&conn, 0, 100).unwrap();
         assert_eq!(packages.len(), 1);
         assert_eq!(packages[0].kind, None);
+    }
+
+    /// Regression test: `upsert` must not clobber an existing tag→digest
+    /// mapping with whichever manifest happens to be most recently inserted.
+    ///
+    /// The bug: when sync calls `add_known_package(tag, None)` after pulling
+    /// a new version, `upsert_with_params` looked up "the most recent
+    /// manifest in this repo" and overwrote *every* tag's `manifest_digest`
+    /// with that placeholder. This caused older version tags (e.g. `1.0.0`)
+    /// to silently re-point at the latest pulled manifest, so older versions
+    /// would render the latest version's WIT/docs.
+    ///
+    /// After the fix, `upsert` is a no-op when an `oci_tag` row already
+    /// exists for the given `(repository, tag)` pair.
+    #[test]
+    fn test_known_package_upsert_does_not_clobber_existing_tag_digest() {
+        use crate::oci::{OciManifest, OciRepository as OciRepo, OciTag};
+        use std::collections::HashMap;
+
+        let conn = setup_test_db();
+        let repo_id = OciRepo::upsert(&conn, "ghcr.io", "example/wordmark").unwrap();
+
+        // Two distinct manifests representing two real published versions.
+        let v1_digest = "sha256:1111111111111111111111111111111111111111111111111111111111111111";
+        let v2_digest = "sha256:2222222222222222222222222222222222222222222222222222222222222222";
+        for digest in [v1_digest, v2_digest] {
+            OciManifest::upsert(
+                &conn,
+                repo_id,
+                digest,
+                Some("application/vnd.oci.image.manifest.v1+json"),
+                Some("{}"),
+                Some(1024),
+                None,
+                None,
+                None,
+                &HashMap::new(),
+            )
+            .unwrap();
+        }
+
+        // Authoritative mappings — the digests each tag actually points to,
+        // as set by the real pull path (`Store::insert` → `OciTag::upsert`).
+        OciTag::upsert(&conn, repo_id, "1.0.0", v1_digest).unwrap();
+        OciTag::upsert(&conn, repo_id, "1.1.0", v2_digest).unwrap();
+
+        // Sync re-discovers the same tags and registers them without a
+        // digest. This must not corrupt the existing mappings.
+        RawKnownPackage::upsert(&conn, "ghcr.io", "example/wordmark", Some("1.0.0"), None).unwrap();
+        RawKnownPackage::upsert(&conn, "ghcr.io", "example/wordmark", Some("1.1.0"), None).unwrap();
+
+        let v1_after = OciTag::find_by_tag(&conn, repo_id, "1.0.0")
+            .unwrap()
+            .expect("1.0.0 tag should still exist");
+        let v2_after = OciTag::find_by_tag(&conn, repo_id, "1.1.0")
+            .unwrap()
+            .expect("1.1.0 tag should still exist");
+        assert_eq!(
+            v1_after.manifest_digest, v1_digest,
+            "1.0.0 tag must continue to point at its original manifest"
+        );
+        assert_eq!(
+            v2_after.manifest_digest, v2_digest,
+            "1.1.0 tag must continue to point at its original manifest"
+        );
+
+        // Sync of a never-pulled tag must NOT invent an `oci_tag` row —
+        // tag→digest mappings are owned exclusively by the real pull path.
+        RawKnownPackage::upsert(&conn, "ghcr.io", "example/wordmark", Some("1.2.0"), None).unwrap();
+        assert!(
+            OciTag::find_by_tag(&conn, repo_id, "1.2.0")
+                .unwrap()
+                .is_none(),
+            "sync must not create speculative oci_tag rows"
+        );
     }
 }

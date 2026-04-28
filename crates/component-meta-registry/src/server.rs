@@ -8,7 +8,7 @@ use std::sync::Arc;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::{Json, Router, routing::get};
+use axum::{Json, Router, routing::get, routing::post};
 use component_package_manager::manager::Manager;
 use serde::Deserialize;
 use tower_http::cors::CorsLayer;
@@ -135,6 +135,11 @@ pub fn router(state: AppState) -> Router {
             get(get_package_version_reordered),
         )
         .route("/v1/packages/{registry}/{*repository}", get(get_package))
+        .route("/v1/queue", get(get_queue_status))
+        .route(
+            "/v1/packages/notify/{registry}/{*repository}",
+            post(notify_new_version),
+        )
         .layer(CorsLayer::permissive())
         .layer(TraceLayer::new_for_http())
         .with_state(state)
@@ -143,6 +148,15 @@ pub fn router(state: AppState) -> Router {
 /// Health check endpoint.
 async fn health() -> impl IntoResponse {
     Json(serde_json::json!({ "status": "ok" }))
+}
+
+/// Fetch queue status.
+async fn get_queue_status(State(manager): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let manager = manager
+        .lock()
+        .map_err(|e| anyhow::anyhow!("lock poisoned: {e}"))?;
+    let status = manager.get_queue_status()?;
+    Ok(Json(status))
 }
 
 /// Search packages by query string.
@@ -286,6 +300,66 @@ async fn get_package_version_reordered(
     }
 }
 
+/// Query parameters for `POST /v1/packages/notify/...`.
+#[derive(Debug, Deserialize)]
+pub struct NotifyParams {
+    /// Tag of the newly-published version (e.g. `"1.1.0"`).
+    pub tag: String,
+}
+
+/// Notify the registry that a new version was just published, requesting it
+/// be pulled as soon as possible.
+///
+/// Returns `202 Accepted` with a JSON `NotifyOutcome` body in both the
+/// "enqueued" and "skipped" cases — the request itself was accepted; the
+/// outcome describes what the registry decided to do with it.
+///
+/// To prevent abuse, the endpoint:
+///
+/// * Rejects empty tags with `400 Bad Request`.
+/// * Only accepts notifications for packages already known to this
+///   registry (i.e. previously indexed). Notifications for unknown
+///   packages return `404 Not Found` so the queue can't be flooded with
+///   arbitrary `(registry, repository, tag)` triples.
+/// * Enforces a freshness window (the same 1-hour cooldown used by the
+///   periodic indexer). Repeated notifications for a tag that was just
+///   pulled are returned as `{"status":"skipped"}`.
+async fn notify_new_version(
+    State(manager): State<AppState>,
+    Path((registry, repository)): Path<(String, String)>,
+    Query(params): Query<NotifyParams>,
+) -> Result<axum::response::Response, AppError> {
+    let repository = repository.trim_start_matches('/');
+    let tag = params.tag.trim();
+    if tag.is_empty() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(serde_json::json!({ "error": "tag must not be empty" })),
+        )
+            .into_response());
+    }
+
+    let manager = manager
+        .lock()
+        .map_err(|e| anyhow::anyhow!("lock poisoned: {e}"))?;
+
+    // Only allow notifications for packages we already know about. This
+    // prevents arbitrary clients from filling the fetch queue with
+    // unknown `(registry, repository, tag)` triples.
+    if manager.get_known_package(&registry, repository)?.is_none() {
+        return Ok((
+            StatusCode::NOT_FOUND,
+            Json(serde_json::json!({
+                "error": "unknown package; only previously-indexed packages may be notified"
+            })),
+        )
+            .into_response());
+    }
+
+    let outcome = manager.notify_new_version(&registry, repository, tag)?;
+    Ok((StatusCode::ACCEPTED, Json(outcome)).into_response())
+}
+
 /// Application error type that converts to HTTP responses.
 struct AppError(anyhow::Error);
 
@@ -338,6 +412,65 @@ mod tests {
         assert_eq!(body, serde_json::json!({ "status": "ok" }));
 
         // Clean up.
+        server.abort();
+    }
+
+    /// Verify the notify endpoint enqueues a pull task and is idempotent.
+    /// A second notify for the same tag while the task is still pending
+    /// should also return `enqueued` (the queue dedupes internally).
+    #[tokio::test]
+    async fn notify_endpoint_enqueues_pull_task() {
+        use component_meta_registry_types::NotifyOutcome;
+
+        let manager = Manager::open().await.expect("failed to open manager");
+
+        // Register the target as a known package up-front: the notify
+        // endpoint rejects unknown packages with `404` to prevent
+        // arbitrary clients from flooding the fetch queue.
+        let registry = "example.test";
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(0);
+        let repository = format!("notify-test-{unique}");
+        manager
+            .add_known_package(registry, &repository, None, None)
+            .expect("failed to register known package");
+
+        let state = Arc::new(std::sync::Mutex::new(manager));
+        let app = router(state);
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("failed to bind listener");
+        let addr = listener.local_addr().expect("failed to get local addr");
+
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.expect("server error");
+        });
+
+        let url =
+            format!("http://{addr}/v1/packages/notify/{registry}/{repository}?tag=0.0.1-test");
+        let client = reqwest::Client::new();
+        let resp = client.post(&url).send().await.expect("request failed");
+        assert_eq!(resp.status(), StatusCode::ACCEPTED);
+        let outcome: NotifyOutcome = resp.json().await.expect("invalid json");
+        assert_eq!(outcome, NotifyOutcome::Enqueued);
+
+        // A second notify for the same tag while the task is still
+        // pending must also return `enqueued` — the underlying queue
+        // dedupes by `(registry, repository, tag)` so the request is
+        // accepted and reported as enqueued without creating a duplicate
+        // row.
+        let resp = client
+            .post(&url)
+            .send()
+            .await
+            .expect("second request failed");
+        assert_eq!(resp.status(), StatusCode::ACCEPTED);
+        let outcome: NotifyOutcome = resp.json().await.expect("invalid json");
+        assert_eq!(outcome, NotifyOutcome::Enqueued);
+
         server.abort();
     }
 }

@@ -448,10 +448,46 @@ fn format_date(iso: &str) -> String {
 /// Push WIT worlds and interfaces nav groups into `items`.
 fn push_wit_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>, doc: &WitDocument) {
     // Worlds — each world is a group with its imports/exports as children.
+    // Synthetic worlds (the `root` world of `root:component`) are flattened:
+    // their items appear as top-level sidebar entries instead.
     for world in &doc.worlds {
+        if world.is_synthetic {
+            for item in world.exports.iter().chain(world.imports.iter()) {
+                match item {
+                    crate::wit_doc::WorldItemDoc::Interface {
+                        name,
+                        url: Some(url),
+                        ..
+                    } => {
+                        items.push(SidebarItem::Entry(SidebarEntry {
+                            sigil_bg: s::IFACE.bg,
+                            sigil_color: s::IFACE.color,
+                            sigil_text: s::IFACE.text,
+                            name: short_interface_name(name),
+                            href: url.clone(),
+                            meta: String::new(),
+                            active: false,
+                        }));
+                    }
+                    crate::wit_doc::WorldItemDoc::Function(func) if !func.url.is_empty() => {
+                        items.push(SidebarItem::Entry(SidebarEntry {
+                            sigil_bg: s::FUNC.bg,
+                            sigil_color: s::FUNC.color,
+                            sigil_text: s::FUNC.text,
+                            name: func.name.clone(),
+                            href: func.url.clone(),
+                            meta: String::new(),
+                            active: false,
+                        }));
+                    }
+                    _ => {}
+                }
+            }
+            continue;
+        }
         let is_active = matches!(ctx.active, SidebarActive::World(name) if name == world.name);
         let mut children = Vec::new();
-        for item in world.imports.iter().chain(world.exports.iter()) {
+        for item in world.exports.iter().chain(world.imports.iter()) {
             if let crate::wit_doc::WorldItemDoc::Interface {
                 name,
                 url: Some(url),

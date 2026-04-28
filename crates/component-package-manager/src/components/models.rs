@@ -144,6 +144,10 @@ pub struct ComponentTarget {
     pub declared_version: Option<String>,
     /// Resolved foreign key to `wit_world`, if matched.
     pub wit_world_id: Option<i64>,
+    /// True when `declared_package` matches the parent OCI repository's WIT
+    /// package (`wit_namespace:wit_name`). Indicates the targeted world is
+    /// native to this component's own package.
+    pub is_native_package: bool,
 }
 
 impl ComponentTarget {
@@ -162,12 +166,13 @@ impl ComponentTarget {
         declared_world: &str,
         declared_version: Option<&str>,
         wit_world_id: Option<i64>,
+        is_native_package: bool,
     ) -> anyhow::Result<i64> {
         conn.execute(
             "INSERT INTO component_target
                  (wasm_component_id, declared_package, declared_world,
-                  declared_version, wit_world_id)
-             VALUES (?1, ?2, ?3, ?4, ?5)
+                  declared_version, wit_world_id, is_native_package)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT DO NOTHING",
             rusqlite::params![
                 wasm_component_id,
@@ -175,6 +180,7 @@ impl ComponentTarget {
                 declared_world,
                 declared_version,
                 wit_world_id,
+                is_native_package,
             ],
         )?;
 
@@ -204,7 +210,7 @@ impl ComponentTarget {
     ) -> anyhow::Result<Vec<Self>> {
         let mut stmt = conn.prepare(
             "SELECT id, wasm_component_id, declared_package, declared_world,
-                    declared_version, wit_world_id
+                    declared_version, wit_world_id, is_native_package
              FROM component_target
              WHERE wasm_component_id = ?1
              ORDER BY declared_package ASC, declared_world ASC",
@@ -218,6 +224,7 @@ impl ComponentTarget {
                 declared_world: row.get(3)?,
                 declared_version: row.get(4)?,
                 wit_world_id: row.get(5)?,
+                is_native_package: row.get(6)?,
             })
         })?;
 
@@ -343,12 +350,19 @@ mod tests {
         let mid = insert_test_manifest(&conn);
         let comp_id = WasmComponent::insert(&conn, mid, None, Some("comp"), None, None).unwrap();
 
-        let tid =
-            ComponentTarget::insert(&conn, comp_id, "wasi:http", "proxy", Some("0.2.0"), None)
-                .unwrap();
+        let tid = ComponentTarget::insert(
+            &conn,
+            comp_id,
+            "wasi:http",
+            "proxy",
+            Some("0.2.0"),
+            None,
+            false,
+        )
+        .unwrap();
         assert!(tid > 0);
 
-        ComponentTarget::insert(&conn, comp_id, "wasi:cli", "command", None, None).unwrap();
+        ComponentTarget::insert(&conn, comp_id, "wasi:cli", "command", None, None, false).unwrap();
 
         let targets = ComponentTarget::list_by_component(&conn, comp_id).unwrap();
         assert_eq!(targets.len(), 2);
@@ -366,12 +380,26 @@ mod tests {
         let mid = insert_test_manifest(&conn);
         let comp_id = WasmComponent::insert(&conn, mid, None, Some("comp"), None, None).unwrap();
 
-        let id1 =
-            ComponentTarget::insert(&conn, comp_id, "wasi:http", "proxy", Some("0.2.0"), None)
-                .unwrap();
-        let id2 =
-            ComponentTarget::insert(&conn, comp_id, "wasi:http", "proxy", Some("0.2.0"), None)
-                .unwrap();
+        let id1 = ComponentTarget::insert(
+            &conn,
+            comp_id,
+            "wasi:http",
+            "proxy",
+            Some("0.2.0"),
+            None,
+            false,
+        )
+        .unwrap();
+        let id2 = ComponentTarget::insert(
+            &conn,
+            comp_id,
+            "wasi:http",
+            "proxy",
+            Some("0.2.0"),
+            None,
+            false,
+        )
+        .unwrap();
         assert_eq!(id1, id2);
     }
 

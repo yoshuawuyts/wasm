@@ -9,7 +9,7 @@
 use std::fmt;
 
 use crate::KnownPackage;
-use component_meta_registry_types::{PackageDetail, PackageVersion};
+use component_meta_registry_types::{NotifyOutcome, PackageDetail, PackageVersion, QueueStatus};
 
 /// Default API base URL when no environment variable is set.
 const DEFAULT_API_BASE_URL: &str = "http://localhost:8081";
@@ -276,6 +276,44 @@ impl RegistryClient {
         self.fetch_packages_from(&url).await
     }
 
+    /// Fetch the current fetch queue status.
+    pub async fn fetch_queue_status(&self) -> Result<QueueStatus, ApiError> {
+        let url = format!("{}/v1/queue", self.base_url);
+        let bytes = self.get(&url).await?;
+        serde_json::from_slice(&bytes).map_err(|e| {
+            ApiError::new(format!(
+                "received an unexpected response from the registry: {e}"
+            ))
+        })
+    }
+
+    /// Notify the registry that a new version of a package was just
+    /// published, requesting it be pulled as soon as possible.
+    ///
+    /// This is a hint, not a guarantee — the registry may dedupe or skip
+    /// the request based on its own freshness/cooldown policy. The returned
+    /// `NotifyOutcome` describes what the server actually did.
+    pub async fn notify_new_version(
+        &self,
+        registry: &str,
+        repository: &str,
+        tag: &str,
+    ) -> Result<NotifyOutcome, ApiError> {
+        let encoded_reg = percent_encode_query_component(registry);
+        let encoded_repo = percent_encode_path_component(repository);
+        let encoded_tag = percent_encode_query_component(tag);
+        let url = format!(
+            "{}/v1/packages/notify/{encoded_reg}/{encoded_repo}?tag={encoded_tag}",
+            self.base_url
+        );
+        let bytes = self.post_empty(&url).await?;
+        serde_json::from_slice(&bytes).map_err(|e| {
+            ApiError::new(format!(
+                "received an unexpected response from the registry: {e}"
+            ))
+        })
+    }
+
     /// Fetch and deserialize a list of packages from the given URL.
     async fn fetch_packages_from(&self, url: &str) -> Result<Vec<KnownPackage>, ApiError> {
         let bytes = self.get(url).await?;
@@ -336,6 +374,36 @@ impl RegistryClient {
         Ok(bytes.to_vec())
     }
 
+    /// Perform an HTTP POST request with an empty body and return the raw
+    /// response body. Accepts both `2xx` responses (including `202 Accepted`).
+    #[cfg(all(target_os = "wasi", target_env = "p2"))]
+    async fn post_empty(&self, url: &str) -> Result<Vec<u8>, ApiError> {
+        use wstd::http::{Body, Request};
+
+        let req = Request::post(url)
+            .body(Body::empty())
+            .map_err(|e| ApiError::new(format!("failed to build request for {url}: {e}")))?;
+
+        let response =
+            self.client.send(req).await.map_err(|e| {
+                ApiError::new(format!("could not connect to the registry API: {e}"))
+            })?;
+
+        let status = response.status();
+        let mut body = response.into_body();
+        let bytes = body
+            .contents()
+            .await
+            .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))?;
+        if !status.is_success() {
+            let body = String::from_utf8_lossy(&bytes);
+            return Err(ApiError::new(format!(
+                "registry API returned unexpected status {status} for {url}: {body}"
+            )));
+        }
+        Ok(bytes.to_vec())
+    }
+
     /// Perform an HTTP GET request and return the raw response body.
     #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
     async fn get(&self, url: &str) -> Result<Vec<u8>, ApiError> {
@@ -348,6 +416,30 @@ impl RegistryClient {
             .await
             .map(|b| b.to_vec())
             .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))
+    }
+
+    /// Perform an HTTP POST request with an empty body and return the raw
+    /// response body. Accepts any 2xx status (including `202 Accepted`).
+    #[cfg(not(all(target_os = "wasi", target_env = "p2")))]
+    async fn post_empty(&self, url: &str) -> Result<Vec<u8>, ApiError> {
+        let resp =
+            self.client.post(url).send().await.map_err(|e| {
+                ApiError::new(format!("could not connect to the registry API: {e}"))
+            })?;
+
+        let status = resp.status();
+        let bytes = resp
+            .bytes()
+            .await
+            .map(|b| b.to_vec())
+            .map_err(|e| ApiError::new(format!("failed to read response body: {e}")))?;
+        if !status.is_success() {
+            let body = String::from_utf8_lossy(&bytes);
+            return Err(ApiError::new(format!(
+                "registry API returned unexpected status {status} for {url}: {body}"
+            )));
+        }
+        Ok(bytes)
     }
 
     /// Perform an HTTP GET request, returning `None` for 404 responses.

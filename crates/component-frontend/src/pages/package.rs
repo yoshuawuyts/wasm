@@ -24,7 +24,7 @@ pub(crate) fn render(
 ) -> String {
     let display_name = page_shell::display_name_for(pkg);
     let url_base = page_shell::url_base_for(pkg, version);
-    let wit_doc = version_detail.and_then(|d| try_parse_wit(d, &url_base));
+    let wit_doc = version_detail.and_then(|d| try_parse_wit(d, &url_base, pkg));
 
     // Package heading
     let kind_label = match pkg.kind {
@@ -156,7 +156,46 @@ fn render_wit_content_with_doc(
     let mut toc: Vec<(String, String, bool)> = Vec::new();
     let display_name = page_shell::display_name_for(pkg);
     if let Some(doc) = doc {
-        if !doc.worlds.is_empty() {
+        // Component special-case: when the document represents an extracted
+        // wasm component (is_component is true) and the only world is
+        // synthetic, inline its imports/exports as the component's own
+        // instead of surfacing a single boring "Worlds → root" card.
+        let inline_root = doc.is_component
+            && doc
+                .worlds
+                .first()
+                .is_some_and(|w| w.is_synthetic && doc.worlds.len() == 1);
+        if inline_root {
+            let world = doc
+                .worlds
+                .first()
+                .expect("inline_root ensures doc.worlds is non-empty");
+            let api_docs = super::world::build_api_doc_lookup(Some(detail), &world.name);
+            if !world.exports.is_empty() {
+                toc.push(("#exports".to_owned(), "Exports".to_owned(), false));
+                section.division(|d| {
+                    d.id("exports".to_owned())
+                        .push(super::world::render_item_section(
+                            "Exports",
+                            &world.exports,
+                            &api_docs,
+                            &display_name,
+                        ))
+                });
+            }
+            if !world.imports.is_empty() {
+                toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
+                section.division(|d| {
+                    d.id("imports".to_owned())
+                        .push(super::world::render_item_section(
+                            "Imports",
+                            &world.imports,
+                            &api_docs,
+                            &display_name,
+                        ))
+                });
+            }
+        } else if !doc.worlds.is_empty() {
             toc.push(("#worlds".to_owned(), "Worlds".to_owned(), false));
             for world in &doc.worlds {
                 let id = format!("world-{}", world.name);
@@ -167,7 +206,10 @@ fn render_wit_content_with_doc(
                     .push(render_world_overview(doc, &display_name))
             });
         }
-        if !doc.interfaces.is_empty() {
+        // When inlining the synthetic root world, the world's exports already
+        // surface every native interface — listing them again under
+        // "Interfaces" would duplicate `convert` etc.
+        if !inline_root && !doc.interfaces.is_empty() {
             toc.push(("#interfaces".to_owned(), "Interfaces".to_owned(), false));
             for iface in &doc.interfaces {
                 let id = format!("iface-{}", iface.name);
@@ -188,18 +230,18 @@ fn render_wit_content_with_doc(
 
         if has_component_imports {
             for comp in &detail.components {
-                if !comp.imports.is_empty() {
-                    toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
-                    section.division(|d| {
-                        d.id("imports".to_owned())
-                            .push(render_iface_ref_list("Imports", &comp.imports))
-                    });
-                }
                 if !comp.exports.is_empty() {
                     toc.push(("#exports".to_owned(), "Exports".to_owned(), false));
                     section.division(|d| {
                         d.id("exports".to_owned())
                             .push(render_iface_ref_list("Exports", &comp.exports))
+                    });
+                }
+                if !comp.imports.is_empty() {
+                    toc.push(("#imports".to_owned(), "Imports".to_owned(), false));
+                    section.division(|d| {
+                        d.id("imports".to_owned())
+                            .push(render_iface_ref_list("Imports", &comp.imports))
                     });
                 }
             }
@@ -317,10 +359,25 @@ fn render_children_overview(
 }
 
 /// Try parsing the WIT text into a rich document model.
-fn try_parse_wit(detail: &PackageVersion, url_base: &str) -> Option<WitDocument> {
+fn try_parse_wit(
+    detail: &PackageVersion,
+    url_base: &str,
+    pkg: &KnownPackage,
+) -> Option<WitDocument> {
     let wit_text = detail.wit_text.as_deref()?;
     let dep_urls = build_dep_urls(&detail.dependencies);
-    crate::wit_doc::parse_wit_doc(wit_text, url_base, &dep_urls).ok()
+    let own_oci_package = match (pkg.wit_namespace.as_deref(), pkg.wit_name.as_deref()) {
+        (Some(ns), Some(n)) => Some(format!("{ns}:{n}")),
+        _ => None,
+    };
+    crate::wit_doc::parse_wit_doc_with_type_docs(
+        wit_text,
+        url_base,
+        &dep_urls,
+        &detail.type_docs,
+        own_oci_package.as_deref(),
+    )
+    .ok()
 }
 
 /// Build the `dep_urls` mapping from a package's declared dependencies.
@@ -417,11 +474,11 @@ fn render_world_summaries(detail: &PackageVersion) -> Division {
                 });
             }
 
-            if !world.imports.is_empty() {
-                world_div.push(render_iface_ref_list("Imports", &world.imports));
-            }
             if !world.exports.is_empty() {
                 world_div.push(render_iface_ref_list("Exports", &world.exports));
+            }
+            if !world.imports.is_empty() {
+                world_div.push(render_iface_ref_list("Imports", &world.imports));
             }
             world_div
         });
