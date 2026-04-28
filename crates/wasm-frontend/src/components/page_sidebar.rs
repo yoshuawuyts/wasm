@@ -452,7 +452,7 @@ fn push_wit_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>, doc: &Wi
     // their items appear as top-level sidebar entries instead.
     for world in &doc.worlds {
         if world.is_synthetic {
-            for item in world.imports.iter().chain(world.exports.iter()) {
+            for item in world.exports.iter().chain(world.imports.iter()) {
                 match item {
                     crate::wit_doc::WorldItemDoc::Interface {
                         name,
@@ -487,7 +487,7 @@ fn push_wit_nav(items: &mut Vec<SidebarItem>, ctx: &SidebarContext<'_>, doc: &Wi
         }
         let is_active = matches!(ctx.active, SidebarActive::World(name) if name == world.name);
         let mut children = Vec::new();
-        for item in world.imports.iter().chain(world.exports.iter()) {
+        for item in world.exports.iter().chain(world.imports.iter()) {
             if let crate::wit_doc::WorldItemDoc::Interface {
                 name,
                 url: Some(url),
