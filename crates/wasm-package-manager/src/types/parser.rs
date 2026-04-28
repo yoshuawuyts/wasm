@@ -117,12 +117,15 @@ pub(crate) fn extract_wit_metadata(wasm_bytes: &[u8]) -> Option<WitMetadata> {
     })
 }
 
-/// Decode a binary WIT package (`.wasm`) into its textual WIT representation.
+/// Decode a binary WIT package or WebAssembly component (`.wasm`) into its
+/// textual WIT representation.
 ///
 /// Uses `wit-component`'s [`WitPrinter`] to produce well-formed WIT text that
-/// is round-trippable through `wit-parser`.
+/// is round-trippable through `wit-parser`. Accepts both binary WIT packages
+/// and compiled WebAssembly components — components have their interface types
+/// extracted and printed as WIT text.
 ///
-/// Returns `None` if the bytes are not a valid WIT package.
+/// Returns `None` if the bytes are not a valid WIT package or component.
 ///
 /// # Example
 ///

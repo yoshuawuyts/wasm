@@ -145,6 +145,7 @@ pub(crate) fn convert(
         docs,
         interfaces,
         worlds,
+        is_component: converter.primary_is_root_component,
     })
 }
 
@@ -612,12 +613,14 @@ impl Converter<'_> {
                 }
             }
             WorldItem::Function(func) => {
-                // Freestanding world functions live directly under the
-                // package page (component pages inline `world root`), so
-                // route them as `/function/{func_name}` to keep URLs short
-                // and avoid leaking the synthetic `root` world name.
                 let mut doc = self.convert_function(func, world_name);
-                doc.url = format!("{}/function/{}", self.url_base, doc.name);
+                // Only collapse world-level functions to `/function/{name}` for
+                // the synthetic `root` world of an extracted component.  For
+                // non-synthetic worlds, keep a world-qualified URL so that two
+                // worlds exporting a function with the same name don't collide.
+                if self.primary_is_root_component && world_name == "root" {
+                    doc.url = format!("{}/function/{}", self.url_base, doc.name);
+                }
                 WorldItemDoc::Function(doc)
             }
             WorldItem::Type { id: type_id, .. } => {

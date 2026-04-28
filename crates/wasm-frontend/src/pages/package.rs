@@ -156,13 +156,20 @@ fn render_wit_content_with_doc(
     let mut toc: Vec<(String, String, bool)> = Vec::new();
     let display_name = page_shell::display_name_for(pkg);
     if let Some(doc) = doc {
-        // Component special-case: when the only world is the synthetic
-        // `root` produced by extracting bindings from a wasm component,
-        // inline its imports/exports as the component's own instead of
-        // surfacing a single boring "Worlds → root" card.
-        let inline_root = doc.worlds.len() == 1 && doc.worlds[0].is_synthetic;
+        // Component special-case: when the document represents an extracted
+        // wasm component (is_component is true) and the only world is
+        // synthetic, inline its imports/exports as the component's own
+        // instead of surfacing a single boring "Worlds → root" card.
+        let inline_root = doc.is_component
+            && doc
+                .worlds
+                .first()
+                .is_some_and(|w| w.is_synthetic && doc.worlds.len() == 1);
         if inline_root {
-            let world = &doc.worlds[0];
+            // SAFETY: inline_root is only true when doc.worlds is non-empty
+            let Some(world) = doc.worlds.first() else {
+                unreachable!("inline_root ensures at least one world exists")
+            };
             let api_docs = super::world::build_api_doc_lookup(Some(detail), &world.name);
             if !world.exports.is_empty() {
                 toc.push(("#exports".to_owned(), "Exports".to_owned(), false));

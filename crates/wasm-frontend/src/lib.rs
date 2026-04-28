@@ -429,7 +429,12 @@ async fn package_function_detail(
     let Some((doc, version_detail)) = fetch_wit_doc(&client, &pkg, &version).await else {
         return not_found_response();
     };
-    let func = doc.worlds.iter().find_map(|w| {
+    // For component packages the `/function/` URL space belongs exclusively to
+    // the synthetic `root` world's items.  Searching all worlds would pick the
+    // first match across potentially many worlds that happen to define a
+    // function with the same name, making routing ambiguous.  Only look in
+    // worlds where `is_synthetic` is true so the lookup is deterministic.
+    let func = doc.worlds.iter().filter(|w| w.is_synthetic).find_map(|w| {
         w.imports
             .iter()
             .chain(w.exports.iter())
