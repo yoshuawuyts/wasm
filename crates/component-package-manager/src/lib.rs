@@ -49,6 +49,9 @@ pub mod oci;
 /// Permission resolution for running WebAssembly components.
 pub mod permissions;
 mod progress;
+/// Publish helpers: build a [`crate::publish::PublishPlan`] from a
+/// `wasm.toml` manifest and push the artifact to an OCI registry.
+pub mod publish;
 /// Dependency resolver using the PubGrub version-solving algorithm.
 pub mod resolver;
 /// Storage layer for persisting package metadata and state.

@@ -66,6 +66,59 @@ component package push ghcr.io/myuser/my-component:v1.0.0
 
 **Note**: You must be authenticated to push packages. See [Authentication](authentication.md) for details.
 
+### Publishing a Package (manifest-driven)
+
+For projects with a `wasm.toml` manifest, prefer the higher-level
+`component publish` command. It reads a `[package]` section from the
+manifest and uploads either the compiled component (`kind = "component"`)
+or a freshly-built WIT package (`kind = "interface"`).
+
+```toml
+# wasm.toml
+[package]
+name = "yoshuawuyts:fetch"
+version = "0.1.0"
+kind = "component"
+file = "build/fetch.wasm"     # defaults to build/<name>.wasm
+description = "A tiny fetch helper"
+license = "Apache-2.0"
+authors = ["Yosh <yosh@example.com>"]
+```
+
+For an interface package, point `wit` at the WIT directory:
+
+```toml
+[package]
+name = "wasi:logging"
+version = "1.0.0"
+kind = "interface"
+wit = "wit"     # defaults to "wit"
+```
+
+The manifest's `version` is the **single source of truth** — WIT files
+must not declare their own `@version`; the publisher will stamp the
+manifest version onto every top-level `package` decl during build.
+
+Inspect what would be published without pushing:
+
+```bash
+component publish --dry-run
+```
+
+Publish for real:
+
+```bash
+component publish                       # uses ghcr.io
+component publish --registry oci.io     # to a different host
+component publish --file build/x.wasm   # override the artifact path
+```
+
+The artifact is uploaded as a single OCI layer
+(`application/vnd.wasm.config.v0+json` config, `application/wasm`
+layer) with `org.opencontainers.image.{title,version,created,description,source,url,documentation,licenses,authors}`
+annotations populated from the `[package]` section.
+
+
 ### Listing Packages
 
 View all locally stored packages:

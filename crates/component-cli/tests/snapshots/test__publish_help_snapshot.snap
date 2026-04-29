@@ -1,0 +1,27 @@
+---
+source: crates/component-cli/tests/test.rs
+expression: output
+---
+Publish a component or WIT interface to an OCI registry
+
+Usage: component publish [OPTIONS]
+
+Options:
+      --file <FILE>
+          Override the path to the artifact (component .wasm file or WIT directory). Mirrors the `[package].file` / `[package].wit` fields in the manifest
+      --dry-run
+          Print the OCI manifest, layers, annotations, and target reference that would be pushed without actually contacting the registry
+      --manifest-path <MANIFEST_PATH>
+          Path to the project directory containing `wasm.toml`. Defaults to the current directory [default: .]
+      --registry <REGISTRY>
+          The registry host to publish to. Defaults to `ghcr.io` [default: ghcr.io]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
+
+Global Options:
+      --color <WHEN>  When to use colored output [default: auto] [possible values: auto, always, never]
+      --offline       Run in offline mode
+  -v, --verbose...    Increase logging verbosity
+  -q, --quiet...      Decrease logging verbosity

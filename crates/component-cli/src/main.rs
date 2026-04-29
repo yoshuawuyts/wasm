@@ -5,6 +5,7 @@ mod compose;
 mod init;
 mod install;
 mod local;
+mod publish;
 mod registry;
 mod run;
 mod self_;
@@ -53,6 +54,7 @@ impl Cli {
             Some(Command::Compose(opts)) => opts.run().map_err(into_miette)?,
             Some(Command::Init(opts)) => opts.run().await?,
             Some(Command::Install(opts)) => opts.run(self.offline).await?,
+            Some(Command::Publish(opts)) => opts.run(self.offline).await.map_err(into_miette)?,
             Some(Command::Self_(opts)) => opts.run().await.map_err(into_miette)?,
             None => {
                 // Apply the parsed color choice when printing help
@@ -74,6 +76,8 @@ enum Command {
     Init(init::Opts),
     /// Install a dependency from an OCI registry
     Install(install::Opts),
+    /// Publish a component or WIT interface to an OCI registry
+    Publish(publish::Opts),
     /// Compose Wasm components from WAC scripts
     Compose(compose::Opts),
     /// Detect and manage local WASM files

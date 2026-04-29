@@ -1,9 +1,11 @@
+use std::collections::BTreeMap;
+
 use docker_credential::DockerCredential;
 use oci_client::Reference;
-use oci_client::client::{ClientConfig, ClientProtocol, ImageData, SizedStream};
+use oci_client::client::{ClientConfig, ClientProtocol, ImageData, PushResponse, SizedStream};
 use oci_client::manifest::{OciDescriptor, OciImageIndex, OciImageManifest};
 use oci_client::secrets::RegistryAuth;
-use oci_wasm::WasmClient;
+use oci_wasm::{WasmClient, WasmConfig};
 
 use crate::config::Config;
 
@@ -35,6 +37,33 @@ impl Client {
         let auth = resolve_auth(reference, &self.config)?;
         let image = self.inner.pull(reference, &auth).await?;
         Ok(image)
+    }
+
+    /// Push a single-layer wasm artifact (component or WIT package) to the
+    /// registry, mirroring [`Client::pull`].
+    ///
+    /// Builds a [`WasmConfig`] from the supplied bytes (using
+    /// [`WasmConfig::from_raw_component`], which works for both compiled
+    /// components and WIT-only packages) and uploads the layer + config +
+    /// manifest. The supplied `annotations` are attached to the OCI
+    /// manifest using the `org.opencontainers.image.*` keys (callers are
+    /// responsible for picking the right keys).
+    pub(crate) async fn push(
+        &self,
+        reference: &Reference,
+        bytes: Vec<u8>,
+        annotations: BTreeMap<String, String>,
+    ) -> anyhow::Result<PushResponse> {
+        let auth = resolve_auth(reference, &self.config)?;
+        let (config, layer) = WasmConfig::from_raw_component(bytes, None)?;
+        let annotations_opt = if annotations.is_empty() {
+            None
+        } else {
+            Some(annotations)
+        };
+        self.inner
+            .push(reference, &auth, layer, config, annotations_opt)
+            .await
     }
 
     /// Fetches the manifest and config digest for a given reference.

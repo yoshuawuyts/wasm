@@ -194,7 +194,7 @@ pub fn resolve_install_inputs(
 // Lockfile management
 // ---------------------------------------------------------------------------
 
-/// Build a [`component_manifest::Package`] from an [`InstallResult`] and upsert it
+/// Build a [`component_manifest::LockedPackage`] from an [`InstallResult`] and upsert it
 /// into `lockfile.interfaces`.
 pub fn upsert_lockfile_type(lockfile: &mut component_manifest::Lockfile, result: &InstallResult) {
     let name = result.package_name.as_deref().map_or_else(
@@ -202,7 +202,7 @@ pub fn upsert_lockfile_type(lockfile: &mut component_manifest::Lockfile, result:
         |n| n.split('@').next().unwrap_or(n).to_string(),
     );
     let registry = format!("{}/{}", result.registry, result.repository);
-    let package = component_manifest::Package {
+    let package = component_manifest::LockedPackage {
         name: name.clone(),
         version: result.tag.clone().unwrap_or_default(),
         registry: registry.clone(),
@@ -246,7 +246,7 @@ pub fn upsert_lockfile_package(
     is_component: bool,
     dep_name: &str,
     registry_path: &str,
-    package: component_manifest::Package,
+    package: component_manifest::LockedPackage,
 ) {
     let packages = if is_component {
         &mut lockfile.components

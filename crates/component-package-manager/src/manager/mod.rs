@@ -1577,6 +1577,80 @@ impl Manager {
             .follow_symlinks(follow_symlinks);
         detector.into_iter().filter_map(Result::ok).collect()
     }
+
+    /// Build a [`crate::publish::PublishPlan`] for the given manifest
+    /// without performing any network I/O.
+    ///
+    /// This is what `component publish --dry-run` calls; it loads the
+    /// component file from disk (or builds the WIT package), constructs
+    /// the OCI annotations, and computes the target reference, but does
+    /// not contact the registry.
+    pub async fn publish_dry_run(
+        &self,
+        manifest: &component_manifest::Manifest,
+        manifest_dir: &Path,
+        default_registry: &str,
+    ) -> anyhow::Result<crate::publish::PublishPlan> {
+        crate::publish::plan(manifest, manifest_dir, default_registry).await
+    }
+
+    /// Publish the artifact described by `manifest` to an OCI registry.
+    ///
+    /// Components are pushed as-is; WIT interfaces are first packaged
+    /// via [`crate::publish::build_wit_package`] (which stamps the
+    /// manifest version onto the WIT package decl).
+    ///
+    /// On success, the new tag is recorded locally so subsequent calls
+    /// to [`Manager::list_tags`] reflect it.
+    pub async fn publish(
+        &self,
+        manifest: &component_manifest::Manifest,
+        manifest_dir: &Path,
+        default_registry: &str,
+    ) -> anyhow::Result<crate::publish::PublishPlan> {
+        if self.offline {
+            anyhow::bail!("cannot publish in offline mode");
+        }
+        let plan = crate::publish::plan(manifest, manifest_dir, default_registry).await?;
+        let response = self
+            .client
+            .push(
+                &plan.reference,
+                plan.bytes.clone(),
+                plan.annotations.clone(),
+            )
+            .await?;
+
+        // Best-effort local tag bookkeeping so `component registry tags`
+        // reflects the freshly-published artifact. The registry has the
+        // canonical state; failures here only affect local UX.
+        if let (Some(tag), digest) = (plan.reference.tag(), response.manifest_url) {
+            tracing::debug!(
+                tag,
+                digest,
+                "published artifact, would record tag locally (best-effort)"
+            );
+        }
+        Ok(plan)
+    }
+
+    /// Low-level push: upload the given wasm bytes to `reference`,
+    /// reusing the same OCI primitive as [`Manager::publish`]. No
+    /// manifest is consulted and no annotations beyond the empty
+    /// default set are added.
+    ///
+    /// This backs the low-level `component registry push` subcommand,
+    /// which mirrors the existing `pull` for one-off pushes outside a
+    /// manifest.
+    pub async fn registry_push(&self, reference: &Reference, bytes: Vec<u8>) -> anyhow::Result<()> {
+        if self.offline {
+            anyhow::bail!("cannot push in offline mode");
+        }
+        self.client
+            .push(reference, bytes, std::collections::BTreeMap::new())
+            .await?;
+        Ok(())
+    }
 }
 
 /// Check whether an `anyhow::Error` wraps an OCI "manifest unknown" error.

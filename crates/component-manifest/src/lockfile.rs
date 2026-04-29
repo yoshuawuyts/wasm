@@ -49,11 +49,11 @@ pub struct Lockfile {
 
     /// The list of resolved component packages.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub components: Vec<Package>,
+    pub components: Vec<LockedPackage>,
 
     /// The list of resolved interface packages.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub interfaces: Vec<Package>,
+    pub interfaces: Vec<LockedPackage>,
 }
 
 impl Default for Lockfile {
@@ -96,7 +96,7 @@ impl Lockfile {
     /// assert!(all.iter().any(|(_, pt)| *pt == PackageType::Component));
     /// assert!(all.iter().any(|(_, pt)| *pt == PackageType::Interface));
     /// ```
-    pub fn all_packages(&self) -> impl Iterator<Item = (&Package, PackageType)> {
+    pub fn all_packages(&self) -> impl Iterator<Item = (&LockedPackage, PackageType)> {
         self.components
             .iter()
             .map(|p| (p, PackageType::Component))
@@ -104,7 +104,7 @@ impl Lockfile {
     }
 
     /// Backfill `registry` and `digest` on every [`PackageDependency`] by
-    /// looking up the matching top-level [`Package`] entry, matched by
+    /// looking up the matching top-level [`LockedPackage`] entry, matched by
     /// `(name, version)`.
     ///
     /// Dependencies whose `(name, version)` pair does not match any top-level
@@ -176,7 +176,7 @@ impl Lockfile {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[must_use]
-pub struct Package {
+pub struct LockedPackage {
     /// The package name (e.g., "wasi:logging").
     pub name: String,
 
@@ -300,14 +300,14 @@ mod tests {
             lockfile_version: 3,
             components: vec![],
             interfaces: vec![
-                Package {
+                LockedPackage {
                     name: "wasi:logging".to_string(),
                     version: "1.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-logging".to_string(),
                     digest: "sha256:abc123".to_string(),
                     dependencies: vec![],
                 },
-                Package {
+                LockedPackage {
                     name: "wasi:key-value".to_string(),
                     version: "2.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -352,7 +352,7 @@ mod tests {
     // r[verify lockfile.no-dependencies.serialize]
     #[test]
     fn test_serialize_package_without_dependencies() {
-        let package = Package {
+        let package = LockedPackage {
             name: "wasi:logging".to_string(),
             version: "1.0.0".to_string(),
             registry: "ghcr.io/webassembly/wasi-logging".to_string(),
@@ -398,14 +398,14 @@ mod tests {
     fn test_all_packages() {
         let lockfile = Lockfile {
             lockfile_version: 3,
-            components: vec![Package {
+            components: vec![LockedPackage {
                 name: "root:component".to_string(),
                 version: "0.1.0".to_string(),
                 registry: "ghcr.io/example/component".to_string(),
                 digest: "sha256:comp123".to_string(),
                 dependencies: vec![],
             }],
-            interfaces: vec![Package {
+            interfaces: vec![LockedPackage {
                 name: "wasi:clocks".to_string(),
                 version: "0.2.5".to_string(),
                 registry: "ghcr.io/webassembly/wasi/clocks".to_string(),
@@ -458,7 +458,7 @@ mod tests {
         // Empty registry/digest must be omitted from the serialized TOML so
         // that the file stays clean until `resolve_dependency_details()` fills
         // them in.
-        let package = Package {
+        let package = LockedPackage {
             name: "wasi:key-value".to_string(),
             version: "2.0.0".to_string(),
             registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -490,14 +490,14 @@ mod tests {
             lockfile_version: 3,
             components: vec![],
             interfaces: vec![
-                Package {
+                LockedPackage {
                     name: "wasi:logging".to_string(),
                     version: "1.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-logging".to_string(),
                     digest: "sha256:abc123".to_string(),
                     dependencies: vec![],
                 },
-                Package {
+                LockedPackage {
                     name: "wasi:key-value".to_string(),
                     version: "2.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -524,7 +524,7 @@ mod tests {
         let mut lockfile = Lockfile {
             lockfile_version: 3,
             components: vec![],
-            interfaces: vec![Package {
+            interfaces: vec![LockedPackage {
                 name: "wasi:key-value".to_string(),
                 version: "2.0.0".to_string(),
                 registry: "ghcr.io/webassembly/wasi-key-value".to_string(),

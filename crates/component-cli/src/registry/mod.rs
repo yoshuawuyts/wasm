@@ -19,7 +19,15 @@ pub(crate) enum Opts {
     Show,
     /// Pull a component from the registry
     Pull(PullOpts),
-    Push,
+    /// Push a single Wasm artifact to the registry (low-level)
+    ///
+    /// This is the low-level counterpart to `component publish`: it
+    /// uploads a single `.wasm` file to a fully-qualified OCI
+    /// reference, without consulting `wasm.toml`. Reuses the same OCI
+    /// push primitive, so the resulting artifact has the same shape
+    /// (`application/vnd.wasm.config.v0+json` config, single
+    /// `application/wasm` layer).
+    Push(PushOpts),
     /// List all available tags for a component
     Tags(TagsOpts),
     /// Search for packages across configured registries
@@ -43,6 +51,18 @@ pub(crate) struct PullOpts {
     /// The reference to pull
     #[arg(value_parser = crate::util::parse_reference)]
     reference: Reference,
+}
+
+/// Options for the low-level `registry push` subcommand.
+#[derive(clap::Args)]
+pub(crate) struct PushOpts {
+    /// The fully-qualified OCI reference to push to (e.g.
+    /// `ghcr.io/owner/name:0.1.0`).
+    #[arg(value_parser = crate::util::parse_reference)]
+    reference: Reference,
+    /// Path to the `.wasm` file to upload as the layer.
+    #[arg(long)]
+    file: std::path::PathBuf,
 }
 
 #[derive(clap::Args)]
@@ -94,7 +114,14 @@ impl Opts {
                 }
                 Ok(())
             }
-            Opts::Push => todo!(),
+            Opts::Push(opts) => {
+                let bytes = tokio::fs::read(&opts.file).await.map_err(|e| {
+                    anyhow::anyhow!("failed to read `{}`: {e}", opts.file.display())
+                })?;
+                store.registry_push(&opts.reference, bytes).await?;
+                println!("{:>12} {}", "Pushed", opts.reference.whole(),);
+                Ok(())
+            }
             Opts::Tags(opts) => {
                 let all_tags = store.list_tags(&opts.reference).await?;
 

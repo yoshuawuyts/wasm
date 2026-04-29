@@ -50,6 +50,10 @@ pub enum PackageType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[must_use]
 pub struct Manifest {
+    /// Optional `[package]` section with publish metadata for this manifest's
+    /// single artifact (component or WIT interface).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<crate::package::Package>,
     /// All dependency sections of the manifest.
     #[serde(default)]
     pub dependencies: Dependencies,
@@ -377,6 +381,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -404,6 +409,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -464,6 +470,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 components,
                 interfaces,

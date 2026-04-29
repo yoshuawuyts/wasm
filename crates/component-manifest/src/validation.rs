@@ -282,7 +282,7 @@ fn validate_version_conflicts(manifest: &Manifest, errors: &mut Vec<ValidationEr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Dependencies, Dependency, Package, PackageDependency};
+    use crate::{Dependencies, Dependency, LockedPackage, PackageDependency};
     use std::collections::HashMap;
 
     // r[verify validation.success]
@@ -299,6 +299,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -309,14 +310,14 @@ mod tests {
             lockfile_version: 3,
             components: vec![],
             interfaces: vec![
-                Package {
+                LockedPackage {
                     name: "wasi:logging".to_string(),
                     version: "1.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-logging".to_string(),
                     digest: "sha256:abc123".to_string(),
                     dependencies: vec![],
                 },
-                Package {
+                LockedPackage {
                     name: "wasi:key-value".to_string(),
                     version: "2.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -345,6 +346,7 @@ mod tests {
         // Missing wasi:key-value in manifest
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -355,14 +357,14 @@ mod tests {
             lockfile_version: 3,
             components: vec![],
             interfaces: vec![
-                Package {
+                LockedPackage {
                     name: "wasi:logging".to_string(),
                     version: "1.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-logging".to_string(),
                     digest: "sha256:abc123".to_string(),
                     dependencies: vec![],
                 },
-                Package {
+                LockedPackage {
                     name: "wasi:key-value".to_string(),
                     version: "2.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -399,6 +401,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -409,14 +412,14 @@ mod tests {
             lockfile_version: 3,
             components: vec![],
             interfaces: vec![
-                Package {
+                LockedPackage {
                     name: "wasi:logging".to_string(),
                     version: "1.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-logging".to_string(),
                     digest: "sha256:abc123".to_string(),
                     dependencies: vec![],
                 },
-                Package {
+                LockedPackage {
                     name: "wasi:key-value".to_string(),
                     version: "2.0.0".to_string(),
                     registry: "ghcr.io/webassembly/wasi-key-value".to_string(),
@@ -517,6 +520,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 components,
                 interfaces,
@@ -525,14 +529,14 @@ mod tests {
 
         let lockfile = Lockfile {
             lockfile_version: 3,
-            components: vec![Package {
+            components: vec![LockedPackage {
                 name: "root:component".to_string(),
                 version: "0.1.0".to_string(),
                 registry: "ghcr.io/example/component".to_string(),
                 digest: "sha256:comp123".to_string(),
                 dependencies: vec![],
             }],
-            interfaces: vec![Package {
+            interfaces: vec![LockedPackage {
                 name: "wasi:logging".to_string(),
                 version: "1.0.0".to_string(),
                 registry: "ghcr.io/webassembly/wasi-logging".to_string(),
@@ -625,6 +629,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 interfaces,
                 ..Default::default()
@@ -662,6 +667,7 @@ mod tests {
         );
 
         let manifest = Manifest {
+            package: None,
             dependencies: Dependencies {
                 components,
                 interfaces,

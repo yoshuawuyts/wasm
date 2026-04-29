@@ -727,6 +727,96 @@ fn test_install_without_init() {
 }
 
 // =============================================================================
+// Publish Command Tests
+// =============================================================================
+
+// r[verify cli.publish.help]
+#[test]
+fn test_publish_help_snapshot() {
+    let output = run_cli(&["publish", "--help"]);
+    assert_snapshot!(output);
+}
+
+// r[verify cli.publish.dry-run-interface]
+#[test]
+fn test_publish_dry_run_interface() {
+    let dir = TempDir::new().expect("Failed to create temp dir");
+    std::fs::write(
+        dir.path().join("wasm.toml"),
+        "[package]\n\
+         name = \"example:hello\"\n\
+         version = \"0.1.0\"\n\
+         kind = \"interface\"\n\
+         wit = \"wit\"\n\
+         description = \"An example greeting interface\"\n\
+         license = \"Apache-2.0\"\n",
+    )
+    .unwrap();
+    std::fs::create_dir(dir.path().join("wit")).unwrap();
+    std::fs::write(
+        dir.path().join("wit/iface.wit"),
+        "package example:hello;\n\
+         interface greet {\n\
+             hello: func() -> string;\n\
+         }\n",
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_component"))
+        .args(["publish", "--dry-run", "--manifest-path"])
+        .arg(dir.path())
+        .output()
+        .expect("execute");
+    assert!(
+        output.status.success(),
+        "publish --dry-run failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Target reference: ghcr.io/example/hello:0.1.0"));
+    assert!(stdout.contains("Action: build WIT + push"));
+    assert!(stdout.contains("org.opencontainers.image.title = example:hello"));
+    assert!(stdout.contains("org.opencontainers.image.licenses = Apache-2.0"));
+}
+
+// r[verify cli.publish.rejects-versioned-wit]
+#[test]
+fn test_publish_dry_run_rejects_versioned_wit() {
+    let dir = TempDir::new().expect("Failed to create temp dir");
+    std::fs::write(
+        dir.path().join("wasm.toml"),
+        "[package]\n\
+         name = \"example:hello\"\n\
+         version = \"0.1.0\"\n\
+         kind = \"interface\"\n\
+         wit = \"wit\"\n",
+    )
+    .unwrap();
+    std::fs::create_dir(dir.path().join("wit")).unwrap();
+    std::fs::write(
+        dir.path().join("wit/iface.wit"),
+        "package example:hello@9.9.9;\n\
+         interface greet {\n\
+             hello: func() -> string;\n\
+         }\n",
+    )
+    .unwrap();
+
+    let output = Command::new(env!("CARGO_BIN_EXE_component"))
+        .args(["publish", "--dry-run", "--manifest-path"])
+        .arg(dir.path())
+        .output()
+        .expect("execute");
+    assert!(!output.status.success(), "should reject @version");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    // miette may line-wrap the message, so check for two stable substrings.
+    assert!(
+        stderr.contains("example:hello@9.9.9") && stderr.contains("@version"),
+        "stderr was: {stderr}"
+    );
+}
+
+// =============================================================================
 // Run Command Tests
 // =============================================================================
 

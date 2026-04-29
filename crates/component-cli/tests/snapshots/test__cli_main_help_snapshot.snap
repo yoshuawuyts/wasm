@@ -10,6 +10,7 @@ Commands:
   run       Execute a Wasm Component
   init      Create a new wasm component in an existing directory
   install   Install a dependency from an OCI registry
+  publish   Publish a component or WIT interface to an OCI registry
   compose   Compose Wasm components from WAC scripts
   local     Detect and manage local WASM files
   registry  Manage Wasm Components and WIT interfaces in OCI registries
