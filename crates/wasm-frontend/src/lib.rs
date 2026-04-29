@@ -689,7 +689,7 @@ fn pick_latest_semver(
         .filter_map(|tag| {
             semver::Version::parse(tag)
                 .ok()
-                .filter(&predicate)
+                .filter(|version| predicate(version))
                 .map(|version| (version, tag))
         })
         .max_by(|(acc_version, _), (candidate_version, _)| acc_version.cmp(candidate_version))
