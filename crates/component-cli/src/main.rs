@@ -166,15 +166,6 @@ async fn main() -> miette::Result<()> {
 /// `--dir`, `--listen` (each followed by its value). A leading
 /// `-h`/`--help` before any positional triggers host help via clap
 /// in the usual way.
-/// Insert `--` after the first positional argument of the `run`
-/// subcommand so that everything after it is treated as guest args
-/// by clap (`trailing_var_arg = true`).
-///
-/// Identifies host flags as `--inherit-env`, `--inherit-network`,
-/// `--no-stdio`, `--global`/`-g`, plus value-taking flags `--env`,
-/// `--dir`, `--listen` (each followed by its value). A leading
-/// `-h`/`--help` before any positional triggers host help via clap
-/// in the usual way.
 fn quarantine_run_trailing_args(args: Vec<String>) -> Vec<String> {
     /// Host flags that take no value.
     const VALUELESS: &[&str] = &[

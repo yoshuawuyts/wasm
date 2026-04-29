@@ -135,8 +135,6 @@ wasmtime = "44.0.0"
 wasmtime-wasi = "44.0.0"
 wasmtime-wasi-http = "44.0.0"
 hyper = { version = "1", features = ["http1", "server"] }
-ratatui = "0.30.0"
-crossterm = "0.29.0"
 
 # store dependencies
 cacache = { version = "13.1.0", features = [

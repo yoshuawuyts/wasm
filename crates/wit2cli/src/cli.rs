@@ -129,15 +129,41 @@ fn add_param_args(
 ) -> Result<Command, CliError> {
     match &param.ty {
         // Optional wraps the underlying rule but flips required→false.
-        WitTy::Option(inner) => {
-            let inner_param = ParamDecl {
-                name: param.name.clone(),
-                ty: (**inner).clone(),
-            };
-            let arg = positional_for_primitive(&inner_param);
-            cmd = cmd.arg(arg.required(false));
-            Ok(cmd)
-        }
+        // Only primitive-like inner types are supported on the CLI;
+        // `option<record>`, `option<list<_>>`, etc. would require a
+        // different surface and are explicitly rejected here.
+        WitTy::Option(inner) => match inner.as_ref() {
+            WitTy::Bool
+            | WitTy::S8
+            | WitTy::S16
+            | WitTy::S32
+            | WitTy::S64
+            | WitTy::U8
+            | WitTy::U16
+            | WitTy::U32
+            | WitTy::U64
+            | WitTy::F32
+            | WitTy::F64
+            | WitTy::Char
+            | WitTy::String
+            | WitTy::Variant(_)
+            | WitTy::Enum(_) => {
+                let inner_param = ParamDecl {
+                    name: param.name.clone(),
+                    ty: (**inner).clone(),
+                };
+                let arg = positional_for_primitive(&inner_param);
+                cmd = cmd.arg(arg.required(false));
+                Ok(cmd)
+            }
+            other => Err(CliError::UnsupportedArg {
+                param: param.name.clone(),
+                reason: format!(
+                    "option<{}> parameters are not supported as CLI input",
+                    debug_kind(other)
+                ),
+            }),
+        },
         WitTy::Record(fields) => {
             for (fname, fty) in fields {
                 let flag = if multi_record {
@@ -148,9 +174,8 @@ fn add_param_args(
                 if !seen.insert(flag.clone()) {
                     return Err(CliError::FlagCollision { flag });
                 }
-                let leaked: &'static str = Box::leak(flag.into_boxed_str());
-                let arg = Arg::new(leaked)
-                    .long(leaked)
+                let arg = Arg::new(flag.clone())
+                    .long(flag)
                     .required(true)
                     .num_args(1)
                     .help(format!("field `{fname}` of `{}`", param.name));
@@ -159,13 +184,13 @@ fn add_param_args(
             Ok(cmd)
         }
         WitTy::List(inner) => {
-            let leaked: &'static str = Box::leak(param.name.clone().into_boxed_str());
-            let mut arg = Arg::new(leaked).help(format!("list parameter `{}`", param.name));
+            let name = param.name.clone();
+            let mut arg = Arg::new(name.clone()).help(format!("list parameter `{}`", param.name));
             if last {
                 arg = arg.num_args(0..);
             } else {
                 arg = arg
-                    .long(leaked)
+                    .long(name)
                     .action(ArgAction::Append)
                     .num_args(1)
                     .required(false);
@@ -205,8 +230,7 @@ fn add_param_args(
 /// Build a positional `Arg` for a primitive / string / variant /
 /// enum parameter.
 fn positional_for_primitive(param: &ParamDecl) -> Arg {
-    let leaked: &'static str = Box::leak(param.name.clone().into_boxed_str());
-    let arg = Arg::new(leaked)
+    let arg = Arg::new(param.name.clone())
         .required(true)
         .num_args(1)
         .help(format!("parameter `{}`", param.name));
