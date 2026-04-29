@@ -1,6 +1,5 @@
 target/
 .git/
 docs/
-spec/
 scripts/
 .env
