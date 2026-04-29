@@ -2,13 +2,19 @@
 source: crates/wit2cli/tests/snapshots.rs
 expression: rendered
 ---
-=== WIT surface ===
-surface (1 item)
-└─ func forward
-   params:
-     s: string
-   results:
-     string
+=== WIT package ===
+package root:component;
+
+world root {
+  import test:needs-import/custom-host;
+
+  export forward: func(s: string) -> string;
+}
+package test:needs-import {
+  interface custom-host {
+    do-thing: func(input: string) -> string;
+  }
+}
 
 === Generated CLI ===
 $ <program> --help

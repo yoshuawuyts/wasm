@@ -17,6 +17,7 @@ miette = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 wasmtime = { workspace = true }
+wit-component = { workspace = true }
 wit-parser = { workspace = true }
 
 [dev-dependencies]

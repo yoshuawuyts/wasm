@@ -8,45 +8,51 @@
 
 use std::fmt::Write as _;
 
-use crate::wit::{FuncDecl, LibraryExtractError, LibraryItem, LibrarySurface, ParamDecl, WitTy};
+use wit_component::WitPrinter;
+use wit_parser::decoding::{DecodedWasm, decode};
+
+use crate::wit::LibraryExtractError;
 use crate::{build_clap, extract_library_surface};
 
-/// Render `surface` as multi-line text suitable for a snapshot test.
+/// Render the component's WIT package as a human-readable WIT
+/// document, identical to what `wasm-tools component wit` would
+/// print.
 ///
-/// The format lists every [`LibraryItem`] (free functions and
-/// interfaces), each function's params and results, and any
-/// doc-comments declared in the WIT.
-#[must_use]
-pub fn render_surface(surface: &LibrarySurface) -> String {
-    let mut out = String::new();
-    let count = surface.items.len();
-    let plural = if count == 1 { "item" } else { "items" };
-    let _ = writeln!(out, "surface ({count} {plural})");
-
-    let last = count.saturating_sub(1);
-    for (i, item) in surface.items.iter().enumerate() {
-        let is_last = i == last;
-        match item {
-            LibraryItem::Func(f) => {
-                render_func(&mut out, f, is_last, "");
-            }
-            LibraryItem::Interface {
-                name, doc, funcs, ..
-            } => {
-                let connector = if is_last { "└─" } else { "├─" };
-                let _ = writeln!(out, "{connector} interface {name}");
-                let prefix = if is_last { "   " } else { "│  " };
-                if let Some(doc) = doc {
-                    write_doc(&mut out, doc, prefix);
-                }
-                let f_last = funcs.len().saturating_sub(1);
-                for (j, f) in funcs.iter().enumerate() {
-                    render_func(&mut out, f, j == f_last, prefix);
-                }
-            }
+/// This is the format used by the snapshot tests because it lets
+/// readers see exactly the WIT shape — including imports, nested
+/// type definitions, and full world syntax — that `wit2cli` is
+/// translating into a CLI.
+///
+/// # Errors
+///
+/// Returns [`LibraryExtractError::Decode`] if the component's WIT
+/// can't be decoded.
+pub fn render_wit_text(bytes: &[u8]) -> Result<String, LibraryExtractError> {
+    let decoded = decode(bytes).map_err(|e| LibraryExtractError::Decode(e.to_string()))?;
+    let (resolve, package_id) = match &decoded {
+        DecodedWasm::WitPackage(resolve, package_id) => (resolve, *package_id),
+        DecodedWasm::Component(resolve, world_id) => {
+            let world = resolve
+                .worlds
+                .get(*world_id)
+                .ok_or_else(|| LibraryExtractError::Decode("world id not in resolve".to_string()))?;
+            let pkg = world.package.ok_or_else(|| {
+                LibraryExtractError::Decode("component world has no package".to_string())
+            })?;
+            (resolve, pkg)
         }
-    }
-    out
+    };
+    let nested: Vec<_> = resolve
+        .packages
+        .iter()
+        .filter(|(id, _)| *id != package_id)
+        .map(|(id, _)| id)
+        .collect();
+    let mut printer = WitPrinter::default();
+    printer
+        .print(resolve, package_id, &nested)
+        .map_err(|e| LibraryExtractError::Decode(format!("printing WIT: {e}")))?;
+    Ok(printer.output.to_string())
 }
 
 /// Render a [`clap::Command`] tree as `--help` text.
@@ -62,22 +68,23 @@ pub fn render_clap_tree(cmd: &clap::Command) -> String {
     out
 }
 
-/// Render WIT bytes end-to-end: surface + generated CLI tree.
+/// Render WIT bytes end-to-end: WIT package + generated CLI tree.
 ///
 /// One-stop helper for snapshot tests.
 ///
 /// # Errors
 ///
-/// Forwards any error from [`extract_library_surface`] or
-/// [`build_clap`].
+/// Forwards any error from [`render_wit_text`],
+/// [`extract_library_surface`], or [`build_clap`].
 pub fn render_mapping(bytes: &[u8]) -> Result<String, RenderMappingError> {
+    let wit_text = render_wit_text(bytes).map_err(RenderMappingError::Extract)?;
     let surface = extract_library_surface(bytes).map_err(RenderMappingError::Extract)?;
     let cmd =
         build_clap(&surface, "<program>").map_err(|e| RenderMappingError::Build(e.to_string()))?;
     let mut out = String::new();
-    out.push_str("=== WIT surface ===\n");
-    out.push_str(&render_surface(&surface));
-    out.push_str("\n=== Generated CLI ===\n");
+    out.push_str("=== WIT package ===\n");
+    out.push_str(wit_text.trim_end());
+    out.push_str("\n\n=== Generated CLI ===\n");
     out.push_str(&render_clap_tree(&cmd));
     Ok(out)
 }
@@ -92,96 +99,6 @@ pub enum RenderMappingError {
     /// Failed to build the clap CLI from the surface.
     #[error("failed to build clap CLI: {0}")]
     Build(String),
-}
-
-fn render_func(out: &mut String, f: &FuncDecl, is_last: bool, parent_prefix: &str) {
-    let connector = if is_last { "└─" } else { "├─" };
-    let _ = writeln!(out, "{parent_prefix}{connector} func {}", f.name);
-    let inner = if is_last { "   " } else { "│  " };
-    let prefix = format!("{parent_prefix}{inner}");
-    if let Some(doc) = &f.doc {
-        write_doc(out, doc, &prefix);
-    }
-    if f.params.is_empty() {
-        let _ = writeln!(out, "{prefix}params: (none)");
-    } else {
-        let _ = writeln!(out, "{prefix}params:");
-        for ParamDecl { name, ty } in &f.params {
-            let _ = writeln!(out, "{prefix}  {name}: {}", format_ty(ty));
-        }
-    }
-    if f.results.is_empty() {
-        let _ = writeln!(out, "{prefix}results: (none)");
-    } else {
-        let _ = writeln!(out, "{prefix}results:");
-        for r in &f.results {
-            let _ = writeln!(out, "{prefix}  {}", format_ty(&r.ty));
-        }
-    }
-}
-
-fn write_doc(out: &mut String, doc: &str, prefix: &str) {
-    let trimmed = doc.trim();
-    if trimmed.is_empty() {
-        return;
-    }
-    let mut lines = trimmed.lines();
-    if let Some(first) = lines.next() {
-        let _ = writeln!(out, "{prefix}doc: {first}");
-        for rest in lines {
-            let _ = writeln!(out, "{prefix}     {rest}");
-        }
-    }
-}
-
-/// Format a [`WitTy`] using a syntax that mirrors WIT itself
-/// (`list<u8>`, `result<list<u8>, string>`, etc.).
-fn format_ty(ty: &WitTy) -> String {
-    match ty {
-        WitTy::Bool => "bool".into(),
-        WitTy::S8 => "s8".into(),
-        WitTy::S16 => "s16".into(),
-        WitTy::S32 => "s32".into(),
-        WitTy::S64 => "s64".into(),
-        WitTy::U8 => "u8".into(),
-        WitTy::U16 => "u16".into(),
-        WitTy::U32 => "u32".into(),
-        WitTy::U64 => "u64".into(),
-        WitTy::F32 => "f32".into(),
-        WitTy::F64 => "f64".into(),
-        WitTy::Char => "char".into(),
-        WitTy::String => "string".into(),
-        WitTy::List(inner) => format!("list<{}>", format_ty(inner)),
-        WitTy::Option(inner) => format!("option<{}>", format_ty(inner)),
-        WitTy::Result { ok, err } => {
-            let ok = ok.as_deref().map_or("_".to_string(), format_ty);
-            let err = err.as_deref().map_or("_".to_string(), format_ty);
-            format!("result<{ok}, {err}>")
-        }
-        WitTy::Record(fields) => {
-            let fields: Vec<String> = fields
-                .iter()
-                .map(|(n, t)| format!("{n}: {}", format_ty(t)))
-                .collect();
-            format!("record {{ {} }}", fields.join(", "))
-        }
-        WitTy::Variant(cases) => {
-            let cases: Vec<String> = cases
-                .iter()
-                .map(|(n, t)| match t {
-                    Some(payload) => format!("{n}({})", format_ty(payload)),
-                    None => n.clone(),
-                })
-                .collect();
-            format!("variant {{ {} }}", cases.join(", "))
-        }
-        WitTy::Enum(cases) => format!("enum {{ {} }}", cases.join(", ")),
-        WitTy::Flags(flags) => format!("flags {{ {} }}", flags.join(", ")),
-        WitTy::Tuple(types) => {
-            let types: Vec<String> = types.iter().map(format_ty).collect();
-            format!("tuple<{}>", types.join(", "))
-        }
-    }
 }
 
 fn render_clap_node(out: &mut String, cmd: &clap::Command, path: &[String]) {
@@ -213,46 +130,17 @@ fn render_clap_node(out: &mut String, cmd: &clap::Command, path: &[String]) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::wit::{FuncDecl, LibraryItem, LibrarySurface, ParamDecl, ResultDecl};
 
     #[test]
-    fn render_surface_basic() {
-        let surface = LibrarySurface {
-            items: vec![LibraryItem::Func(FuncDecl {
-                name: "to-word".to_string(),
-                doc: Some("Convert.".to_string()),
-                params: vec![ParamDecl {
-                    name: "markdown".to_string(),
-                    ty: WitTy::String,
-                }],
-                results: vec![ResultDecl {
-                    ty: WitTy::Result {
-                        ok: Some(Box::new(WitTy::List(Box::new(WitTy::U8)))),
-                        err: Some(Box::new(WitTy::String)),
-                    },
-                }],
-            })],
-        };
-        let out = render_surface(&surface);
-        assert!(out.contains("surface (1 item)"));
-        assert!(out.contains("func to-word"));
-        assert!(out.contains("doc: Convert."));
-        assert!(out.contains("markdown: string"));
-        assert!(out.contains("result<list<u8>, string>"));
-    }
-
-    #[test]
-    fn format_ty_records_and_variants() {
-        let rec = WitTy::Record(vec![
-            ("name".to_string(), WitTy::String),
-            ("age".to_string(), WitTy::U32),
-        ]);
-        assert_eq!(format_ty(&rec), "record { name: string, age: u32 }");
-
-        let variant = WitTy::Variant(vec![
-            ("red".to_string(), None),
-            ("blue".to_string(), Some(Box::new(WitTy::String))),
-        ]);
-        assert_eq!(format_ty(&variant), "variant { red, blue(string) }");
+    fn render_clap_tree_walks_subcommands() {
+        let cmd = clap::Command::new("test")
+            .subcommand(clap::Command::new("foo").about("a foo"))
+            .subcommand(clap::Command::new("bar").about("a bar"));
+        let out = render_clap_tree(&cmd);
+        assert!(out.contains("$ <program> --help"));
+        assert!(out.contains("$ <program> foo --help"));
+        assert!(out.contains("$ <program> bar --help"));
+        assert!(out.contains("a foo"));
+        assert!(out.contains("a bar"));
     }
 }
