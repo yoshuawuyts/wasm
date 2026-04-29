@@ -19,8 +19,3 @@ jobs:
 
       - name: Build xtask
         run: cargo build --package xtask
-
-      - name: Install tracey
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf https://github.com/bearcove/tracey/releases/latest/download/tracey-installer.sh | sh
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"

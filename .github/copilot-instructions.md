@@ -42,13 +42,3 @@ then run `cargo xtask sql migrate --name <description>`. Never hand-write migrat
 
 Run `cargo xtask sql check` (or `cargo xtask test`) to verify migrations are in sync
 before pushing.
-
-## Spec-Driven Development
-
-This project follows spec-driven development: **specs first, then tests, then
-implementation**. Requirements live in `spec/*.md`, traceability is tracked with
-[Tracey](https://github.com/bearcove/tracey) (config: `.config/tracey/config.styx`),
-and the annotation prefix is `r`.
-
-When implementing features, follow the `spec-driven-development` skill workflow.
-For Tracey annotation details, see the `tracey` skill.

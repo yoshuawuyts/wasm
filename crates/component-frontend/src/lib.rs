@@ -37,6 +37,7 @@ fn app() -> Router {
         .route("/search", get(search))
         .route("/about", get(about))
         .route("/docs", get(docs))
+        .route("/docs/{page}", get(docs_page))
         .route("/design-system", get(design_system))
         .route("/downloads", get(downloads))
         .route("/status", get(queue_status))
@@ -157,6 +158,14 @@ async fn about() -> Response {
 async fn docs() -> Response {
     let html = pages::docs::render();
     with_cache_control(html, "public, max-age=3600")
+}
+
+/// Individual documentation sub-page (`/docs/<slug>`).
+async fn docs_page(Path(page): Path<String>) -> Response {
+    match pages::docs::render_page(&page) {
+        Some(html) => with_cache_control(html, "public, max-age=3600"),
+        None => not_found_response(),
+    }
 }
 
 /// Design system reference page.
@@ -678,16 +687,26 @@ fn with_cache_control(html: String, cache_control: &'static str) -> Response {
 
 #[must_use]
 pub(crate) fn pick_redirect_version(tags: &[String]) -> Option<String> {
+    pick_latest_semver(tags, |version| version.pre.is_empty())
+        .or_else(|| pick_latest_semver(tags, |_| true))
+        .or_else(|| tags.iter().find(|tag| tag.as_str() == "latest").cloned())
+}
+
+/// Pick the latest semver tag matching `predicate`, preserving the original
+/// tag string. Returns `None` if no tag parses as semver and matches.
+fn pick_latest_semver(
+    tags: &[String],
+    predicate: impl Fn(&semver::Version) -> bool,
+) -> Option<String> {
     tags.iter()
         .filter_map(|tag| {
             semver::Version::parse(tag)
                 .ok()
-                .filter(|version| version.pre.is_empty())
+                .filter(|version| predicate(version))
                 .map(|version| (version, tag))
         })
         .max_by(|(acc_version, _), (candidate_version, _)| acc_version.cmp(candidate_version))
         .map(|(_, tag)| tag.clone())
-        .or_else(|| tags.iter().find(|tag| tag.as_str() == "latest").cloned())
 }
 
 #[cfg(test)]
@@ -798,6 +817,30 @@ mod tests {
     fn pick_redirect_version_falls_back_to_latest_tag() {
         let tags = vec!["latest".to_string(), "sha256-deadbeef".to_string()];
         assert_eq!(pick_redirect_version(&tags), Some("latest".to_string()));
+    }
+
+    // r[verify frontend.pages.package-redirect]
+    #[test]
+    fn pick_redirect_version_falls_back_to_latest_prerelease() {
+        // When only pre-release semver tags exist (e.g. wasi:otel only ships
+        // `0.2.0-rc` versions), the redirect MUST still resolve to the latest
+        // pre-release rather than 404'ing.
+        let tags = vec![
+            "0.2.0-rc.1".to_string(),
+            "0.2.0-rc.2".to_string(),
+            "sha256-deadbeef".to_string(),
+        ];
+        assert_eq!(pick_redirect_version(&tags), Some("0.2.0-rc.2".to_string()));
+    }
+
+    #[test]
+    fn pick_redirect_version_prefers_stable_over_prerelease() {
+        let tags = vec![
+            "1.0.0".to_string(),
+            "2.0.0-rc.1".to_string(),
+            "0.9.0".to_string(),
+        ];
+        assert_eq!(pick_redirect_version(&tags), Some("1.0.0".to_string()));
     }
 
     #[test]
