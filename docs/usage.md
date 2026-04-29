@@ -60,18 +60,30 @@ The package is stored locally in content-addressable storage and can be listed w
 
 `component publish` reads a `[package]` section from `wasm.toml` and
 uploads either the compiled component (`kind = "component"`) or a
-freshly-built WIT package (`kind = "interface"`). The target registry
-**must** be spelled out in the manifest — there is no implicit default,
-so publishing is fully reproducible from `wasm.toml` alone.
+freshly-built WIT package (`kind = "interface"`). The target reference
+**must** be spelled out in full in the manifest — there is no implicit
+default and no shorthand — so publishing is fully reproducible from
+`wasm.toml` alone.
 
 ```toml
 # wasm.toml
 [package]
+# Package identity in `namespace:name` form. Used as the OCI artifact
+# title and (for interfaces) stamped onto WIT package decls.
 name = "yoshuawuyts:fetch"
+# Semver version. The single source of truth: WIT files must not
+# declare their own `@version` — the publisher stamps this onto every
+# top-level `package` decl during build. Becomes the OCI tag.
 version = "0.1.0"
-registry = "ghcr.io"
+# Fully-formed OCI repository reference (host + path), without a tag.
+# The published reference is `<registry_ref>:<version>`.
+registry_ref = "ghcr.io/yoshuawuyts/fetch"
+# What kind of artifact this manifest publishes: "component" or "interface".
 kind = "component"
-file = "build/fetch.wasm"     # defaults to build/<name>.wasm
+# Path to the compiled component, relative to the manifest directory.
+# Defaults to `build/<name-after-colon>.wasm` if omitted.
+file = "build/fetch.wasm"
+# Free-form metadata, mapped to `org.opencontainers.image.*` annotations.
 description = "A tiny fetch helper"
 license = "Apache-2.0"
 authors = ["Yosh <yosh@example.com>"]
@@ -83,14 +95,11 @@ For an interface package, point `wit` at the WIT directory:
 [package]
 name = "wasi:logging"
 version = "1.0.0"
-registry = "ghcr.io"
+registry_ref = "ghcr.io/wasi/logging"
 kind = "interface"
-wit = "wit"     # defaults to "wit"
+# Path to the WIT directory, relative to the manifest. Defaults to "wit".
+wit = "wit"
 ```
-
-The manifest's `version` is the **single source of truth** — WIT files
-must not declare their own `@version`; the publisher will stamp the
-manifest version onto every top-level `package` decl during build.
 
 Inspect what would be published without pushing:
 
@@ -101,7 +110,7 @@ component publish --dry-run
 Publish for real:
 
 ```bash
-component publish                       # uses [package].registry
+component publish                       # uses [package].registry_ref
 component publish --file build/x.wasm   # override the artifact path
 ```
 

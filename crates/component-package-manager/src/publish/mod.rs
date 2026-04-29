@@ -19,7 +19,7 @@
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use oci_client::Reference;
 
@@ -158,27 +158,16 @@ pub fn build_annotations(pkg: &Package, created: DateTime<Utc>) -> BTreeMap<Stri
 
 /// Resolve the OCI reference for a given `[package]` section.
 ///
-/// The package name is expected in `namespace:name` form. The resulting
-/// reference looks like `<package.registry>/<namespace>/<name>:<version>`.
+/// The reference is built directly from `[package].registry_ref` and
+/// `[package].version` as `<registry_ref>:<version>` — `registry_ref`
+/// is expected to be a fully-formed repository URI (host + path),
+/// e.g. `ghcr.io/yoshuawuyts/fetch`.
 ///
 /// # Errors
 ///
-/// Returns an error when the package name is not in `namespace:name`
-/// form, or the resulting reference cannot be parsed.
+/// Returns an error when the resulting reference cannot be parsed.
 pub fn resolve_reference(pkg: &Package) -> Result<Reference> {
-    let (namespace, name) = pkg.name.split_once(':').with_context(|| {
-        format!(
-            "[package].name `{}` must be in `namespace:name` form",
-            pkg.name
-        )
-    })?;
-    if namespace.is_empty() || name.is_empty() {
-        bail!(
-            "[package].name `{}` must have a non-empty namespace and name",
-            pkg.name
-        );
-    }
-    let s = format!("{}/{namespace}/{name}:{}", pkg.registry, pkg.version);
+    let s = format!("{}:{}", pkg.registry_ref, pkg.version);
     s.parse::<Reference>()
         .with_context(|| format!("failed to parse OCI reference `{s}`"))
 }
@@ -204,8 +193,8 @@ pub fn require_package(manifest: &Manifest) -> Result<&Package> {
 ///
 /// `manifest_dir` is the directory containing `wasm.toml` (used to
 /// resolve relative paths in `[package].file` / `[package].wit`). The
-/// target registry is read from the manifest's `[package].registry`
-/// field — there is no implicit default.
+/// target reference is read from the manifest's `[package].registry_ref`
+/// and `[package].version` fields — there is no implicit default.
 pub async fn plan(manifest: &Manifest, manifest_dir: &Path) -> Result<PublishPlan> {
     let pkg = require_package(manifest)?;
     let reference = resolve_reference(pkg)?;
@@ -231,7 +220,7 @@ mod tests {
         Package {
             name: "yoshuawuyts:fetch".into(),
             version: "0.1.0".into(),
-            registry: "ghcr.io".into(),
+            registry_ref: "ghcr.io/yoshuawuyts/fetch".into(),
             kind: PackageKind::Component,
             file: None,
             wit: None,
@@ -301,7 +290,7 @@ mod tests {
 
     // r[verify publish.reference.resolves]
     #[test]
-    fn reference_is_built_from_namespace_name_and_version() {
+    fn reference_is_built_from_registry_ref_and_version() {
         let pkg = sample_pkg();
         let r = resolve_reference(&pkg).expect("ok");
         assert_eq!(r.registry(), "ghcr.io");
@@ -309,11 +298,11 @@ mod tests {
         assert_eq!(r.tag(), Some("0.1.0"));
     }
 
-    // r[verify publish.reference.invalid-name]
+    // r[verify publish.reference.invalid-ref]
     #[test]
-    fn reference_requires_namespace_name_form() {
+    fn reference_rejects_unparseable_ref() {
         let mut pkg = sample_pkg();
-        pkg.name = "no-colon".into();
+        pkg.registry_ref = "not a valid ref".into();
         assert!(resolve_reference(&pkg).is_err());
     }
 

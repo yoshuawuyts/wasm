@@ -1600,7 +1600,7 @@ impl Manager {
     /// manifest version onto the WIT package decl).
     ///
     /// The target registry comes from the manifest's
-    /// `[package].registry` field — there is no implicit default.
+    /// `[package].registry_ref` field — there is no implicit default.
     pub async fn publish(
         &self,
         manifest: &component_manifest::Manifest,
