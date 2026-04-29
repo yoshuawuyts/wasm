@@ -174,13 +174,14 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(wit_world_import::Column::DeclaredInterface).text())
                     .col(ColumnDef::new(wit_world_import::Column::DeclaredVersion).text())
-                    .col(
-                        ColumnDef::new(wit_world_import::Column::ResolvedPackageId).big_integer(),
-                    )
+                    .col(ColumnDef::new(wit_world_import::Column::ResolvedPackageId).big_integer())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_wit_world_import_world")
-                            .from(wit_world_import::Entity, wit_world_import::Column::WitWorldId)
+                            .from(
+                                wit_world_import::Entity,
+                                wit_world_import::Column::WitWorldId,
+                            )
                             .to(wit_world::Entity, wit_world::Column::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
@@ -255,13 +256,14 @@ impl MigrationTrait for Migration {
                     )
                     .col(ColumnDef::new(wit_world_export::Column::DeclaredInterface).text())
                     .col(ColumnDef::new(wit_world_export::Column::DeclaredVersion).text())
-                    .col(
-                        ColumnDef::new(wit_world_export::Column::ResolvedPackageId).big_integer(),
-                    )
+                    .col(ColumnDef::new(wit_world_export::Column::ResolvedPackageId).big_integer())
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_wit_world_export_world")
-                            .from(wit_world_export::Entity, wit_world_export::Column::WitWorldId)
+                            .from(
+                                wit_world_export::Entity,
+                                wit_world_export::Column::WitWorldId,
+                            )
                             .to(wit_world::Entity, wit_world::Column::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )

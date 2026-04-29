@@ -22,7 +22,11 @@ impl MigrationTrait for Migration {
                             .primary_key()
                             .auto_increment(),
                     )
-                    .col(ColumnDef::new(fetch_queue::Column::Registry).text().not_null())
+                    .col(
+                        ColumnDef::new(fetch_queue::Column::Registry)
+                            .text()
+                            .not_null(),
+                    )
                     .col(
                         ColumnDef::new(fetch_queue::Column::Repository)
                             .text()
@@ -34,9 +38,7 @@ impl MigrationTrait for Migration {
                             .text()
                             .not_null()
                             .default("pull")
-                            .check(
-                                Expr::col(fetch_queue::Column::Task).is_in(["pull", "reindex"]),
-                            ),
+                            .check(Expr::col(fetch_queue::Column::Task).is_in(["pull", "reindex"])),
                     )
                     .col(
                         ColumnDef::new(fetch_queue::Column::Status)

@@ -41,7 +41,10 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_wasm_component_manifest")
-                            .from(wasm_component::Entity, wasm_component::Column::OciManifestId)
+                            .from(
+                                wasm_component::Entity,
+                                wasm_component::Column::OciManifestId,
+                            )
                             .to(oci_manifest::Entity, oci_manifest::Column::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
@@ -125,7 +128,10 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_component_target_world")
-                            .from(component_target::Entity, component_target::Column::WitWorldId)
+                            .from(
+                                component_target::Entity,
+                                component_target::Column::WitWorldId,
+                            )
                             .to(wit_world::Entity, wit_world::Column::Id)
                             .on_delete(ForeignKeyAction::SetNull),
                     )

@@ -1,6 +1,5 @@
 //! SeaORM entity for the `oci_manifest_annotation` table.
 
-
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]

@@ -1,6 +1,5 @@
 //! SeaORM entity for the `_sync_meta` table.
 
-
 use sea_orm::entity::prelude::*;
 
 #[derive(Clone, Debug, PartialEq, Eq, DeriveEntityModel)]

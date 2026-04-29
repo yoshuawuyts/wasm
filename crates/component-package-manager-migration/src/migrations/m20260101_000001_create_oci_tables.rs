@@ -104,7 +104,11 @@ impl MigrationTrait for Migration {
                             .big_integer()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(oci_manifest::Column::Digest).text().not_null())
+                    .col(
+                        ColumnDef::new(oci_manifest::Column::Digest)
+                            .text()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(oci_manifest::Column::MediaType).text())
                     .col(ColumnDef::new(oci_manifest::Column::RawJson).text())
                     .col(ColumnDef::new(oci_manifest::Column::SizeBytes).big_integer())
@@ -258,7 +262,11 @@ impl MigrationTrait for Migration {
                             .big_integer()
                             .not_null(),
                     )
-                    .col(ColumnDef::new(oci_tag::Column::ManifestDigest).text().not_null())
+                    .col(
+                        ColumnDef::new(oci_tag::Column::ManifestDigest)
+                            .text()
+                            .not_null(),
+                    )
                     .col(ColumnDef::new(oci_tag::Column::Tag).text().not_null())
                     .col(
                         ColumnDef::new(oci_tag::Column::CreatedAt)
@@ -474,14 +482,20 @@ impl MigrationTrait for Migration {
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_oci_referrer_subject")
-                            .from(oci_referrer::Entity, oci_referrer::Column::SubjectManifestId)
+                            .from(
+                                oci_referrer::Entity,
+                                oci_referrer::Column::SubjectManifestId,
+                            )
                             .to(oci_manifest::Entity, oci_manifest::Column::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
                     .foreign_key(
                         ForeignKey::create()
                             .name("fk_oci_referrer_referrer")
-                            .from(oci_referrer::Entity, oci_referrer::Column::ReferrerManifestId)
+                            .from(
+                                oci_referrer::Entity,
+                                oci_referrer::Column::ReferrerManifestId,
+                            )
                             .to(oci_manifest::Entity, oci_manifest::Column::Id)
                             .on_delete(ForeignKeyAction::Cascade),
                     )
