@@ -97,7 +97,12 @@ impl std::error::Error for WitPackagerError {
 }
 
 /// Build a WIT-only WebAssembly binary from `wit_dir`, stamping `version`
-/// onto all top-level package declarations.
+/// onto top-level package declarations that don't already carry one.
+///
+/// Only packages whose `(namespace, name)` matches a top-level package
+/// in `wit_dir` *and* currently have no `@version` are stamped, so
+/// dependencies under `wit/deps/` (which are typically already
+/// versioned) are left untouched.
 ///
 /// The directory is expected to look like:
 /// ```text

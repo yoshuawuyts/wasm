@@ -109,14 +109,16 @@ pub struct Package {
     /// What kind of artifact this manifest describes.
     pub kind: PackageKind,
     /// Path to the compiled component artifact, relative to the manifest
-    /// directory. Only valid when `kind = "component"`. Optional —
-    /// defaults to `build/<name>.wasm` (where `<name>` is the part of
-    /// `name` after `:`) when omitted.
+    /// directory. Only valid when `kind = "component"`. Optional in the
+    /// manifest — when omitted this field stays `None` and
+    /// [`Package::artifact_path`] resolves it to `build/<name>.wasm`
+    /// (where `<name>` is the part of `name` after `:`) at use time.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file: Option<PathBuf>,
     /// Path to the WIT directory, relative to the manifest directory.
-    /// Only valid when `kind = "interface"`. Optional — defaults to
-    /// `wit` when omitted.
+    /// Only valid when `kind = "interface"`. Optional in the manifest —
+    /// when omitted this field stays `None` and
+    /// [`Package::artifact_path`] resolves it to `wit` at use time.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit: Option<PathBuf>,
     /// Human-readable short description of the package.
