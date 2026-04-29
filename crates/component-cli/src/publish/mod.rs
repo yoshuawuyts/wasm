@@ -18,9 +18,9 @@ pub(crate) struct Opts {
     #[arg(long)]
     file: Option<PathBuf>,
 
-    /// Print the OCI manifest, layers, annotations, and target
-    /// reference that would be pushed without actually contacting the
-    /// registry.
+    /// Print the publish plan, including layers, annotations, and the
+    /// target reference that would be pushed, without actually
+    /// contacting the registry.
     #[arg(long)]
     dry_run: bool,
 

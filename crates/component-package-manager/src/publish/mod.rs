@@ -50,8 +50,12 @@ pub struct PublishPlan {
     /// The `org.opencontainers.image.*` annotations that would be
     /// attached to the OCI manifest.
     pub annotations: BTreeMap<String, String>,
-    /// The encoded artifact bytes (kept so the dry-run output can show
-    /// the layer count and digests without recomputing).
+    /// The encoded artifact bytes, retained on the plan so the publish
+    /// path can hand them off to the OCI client without re-reading the
+    /// source. For non-dry-run callers these bytes are moved out
+    /// (via [`std::mem::take`]) before the push, so the field will be
+    /// empty on the returned plan. The dry-run renderer does not
+    /// currently print per-layer digests.
     pub bytes: Vec<u8>,
 }
 

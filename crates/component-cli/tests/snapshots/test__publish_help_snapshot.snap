@@ -10,7 +10,7 @@ Options:
       --file <FILE>
           Override the path to the artifact (component .wasm file or WIT directory). Mirrors the `[package].file` / `[package].wit` fields in the manifest
       --dry-run
-          Print the OCI manifest, layers, annotations, and target reference that would be pushed without actually contacting the registry
+          Print the publish plan, including layers, annotations, and the target reference that would be pushed, without actually contacting the registry
       --manifest-path <MANIFEST_PATH>
           Path to the project directory containing `wasm.toml`. Defaults to the current directory [default: .]
   -h, --help

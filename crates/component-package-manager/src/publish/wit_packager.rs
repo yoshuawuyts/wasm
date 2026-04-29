@@ -162,9 +162,10 @@ pub fn build_wit_package(wit_dir: &Path, version: &str) -> Result<WitPackaged, W
             })?;
 
     for (_id, pkg) in &mut resolve.packages {
-        if top_level
-            .iter()
-            .any(|(ns, n)| ns == &pkg.name.namespace && n == &pkg.name.name)
+        if pkg.name.version.is_none()
+            && top_level
+                .iter()
+                .any(|(ns, n)| ns == &pkg.name.namespace && n == &pkg.name.name)
         {
             pkg.name = PackageName {
                 namespace: pkg.name.namespace.clone(),

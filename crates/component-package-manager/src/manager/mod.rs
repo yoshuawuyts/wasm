@@ -1609,14 +1609,12 @@ impl Manager {
         if self.offline {
             anyhow::bail!("cannot publish in offline mode");
         }
-        let plan = crate::publish::plan(manifest, manifest_dir).await?;
+        let mut plan = crate::publish::plan(manifest, manifest_dir).await?;
+        let bytes = std::mem::take(&mut plan.bytes);
+        let annotations = std::mem::take(&mut plan.annotations);
         let _response = self
             .client
-            .push(
-                &plan.reference,
-                plan.bytes.clone(),
-                plan.annotations.clone(),
-            )
+            .push(&plan.reference, bytes, annotations)
             .await?;
 
         // NOTE: locally recording the freshly-published tag (so

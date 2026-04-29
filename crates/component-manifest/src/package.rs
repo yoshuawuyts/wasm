@@ -11,9 +11,16 @@ use crate::PackageType;
 
 /// The kind of artifact a manifest publishes.
 ///
-/// Cross-validation in [`Package::validate`] requires:
-/// * `kind = "component"` ↔ a `file = "..."` field is set (and `wit` is unset).
-/// * `kind = "interface"` ↔ a `wit = "..."` field is set (and `file` is unset).
+/// This determines which manifest path field applies:
+/// * `kind = "component"` uses the `file` field when provided, and must
+///   not set `wit`.
+/// * `kind = "interface"` uses the `wit` field when provided, and must
+///   not set `file`.
+///
+/// If the applicable field is omitted, path resolution falls back to the
+/// default artifact path derived by [`Package::artifact_path`]
+/// (`build/<name>.wasm` for components, `wit` for interfaces) rather
+/// than requiring the field to be set explicitly.
 ///
 /// # Example
 ///
@@ -102,12 +109,14 @@ pub struct Package {
     /// What kind of artifact this manifest describes.
     pub kind: PackageKind,
     /// Path to the compiled component artifact, relative to the manifest
-    /// directory. Required when `kind = "component"`. Defaults to
-    /// `build/<name>.wasm` if omitted.
+    /// directory. Only valid when `kind = "component"`. Optional —
+    /// defaults to `build/<name>.wasm` (where `<name>` is the part of
+    /// `name` after `:`) when omitted.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub file: Option<PathBuf>,
     /// Path to the WIT directory, relative to the manifest directory.
-    /// Required when `kind = "interface"`. Defaults to `wit` if omitted.
+    /// Only valid when `kind = "interface"`. Optional — defaults to
+    /// `wit` when omitted.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub wit: Option<PathBuf>,
     /// Human-readable short description of the package.
