@@ -1356,6 +1356,7 @@ impl Manager {
         repository: &str,
         tag: &str,
     ) -> anyhow::Result<wasm_meta_registry_types::NotifyOutcome> {
+        use anyhow::Context as _;
         use wasm_meta_registry_client::RegistryClient;
 
         if self.offline {
@@ -1366,7 +1367,8 @@ impl Manager {
         client
             .notify_new_version(registry, repository, tag)
             .await
-            .map_err(|e| anyhow::anyhow!("failed to notify meta-registry at {url}: {e}"))
+            .map_err(|e| anyhow::Error::msg(e.to_string()))
+            .with_context(|| format!("failed to notify meta-registry at {url}"))
     }
 
     #[cfg(feature = "http-sync")]
