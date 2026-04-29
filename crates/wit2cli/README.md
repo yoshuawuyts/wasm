@@ -1,9 +1,9 @@
-# wit-clap
+# wit2cli
 
 Translate a WebAssembly component's WIT exports into a [`clap`] sub-CLI
 on the fly.
 
-Given a compiled component (a `.wasm` file), `wit-clap` extracts a
+Given a compiled component (a `.wasm` file), `wit2cli` extracts a
 `LibrarySurface` describing every exported function, then builds a
 `clap::Command` that mirrors the WIT shape. Parsed `ArgMatches`
 become a `Vec<wasmtime::component::Val>` ready to hand off to
@@ -16,7 +16,7 @@ library-style component dispatch.
 ## Quick start
 
 ```rust,no_run
-use wit_clap::{build_clap, extract_library_surface, parse_invocation};
+use wit2cli::{build_clap, extract_library_surface, parse_invocation};
 
 let bytes = std::fs::read("my-component.wasm")?;
 let surface = extract_library_surface(&bytes)?;
@@ -38,7 +38,7 @@ tree end-to-end.
 To regenerate snapshots after a deliberate mapping change:
 
 ```sh
-INSTA_UPDATE=always cargo test -p wit-clap --test snapshots
+INSTA_UPDATE=always cargo test -p wit2cli --test snapshots
 cargo insta review
 ```
 

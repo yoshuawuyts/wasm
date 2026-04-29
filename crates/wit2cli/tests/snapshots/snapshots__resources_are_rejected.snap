@@ -1,5 +1,5 @@
 ---
-source: crates/wit-clap/tests/snapshots.rs
+source: crates/wit2cli/tests/snapshots.rs
 expression: "format!(\"rejected: resource `{name}`\")"
 ---
 rejected: resource `<anonymous>`

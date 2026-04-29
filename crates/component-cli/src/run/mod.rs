@@ -23,7 +23,7 @@ use component_manifest::RunPermissions;
 use component_package_manager::manager::Manager;
 use wasmparser::{Parser, Payload};
 
-use wit_clap::{
+use wit2cli::{
     LibraryExtractError, build_clap, extract_library_surface, parse_invocation, print_results,
 };
 

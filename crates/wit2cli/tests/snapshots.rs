@@ -2,18 +2,18 @@
 //! committed `.wasm` fixture.
 //!
 //! These snapshots are the canonical, end-user-facing spec for how
-//! `wit-clap` translates WIT exports into a `clap` sub-CLI. If you
+//! `wit2cli` translates WIT exports into a `clap` sub-CLI. If you
 //! change the mapping rules, the snapshot diff will surface every
 //! visible consequence — review carefully before accepting.
 //!
 //! Update workflow:
 //! ```text
-//! INSTA_UPDATE=always cargo test -p wit-clap --test snapshots
+//! INSTA_UPDATE=always cargo test -p wit2cli --test snapshots
 //! cargo insta review
 //! ```
 
-use wit_clap::LibraryExtractError;
-use wit_clap::snapshot::{RenderMappingError, render_mapping};
+use wit2cli::LibraryExtractError;
+use wit2cli::snapshot::{RenderMappingError, render_mapping};
 
 fn fixture_bytes(name: &str) -> Vec<u8> {
     let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -24,7 +24,7 @@ fn fixture_bytes(name: &str) -> Vec<u8> {
         panic!(
             "failed to read fixture `{}`: {e}\n\
              Hint: snapshots reference fixtures via symlinks under \
-             crates/wit-clap/tests/fixtures/. If you see this on a fresh \
+             crates/wit2cli/tests/fixtures/. If you see this on a fresh \
              checkout, ensure git symlinks are enabled (`git config \
              core.symlinks true`).",
             path.display()

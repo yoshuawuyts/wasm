@@ -91,15 +91,15 @@ cargo xtask fixtures check
 Both commands skip silently with a warning if `cargo-component` is
 not on `PATH`.
 
-The same fixtures are also referenced from `crates/wit-clap/tests/fixtures/`
+The same fixtures are also referenced from `crates/wit2cli/tests/fixtures/`
 via symlinks. On a fresh checkout, ensure `git config core.symlinks
 true` is set (the default on macOS / Linux).
 
-### `wit-clap` snapshots are the WIT → CLI mapping spec
+### `wit2cli` snapshots are the WIT → CLI mapping spec
 
 The insta snapshots committed under
-`crates/wit-clap/tests/snapshots/` are the canonical, end-user-facing
-spec for how `wit-clap` translates WIT exports into a `clap` sub-CLI.
+`crates/wit2cli/tests/snapshots/` are the canonical, end-user-facing
+spec for how `wit2cli` translates WIT exports into a `clap` sub-CLI.
 Updating the mapping rules requires reviewing the snapshot diff
 (`cargo insta review`) and accepting the new output deliberately.
 

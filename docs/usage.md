@@ -192,8 +192,8 @@ This operation:
   sub-CLI on the fly.
 
 The WIT → CLI mapping is implemented by the
-[`wit-clap`](../crates/wit-clap) crate. Its
-[`tests/snapshots/`](../crates/wit-clap/tests/snapshots) directory
+[`wit2cli`](../crates/wit2cli) crate. Its
+[`tests/snapshots/`](../crates/wit2cli/tests/snapshots) directory
 contains the canonical, end-user-facing spec for how each WIT type
 translates into a CLI argument — one snapshot per shipped fixture.
 

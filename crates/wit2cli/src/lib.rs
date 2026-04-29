@@ -1,6 +1,6 @@
 //! Translate a WebAssembly component's WIT exports into a [`clap::Command`].
 //!
-//! Given a compiled component (a `.wasm` file), `wit-clap` extracts a
+//! Given a compiled component (a `.wasm` file), `wit2cli` extracts a
 //! [`LibrarySurface`] describing every exported function, then builds
 //! a [`clap::Command`] that mirrors the WIT shape. Parsed
 //! [`clap::ArgMatches`] become a `Vec<`[`Val`]`>` ready to hand off
@@ -9,12 +9,12 @@
 //! The mapping rules — how each WIT type translates into a CLI
 //! argument, how compound types are flattened into flags, how
 //! results render — are documented end-to-end by the snapshot tests
-//! under `crates/wit-clap/tests/snapshots/`.
+//! under `crates/wit2cli/tests/snapshots/`.
 //!
 //! # Quick start
 //!
 //! ```no_run
-//! use wit_clap::{build_clap, extract_library_surface, parse_invocation};
+//! use wit2cli::{build_clap, extract_library_surface, parse_invocation};
 //!
 //! # fn _example() -> Result<(), Box<dyn std::error::Error>> {
 //! let bytes = std::fs::read("my-component.wasm")?;

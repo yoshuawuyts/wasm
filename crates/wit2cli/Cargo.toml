@@ -1,5 +1,5 @@
 [package]
-name = "wit-clap"
+name = "wit2cli"
 description = "Translate a WebAssembly component's WIT exports into a `clap` sub-CLI"
 readme = "README.md"
 repository = { workspace = true }
