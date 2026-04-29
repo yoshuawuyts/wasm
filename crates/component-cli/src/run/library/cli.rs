@@ -13,6 +13,11 @@ use super::wit::{FuncDecl, FuncPath, LibraryItem, LibrarySurface, ParamDecl, Wit
 pub(crate) struct Invocation {
     pub path: FuncPath,
     pub args: Vec<Val>,
+    /// Result types expected by the WIT signature. The runtime
+    /// returns one [`Val`] per entry; the wire-up uses this to
+    /// validate the result count and to drive type-aware
+    /// rendering decisions.
+    pub expected_results: Vec<WitTy>,
 }
 
 /// Errors raised when translating a [`LibrarySurface`] into a
@@ -190,8 +195,9 @@ fn positional_for_primitive(param: &ParamDecl) -> Arg {
 }
 
 /// Attach a `value_parser` for a [`WitTy`]. We only validate basic
-/// number ranges here; conversion to `Val` happens in
-/// [`parse_invocation`].
+/// number ranges and case allowlists here; conversion to `Val`
+/// happens in [`parse_invocation`].
+// r[impl run.library-args]
 fn attach_value_parser(arg: Arg, ty: &WitTy) -> Arg {
     match ty {
         WitTy::Bool => arg.value_parser(value_parser!(bool)),
@@ -203,13 +209,105 @@ fn attach_value_parser(arg: Arg, ty: &WitTy) -> Arg {
         WitTy::U16 => arg.value_parser(value_parser!(u16)),
         WitTy::U32 => arg.value_parser(value_parser!(u32)),
         WitTy::U64 => arg.value_parser(value_parser!(u64)),
-        WitTy::Enum(cases) => {
-            let allowed: Vec<String> = cases.clone();
-            arg.value_parser(allowed)
+        WitTy::F32 => arg.value_parser(parse_f32),
+        WitTy::F64 => arg.value_parser(parse_f64),
+        WitTy::Char => arg.value_parser(parse_char),
+        WitTy::Enum(cases) => arg.value_parser(cases.clone()),
+        WitTy::Variant(cases) => {
+            // Variant cases on the CLI are written as `name` or
+            // `name=payload`. The allowlist applies to the bare
+            // case name; we surface allowed cases in the help text.
+            let names: Vec<String> = cases.iter().map(|(n, _)| n.clone()).collect();
+            arg.value_parser(VariantCaseParser { names })
         }
-        // Everything else (f32/f64/char/string/list/option/record/...)
-        // is treated as a plain string by clap; we parse it later.
-        _ => arg,
+        // For string/list/option/record/result/tuple/flags clap
+        // accepts the raw token; we parse it into a `Val` later
+        // in `parse_invocation`.
+        WitTy::String
+        | WitTy::List(_)
+        | WitTy::Option(_)
+        | WitTy::Record(_)
+        | WitTy::Result { .. }
+        | WitTy::Tuple(_)
+        | WitTy::Flags(_) => arg,
+    }
+}
+
+/// Custom value-parser for `f32`. Clap's `value_parser!` macro
+/// doesn't have a built-in shorthand for floats.
+fn parse_f32(s: &str) -> Result<f32, String> {
+    s.parse::<f32>().map_err(|e| e.to_string())
+}
+
+/// Custom value-parser for `f64`.
+fn parse_f64(s: &str) -> Result<f64, String> {
+    s.parse::<f64>().map_err(|e| e.to_string())
+}
+
+/// Custom value-parser for `char`: the input must be exactly one
+/// Unicode codepoint.
+fn parse_char(s: &str) -> Result<char, String> {
+    let mut chars = s.chars();
+    let c = chars
+        .next()
+        .ok_or_else(|| "empty value for `char`".to_string())?;
+    if chars.next().is_some() {
+        return Err(format!("char must be exactly one codepoint, got {s:?}"));
+    }
+    Ok(c)
+}
+
+/// Clap value-parser for `variant` arguments. Accepts either a bare
+/// case name or `name=payload`; validates only the bare-name part
+/// against the allowlist of case names.
+#[derive(Clone)]
+struct VariantCaseParser {
+    names: Vec<String>,
+}
+
+impl clap::builder::TypedValueParser for VariantCaseParser {
+    type Value = String;
+
+    fn parse_ref(
+        &self,
+        cmd: &Command,
+        arg: Option<&Arg>,
+        value: &std::ffi::OsStr,
+    ) -> Result<Self::Value, clap::Error> {
+        let value = value
+            .to_str()
+            .ok_or_else(|| clap::Error::new(clap::error::ErrorKind::InvalidUtf8))?
+            .to_string();
+        let case_name = value.split('=').next().unwrap_or(&value);
+        if !self.names.iter().any(|n| n == case_name) {
+            let mut err = clap::Error::new(clap::error::ErrorKind::InvalidValue).with_cmd(cmd);
+            if let Some(arg) = arg {
+                err.insert(
+                    clap::error::ContextKind::InvalidArg,
+                    clap::error::ContextValue::String(arg.to_string()),
+                );
+            }
+            err.insert(
+                clap::error::ContextKind::InvalidValue,
+                clap::error::ContextValue::String(case_name.to_string()),
+            );
+            err.insert(
+                clap::error::ContextKind::ValidValue,
+                clap::error::ContextValue::Strings(self.names.clone()),
+            );
+            return Err(err);
+        }
+        Ok(value)
+    }
+
+    fn possible_values(
+        &self,
+    ) -> Option<Box<dyn Iterator<Item = clap::builder::PossibleValue> + '_>> {
+        Some(Box::new(
+            self.names
+                .iter()
+                .map(|n| clap::builder::PossibleValue::new(n.clone())),
+        ))
     }
 }
 
@@ -254,6 +352,7 @@ pub(crate) fn parse_invocation(
                         func: f.name.clone(),
                     },
                     args,
+                    expected_results: f.results.iter().map(|r| r.ty.clone()).collect(),
                 });
             }
             LibraryItem::Interface {
@@ -277,6 +376,7 @@ pub(crate) fn parse_invocation(
                         func: f.name.clone(),
                     },
                     args,
+                    expected_results: f.results.iter().map(|r| r.ty.clone()).collect(),
                 });
             }
             _ => {}
@@ -404,36 +504,15 @@ fn collect_one(
         WitTy::U16 => Ok(Val::U16(*matches.get_one::<u16>(&param.name).unwrap_or(&0))),
         WitTy::U32 => Ok(Val::U32(*matches.get_one::<u32>(&param.name).unwrap_or(&0))),
         WitTy::U64 => Ok(Val::U64(*matches.get_one::<u64>(&param.name).unwrap_or(&0))),
-        WitTy::F32 => {
-            let raw: &String =
-                matches
-                    .get_one::<String>(&param.name)
-                    .ok_or_else(|| CliError::InvalidValue {
-                        param: param.name.clone(),
-                        reason: "missing f32 value".to_string(),
-                    })?;
-            primitive_from_str(&WitTy::F32, raw, &param.name)
-        }
-        WitTy::F64 => {
-            let raw: &String =
-                matches
-                    .get_one::<String>(&param.name)
-                    .ok_or_else(|| CliError::InvalidValue {
-                        param: param.name.clone(),
-                        reason: "missing f64 value".to_string(),
-                    })?;
-            primitive_from_str(&WitTy::F64, raw, &param.name)
-        }
-        WitTy::Char => {
-            let raw: &String =
-                matches
-                    .get_one::<String>(&param.name)
-                    .ok_or_else(|| CliError::InvalidValue {
-                        param: param.name.clone(),
-                        reason: "missing char value".to_string(),
-                    })?;
-            primitive_from_str(&WitTy::Char, raw, &param.name)
-        }
+        WitTy::F32 => Ok(Val::Float32(
+            *matches.get_one::<f32>(&param.name).unwrap_or(&0.0),
+        )),
+        WitTy::F64 => Ok(Val::Float64(
+            *matches.get_one::<f64>(&param.name).unwrap_or(&0.0),
+        )),
+        WitTy::Char => Ok(Val::Char(
+            *matches.get_one::<char>(&param.name).unwrap_or(&'\0'),
+        )),
         WitTy::String => Ok(Val::String(
             matches
                 .get_one::<String>(&param.name)
@@ -492,8 +571,20 @@ fn collect_typed(matches: &ArgMatches, id: &str, ty: &WitTy) -> Result<Val, CliE
             .get_one::<u64>(id)
             .map(|v| Val::U64(*v))
             .ok_or_else(missing),
-        // f32/f64/char/string/enum stored as String — parse here.
-        WitTy::F32 | WitTy::F64 | WitTy::Char | WitTy::String | WitTy::Enum(_) => {
+        WitTy::F32 => matches
+            .get_one::<f32>(id)
+            .map(|v| Val::Float32(*v))
+            .ok_or_else(missing),
+        WitTy::F64 => matches
+            .get_one::<f64>(id)
+            .map(|v| Val::Float64(*v))
+            .ok_or_else(missing),
+        WitTy::Char => matches
+            .get_one::<char>(id)
+            .map(|v| Val::Char(*v))
+            .ok_or_else(missing),
+        // string/enum stored as String — wrap directly.
+        WitTy::String | WitTy::Enum(_) => {
             let raw: &String = matches.get_one::<String>(id).ok_or_else(missing)?;
             primitive_from_str(ty, raw, id)
         }
@@ -524,7 +615,10 @@ fn collect_typed_many(matches: &ArgMatches, id: &str, ty: &WitTy) -> Result<Vec<
         WitTy::U16 => many!(u16, U16),
         WitTy::U32 => many!(u32, U32),
         WitTy::U64 => many!(u64, U64),
-        WitTy::F32 | WitTy::F64 | WitTy::Char | WitTy::String | WitTy::Enum(_) => {
+        WitTy::F32 => many!(f32, Float32),
+        WitTy::F64 => many!(f64, Float64),
+        WitTy::Char => many!(char, Char),
+        WitTy::String | WitTy::Enum(_) => {
             let raws: Vec<String> = matches
                 .get_many::<String>(id)
                 .map(|it| it.cloned().collect())
@@ -754,5 +848,90 @@ mod tests {
             err.contains("required") || err.contains("USAGE") || err.contains("Usage"),
             "expected clap usage error, got: {err}"
         );
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn bad_variant_case_caught_by_clap() {
+        let pick_ty = WitTy::Variant(vec![
+            ("red".to_string(), None),
+            ("green".to_string(), None),
+            ("blue".to_string(), Some(Box::new(WitTy::String))),
+        ]);
+        let s = surface(vec![LibraryItem::Func(func("pick", vec![("c", pick_ty)]))]);
+        let err = parse(&s, &["pick", "yellow"]).expect_err("unknown case must fail");
+        assert!(
+            err.contains("yellow") || err.contains("invalid value"),
+            "expected clap rejection of unknown variant case, got: {err}"
+        );
+        assert!(
+            err.contains("red") || err.contains("blue"),
+            "expected allowed cases listed in error, got: {err}"
+        );
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn bad_float_caught_by_clap() {
+        let s = surface(vec![LibraryItem::Func(func(
+            "set",
+            vec![("x", WitTy::F64)],
+        ))]);
+        let err = parse(&s, &["set", "not-a-number"]).expect_err("bad float must fail");
+        assert!(
+            err.contains("invalid value") || err.contains("invalid float"),
+            "expected clap float error, got: {err}"
+        );
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn bad_char_caught_by_clap() {
+        let s = surface(vec![LibraryItem::Func(func(
+            "at",
+            vec![("c", WitTy::Char)],
+        ))]);
+        let err = parse(&s, &["at", "abc"]).expect_err("multi-char must fail");
+        assert!(
+            err.contains("char") || err.contains("codepoint"),
+            "got: {err}"
+        );
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn multi_record_field_prefixing() {
+        // Two record params force the `--<param>-<field>` prefix.
+        let rec_a = WitTy::Record(vec![("x".to_string(), WitTy::U32)]);
+        let rec_b = WitTy::Record(vec![("x".to_string(), WitTy::U32)]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "merge",
+            vec![("a", rec_a), ("b", rec_b)],
+        ))]);
+        let inv = parse(&s, &["merge", "--a-x", "1", "--b-x", "2"]).expect("parse");
+        let Val::Record(ar) = &inv.args[0] else {
+            panic!("expected record");
+        };
+        assert!(matches!(ar[0].1, Val::U32(1)));
+        let Val::Record(br) = &inv.args[1] else {
+            panic!("expected record");
+        };
+        assert!(matches!(br[0].1, Val::U32(2)));
+    }
+
+    // r[verify run.library-args]
+    #[test]
+    fn multi_record_collision_errors() {
+        // Param `a-b` field `c` and param `a` field `b-c` both
+        // produce `--a-b-c` after prefixing → must be rejected at
+        // CLI-build time.
+        let rec_outer = WitTy::Record(vec![("b-c".to_string(), WitTy::U32)]);
+        let rec_inner = WitTy::Record(vec![("c".to_string(), WitTy::U32)]);
+        let s = surface(vec![LibraryItem::Func(func(
+            "collide",
+            vec![("a", rec_outer), ("a-b", rec_inner)],
+        ))]);
+        let err = build_clap(&s, "test").expect_err("must detect collision");
+        assert!(matches!(err, CliError::FlagCollision { ref flag } if flag == "a-b-c"));
     }
 }

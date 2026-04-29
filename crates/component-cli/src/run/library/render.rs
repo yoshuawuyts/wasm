@@ -5,11 +5,6 @@
 //! [`RenderOutcome::exit_code`]. Tests can therefore exercise the
 //! rendering rules without touching real stdio.
 
-// `match_same_arms`: each scalar branch binds a different concrete
-// numeric type, so they can't actually be merged with `|` patterns
-// without losing the typed binding. The repetition is intentional.
-#![allow(clippy::match_same_arms)]
-
 use std::io::Write;
 
 use serde_json::{Map, Value};
@@ -83,32 +78,19 @@ fn render_one(
             Ok(RenderOutcome { exit_code: 0 })
         }
         // Scalars: Display + newline.
-        Val::Bool(b) => {
-            writeln!(stdout, "{b}")?;
-            Ok(RenderOutcome { exit_code: 0 })
-        }
-        Val::S8(n) => write_scalar(stdout, n),
-        Val::S16(n) => write_scalar(stdout, n),
-        Val::S32(n) => write_scalar(stdout, n),
-        Val::S64(n) => write_scalar(stdout, n),
-        Val::U8(n) => write_scalar(stdout, n),
-        Val::U16(n) => write_scalar(stdout, n),
-        Val::U32(n) => write_scalar(stdout, n),
-        Val::U64(n) => write_scalar(stdout, n),
-        Val::Float32(f) => write_scalar(stdout, f),
-        Val::Float64(f) => write_scalar(stdout, f),
-        Val::Char(c) => {
-            writeln!(stdout, "{c}")?;
+        v if format_scalar(v).is_some() => {
+            let line = format_scalar(v).expect("matched scalar");
+            writeln!(stdout, "{line}")?;
             Ok(RenderOutcome { exit_code: 0 })
         }
         // Compounds → JSON.
-        compound @ (Val::List(_)
+        Val::List(_)
         | Val::Record(_)
         | Val::Variant(_, _)
         | Val::Enum(_)
         | Val::Flags(_)
-        | Val::Tuple(_)) => {
-            let json = val_to_json(compound);
+        | Val::Tuple(_) => {
+            let json = val_to_json(val);
             let s = serde_json::to_string_pretty(&json)
                 .unwrap_or_else(|_| "<unrenderable>".to_string());
             writeln!(stdout, "{s}")?;
@@ -127,20 +109,13 @@ fn render_one(
 /// Render an error payload to stderr (string for primitives, JSON
 /// for compounds), with a trailing newline.
 fn render_to_stderr(val: &Val, stderr: &mut impl Write) -> std::io::Result<()> {
+    if let Val::String(s) = val {
+        return writeln!(stderr, "{s}");
+    }
+    if let Some(line) = format_scalar(val) {
+        return writeln!(stderr, "{line}");
+    }
     match val {
-        Val::String(s) => writeln!(stderr, "{s}"),
-        Val::Bool(b) => writeln!(stderr, "{b}"),
-        Val::S8(n) => writeln!(stderr, "{n}"),
-        Val::S16(n) => writeln!(stderr, "{n}"),
-        Val::S32(n) => writeln!(stderr, "{n}"),
-        Val::S64(n) => writeln!(stderr, "{n}"),
-        Val::U8(n) => writeln!(stderr, "{n}"),
-        Val::U16(n) => writeln!(stderr, "{n}"),
-        Val::U32(n) => writeln!(stderr, "{n}"),
-        Val::U64(n) => writeln!(stderr, "{n}"),
-        Val::Float32(f) => writeln!(stderr, "{f}"),
-        Val::Float64(f) => writeln!(stderr, "{f}"),
-        Val::Char(c) => writeln!(stderr, "{c}"),
         // Recurse through option/result wrappers so a
         // `result<_, option<string>>` errors render cleanly.
         Val::Option(Some(inner)) => render_to_stderr(inner, stderr),
@@ -156,12 +131,24 @@ fn render_to_stderr(val: &Val, stderr: &mut impl Write) -> std::io::Result<()> {
     }
 }
 
-fn write_scalar(
-    stdout: &mut impl Write,
-    n: &impl std::fmt::Display,
-) -> std::io::Result<RenderOutcome> {
-    writeln!(stdout, "{n}")?;
-    Ok(RenderOutcome { exit_code: 0 })
+/// Return the Display representation of a scalar [`Val`], or
+/// `None` if `val` is not a scalar.
+fn format_scalar(val: &Val) -> Option<String> {
+    match val {
+        Val::Bool(b) => Some(b.to_string()),
+        Val::S8(n) => Some(n.to_string()),
+        Val::S16(n) => Some(n.to_string()),
+        Val::S32(n) => Some(n.to_string()),
+        Val::S64(n) => Some(n.to_string()),
+        Val::U8(n) => Some(n.to_string()),
+        Val::U16(n) => Some(n.to_string()),
+        Val::U32(n) => Some(n.to_string()),
+        Val::U64(n) => Some(n.to_string()),
+        Val::Float32(f) => Some(f.to_string()),
+        Val::Float64(f) => Some(f.to_string()),
+        Val::Char(c) => Some(c.to_string()),
+        _ => None,
+    }
 }
 
 fn all_u8(vals: &[Val]) -> bool {

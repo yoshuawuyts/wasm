@@ -88,43 +88,45 @@ pub(crate) struct Opts {
 impl Opts {
     /// Execute the `run` command.
     pub(crate) async fn run(self, offline: bool) -> miette::Result<()> {
+        let input = self.input.as_str();
+
         // 1. Resolve input — local files take priority, then manifest keys,
         //    then OCI references.
-        let local_path = PathBuf::from(&self.input);
+        let local_path = PathBuf::from(input);
         let is_local = local_path.exists();
 
         // Try manifest key lookup (scope:component syntax).
         let mut manifest_path = if is_local {
             None
         } else {
-            resolve_manifest_key(&self.input)?
+            resolve_manifest_key(input)?
         };
 
         // For inputs that look like manifest keys (`scope:component`) but are
         // not yet installed in the local project, auto-install into a local
         // manifest + lockfile by default. The `--global` flag bypasses local
         // installation and runs from the global cache instead.
-        let global_bytes =
-            if !is_local && manifest_path.is_none() && looks_like_manifest_key(&self.input) {
-                if self.global {
-                    Some(load_from_global_cache(&self.input, offline).await?)
-                } else {
-                    auto_install(&self.input, offline).await?;
-                    // Re-resolve the manifest key now that the install has
-                    // populated `wasm.toml`, `wasm.lock.toml`, and the
-                    // vendored Wasm file.
-                    manifest_path = resolve_manifest_key(&self.input)?;
-                    None
-                }
+        let global_bytes = if !is_local && manifest_path.is_none() && looks_like_manifest_key(input)
+        {
+            if self.global {
+                Some(load_from_global_cache(input, offline).await?)
             } else {
+                auto_install(input, offline).await?;
+                // Re-resolve the manifest key now that the install has
+                // populated `wasm.toml`, `wasm.lock.toml`, and the
+                // vendored Wasm file.
+                manifest_path = resolve_manifest_key(input)?;
                 None
-            };
+            }
+        } else {
+            None
+        };
 
         // Only try OCI when the input is not a local file and not a manifest key.
         let reference = if is_local || manifest_path.is_some() || global_bytes.is_some() {
             None
         } else {
-            crate::util::parse_reference(&self.input).ok()
+            crate::util::parse_reference(input).ok()
         };
 
         // 2. Get Wasm bytes.
@@ -581,6 +583,7 @@ async fn run_library_component(
     let interface = invocation.path.interface.clone();
     let func = invocation.path.func.clone();
     let func_args = invocation.args;
+    let expected_results = invocation.expected_results;
     let results = tokio::task::spawn_blocking(move || {
         component_cli_internal_run::execute_library_function(
             &bytes_owned,
@@ -593,6 +596,17 @@ async fn run_library_component(
     .await
     .into_diagnostic()
     .wrap_err("runtime task panicked")??;
+
+    // Sanity-check that wasmtime returned the number of values the
+    // WIT signature declared. A mismatch would indicate either a
+    // wasmtime/wit-parser drift or a corrupt component.
+    if results.len() != expected_results.len() {
+        return Err(miette::miette!(
+            "result count mismatch: WIT declares {} value(s), runtime returned {}",
+            expected_results.len(),
+            results.len()
+        ));
+    }
 
     // 4. Render results to stdout/stderr and propagate exit code.
     let stdout = std::io::stdout();

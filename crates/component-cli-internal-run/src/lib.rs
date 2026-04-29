@@ -215,10 +215,11 @@ pub fn execute_library_function(
     // already provided by `wasmtime_wasi::p2::add_to_linker_sync`.
     wasmtime_wasi_http::p2::add_only_http_to_linker_sync(&mut linker).map_err(into_miette)?;
 
-    let instance = linker
-        .instantiate(&mut store, &component)
-        .map_err(into_miette)
-        .wrap_err("failed to instantiate Wasm Component")?;
+    let instance = linker.instantiate(&mut store, &component).map_err(|e| {
+        RunError::LibraryInstantiationFailed {
+            reason: format!("{e:#}"),
+        }
+    })?;
 
     // Look up the function. Two-phase via `Component::get_export_index`
     // for interface-nested functions; direct `instance.get_func` for

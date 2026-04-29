@@ -67,6 +67,13 @@ command MUST print a generated help message listing each exported function
 or interface as a sub-command. Doc comments declared on each function in
 the WIT MUST be used as the sub-command description.
 
+r[run.library-help.dynamic]
+When the user passes `-h` or `--help` AFTER the `<INPUT>` argument, the
+run command MUST forward the flag to the dynamically generated sub-CLI,
+which renders help for the matching component / interface / function.
+A `--help` BEFORE `<INPUT>` continues to render the host's own
+`component run --help` text.
+
 r[run.library-dispatch]
 The run command MUST translate component exports into nested `clap`
 sub-commands:

@@ -64,9 +64,9 @@ pub(crate) struct ParamDecl {
 /// A single function result. Currently unnamed.
 #[derive(Debug, Clone)]
 pub(crate) struct ResultDecl {
-    /// Type of the result. Read by `render` indirectly via
-    /// the runtime [`Val`](wasmtime::component::Val).
-    #[allow(dead_code)]
+    /// Type of the result. Used by the wire-up to validate the
+    /// number of returned values matches the declared signature
+    /// and to drive future type-aware error messages.
     pub ty: WitTy,
 }
 
@@ -77,9 +77,9 @@ pub(crate) struct FuncDecl {
     /// Doc-comment, used as the clap `about` text.
     pub doc: Option<String>,
     pub params: Vec<ParamDecl>,
-    /// Function results, currently consumed only by tests; the
-    /// runtime invocation path uses wasmtime's own `Func::ty`.
-    #[allow(dead_code)]
+    /// Function results, used to populate
+    /// [`Invocation::expected_results`] for runtime sanity
+    /// checks.
     pub results: Vec<ResultDecl>,
 }
 

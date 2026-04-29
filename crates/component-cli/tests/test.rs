@@ -895,6 +895,109 @@ fn test_library_resources_fixture_is_rejected() {
     );
 }
 
+// r[verify run.library-help.dynamic]
+#[test]
+fn test_library_dynamic_help_on_root() {
+    // `--help` after <INPUT> must render the dynamic sub-CLI's
+    // help, listing every WIT-exported function as a sub-command.
+    let fixture = library_fixture("library_kitchen_sink.wasm");
+    let out = run_cli_raw(&["run", &fixture, "--help"]);
+    assert!(out.status.success(), "exit code: {:?}", out.status.code());
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    for expected in &["shout", "greet", "pick", "fail", "math"] {
+        assert!(
+            stdout.contains(expected),
+            "expected `{expected}` in dynamic help, got:\n{stdout}"
+        );
+    }
+}
+
+// r[verify run.library-help.dynamic]
+#[test]
+fn test_library_dynamic_help_on_interface() {
+    // `<interface> --help` must render help for the interface's
+    // functions only.
+    let fixture = library_fixture("library_kitchen_sink.wasm");
+    let out = run_cli_raw(&["run", &fixture, "math", "--help"]);
+    assert!(out.status.success(), "exit code: {:?}", out.status.code());
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    for expected in &["add", "sum"] {
+        assert!(
+            stdout.contains(expected),
+            "expected `{expected}` in interface help, got:\n{stdout}"
+        );
+    }
+    // Top-level exports (not in the math interface) must NOT appear
+    // in the interface help.
+    assert!(
+        !stdout.contains("shout"),
+        "interface help leaked top-level exports:\n{stdout}"
+    );
+}
+
+// r[verify run.library-help]
+#[test]
+fn test_library_no_args_shows_dynamic_help() {
+    // With no further arguments, clap's `arg_required_else_help`
+    // renders the dynamic CLI's help (to stderr, exit 2).
+    let fixture = library_fixture("library_wordmark.wasm");
+    let out = run_cli_raw(&["run", &fixture]);
+    assert_eq!(out.status.code(), Some(2), "expected clap usage exit");
+    let combined = format!(
+        "{}{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(
+        combined.contains("to-word"),
+        "expected `to-word` in help output, got:\n{combined}"
+    );
+}
+
+// r[verify run.host-flags-before-input]
+#[test]
+fn test_host_flag_before_input_works() {
+    let fixture = library_fixture("library_wordmark.wasm");
+    let out = run_cli_raw(&["run", "--inherit-env", &fixture, "to-word", "x"]);
+    assert!(out.status.success(), "exit code: {:?}", out.status.code());
+    assert_eq!(out.stdout, b"DOCX:x");
+}
+
+// r[verify run.host-flags-before-input]
+#[test]
+fn test_host_flag_after_input_is_forwarded_to_guest() {
+    // `--inherit-env` is a host flag; placed AFTER <INPUT> it must
+    // be forwarded to the dynamic sub-CLI (which doesn't know it).
+    let fixture = library_fixture("library_wordmark.wasm");
+    let out = run_cli_raw(&["run", &fixture, "--inherit-env", "to-word", "x"]);
+    assert!(
+        !out.status.success(),
+        "expected dynamic CLI to reject the flag"
+    );
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("--inherit-env") || stderr.contains("unexpected"),
+        "expected dynamic CLI usage error mentioning the flag, got:\n{stderr}"
+    );
+}
+
+/// A library-style component that imports a custom WIT package the
+/// runner does not provide must surface as
+/// `component::run::library_instantiation_failed`.
+#[test]
+fn test_library_instantiation_failure_for_unsupported_imports() {
+    let fixture = library_fixture("library_needs_import.wasm");
+    let out = run_cli_raw(&["run", &fixture, "forward", "hello"]);
+    assert!(!out.status.success(), "expected non-zero exit");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("library_instantiation_failed")
+            || stderr.contains("instantiate")
+            || stderr.contains("unsupported import"),
+        "expected instantiation-failure diagnostic, got:\n{stderr}"
+    );
+}
+
 #[test]
 fn test_init_prints_success_message() {
     let dir = TempDir::new().expect("Failed to create temp dir");

@@ -54,6 +54,11 @@ const FIXTURES: &[Fixture] = &[
         artifact: "library_resources.wasm",
         committed: "library_resources.wasm",
     },
+    Fixture {
+        source: "library-needs-import",
+        artifact: "library_needs_import.wasm",
+        committed: "library_needs_import.wasm",
+    },
 ];
 
 /// Path from the workspace root to the directory holding the source

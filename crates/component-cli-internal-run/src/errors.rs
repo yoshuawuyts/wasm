@@ -42,6 +42,20 @@ pub enum RunError {
         /// The export path that was looked up (`func` or `iface#func`).
         path: String,
     },
+
+    /// The component imports a WIT package the runner does not
+    /// provide (e.g. a custom interface unknown to wasmtime-wasi).
+    #[diagnostic(
+        code(component::run::library_instantiation_failed),
+        help(
+            "the component imports a WIT package the runner does not provide; \
+             check the component's WIT for unsupported imports"
+        )
+    )]
+    LibraryInstantiationFailed {
+        /// The underlying wasmtime error message.
+        reason: String,
+    },
 }
 
 impl std::fmt::Display for RunError {
@@ -61,6 +75,12 @@ impl std::fmt::Display for RunError {
             }
             RunError::LibraryExportMissing { path } => {
                 write!(f, "component has no export named `{path}`")
+            }
+            RunError::LibraryInstantiationFailed { reason } => {
+                write!(
+                    f,
+                    "failed to instantiate component (missing or unsupported import): {reason}"
+                )
             }
         }
     }
@@ -85,6 +105,9 @@ mod tests {
             Box::new(RunError::LibraryExportMissing {
                 path: "foo".to_string(),
             }),
+            Box::new(RunError::LibraryInstantiationFailed {
+                reason: "missing import".to_string(),
+            }),
         ];
 
         let expected_codes = [
@@ -92,6 +115,7 @@ mod tests {
             "component::run::invalid_binary",
             "component::run::no_version_header",
             "component::run::library_export_missing",
+            "component::run::library_instantiation_failed",
         ];
 
         for (variant, expected_code) in variants.iter().zip(expected_codes.iter()) {
