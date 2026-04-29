@@ -101,6 +101,10 @@ kind = "interface"
 wit = "wit"
 ```
 
+The manifest's `version` is the **single source of truth** — WIT files
+must not declare their own `@version`; the publisher will stamp the
+manifest version onto every top-level `package` decl during build.
+
 Inspect what would be published without pushing:
 
 ```bash
