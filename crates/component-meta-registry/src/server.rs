@@ -163,7 +163,9 @@ async fn search(
     Query(params): Query<SearchParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let manager = manager.lock().await;
-    let packages = manager.search_packages(&params.q, params.offset, params.limit).await?;
+    let packages = manager
+        .search_packages(&params.q, params.offset, params.limit)
+        .await?;
     Ok(Json(packages))
 }
 
@@ -173,7 +175,9 @@ async fn list_packages(
     Query(params): Query<ListParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let manager = manager.lock().await;
-    let packages = manager.list_known_packages(params.offset, params.limit).await?;
+    let packages = manager
+        .list_known_packages(params.offset, params.limit)
+        .await?;
     Ok(Json(packages))
 }
 
@@ -183,7 +187,9 @@ async fn list_recent_packages(
     Query(params): Query<ListParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let manager = manager.lock().await;
-    let packages = manager.list_recent_known_packages(params.offset, params.limit).await?;
+    let packages = manager
+        .list_recent_known_packages(params.offset, params.limit)
+        .await?;
     Ok(Json(packages))
 }
 
@@ -221,8 +227,9 @@ async fn search_by_import(
     Query(params): Query<InterfaceSearchParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let manager = manager.lock().await;
-    let packages =
-        manager.search_packages_by_import(&params.interface, params.offset, params.limit).await?;
+    let packages = manager
+        .search_packages_by_import(&params.interface, params.offset, params.limit)
+        .await?;
     Ok(Json(packages))
 }
 
@@ -233,8 +240,9 @@ async fn search_by_export(
     Query(params): Query<InterfaceSearchParams>,
 ) -> Result<impl IntoResponse, AppError> {
     let manager = manager.lock().await;
-    let packages =
-        manager.search_packages_by_export(&params.interface, params.offset, params.limit).await?;
+    let packages = manager
+        .search_packages_by_export(&params.interface, params.offset, params.limit)
+        .await?;
     Ok(Json(packages))
 }
 
@@ -274,7 +282,10 @@ async fn get_package_version_reordered(
 ) -> Result<impl IntoResponse, AppError> {
     let repository = repository.trim_start_matches('/');
     let manager = manager.lock().await;
-    match manager.get_package_version(&registry, repository, &version).await? {
+    match manager
+        .get_package_version(&registry, repository, &version)
+        .await?
+    {
         Some(ver) => Ok(Json(ver).into_response()),
         None => Ok(StatusCode::NOT_FOUND.into_response()),
     }
@@ -324,7 +335,11 @@ async fn notify_new_version(
     // Only allow notifications for packages we already know about. This
     // prevents arbitrary clients from filling the fetch queue with
     // unknown `(registry, repository, tag)` triples.
-    if manager.get_known_package(&registry, repository).await?.is_none() {
+    if manager
+        .get_known_package(&registry, repository)
+        .await?
+        .is_none()
+    {
         return Ok((
             StatusCode::NOT_FOUND,
             Json(serde_json::json!({
@@ -334,7 +349,9 @@ async fn notify_new_version(
             .into_response());
     }
 
-    let outcome = manager.notify_new_version(&registry, repository, tag).await?;
+    let outcome = manager
+        .notify_new_version(&registry, repository, tag)
+        .await?;
     Ok((StatusCode::ACCEPTED, Json(outcome)).into_response())
 }
 

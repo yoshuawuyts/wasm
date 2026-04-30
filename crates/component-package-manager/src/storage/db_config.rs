@@ -164,13 +164,7 @@ pub fn redact_url(url: &str) -> String {
         Some(c) => format!("{}:[REDACTED]", &userinfo[..c]),
         None => userinfo.to_owned(),
     };
-    format!(
-        "{}://{}@{}{}",
-        &url[..scheme_end],
-        new_userinfo,
-        host,
-        path
-    )
+    format!("{}://{}@{}{}", &url[..scheme_end], new_userinfo, host, path)
 }
 
 fn read_env_u32(key: &str, default: u32) -> anyhow::Result<u32> {
@@ -229,7 +223,10 @@ mod tests {
 
     #[test]
     fn backend_detection() {
-        assert_eq!(backend_from_url("sqlite::memory:").unwrap(), Backend::Sqlite);
+        assert_eq!(
+            backend_from_url("sqlite::memory:").unwrap(),
+            Backend::Sqlite
+        );
         assert_eq!(
             backend_from_url("sqlite:///tmp/foo.db").unwrap(),
             Backend::Sqlite

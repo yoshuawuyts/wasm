@@ -60,8 +60,16 @@ impl SearchOpts {
         let query = self.query.as_deref().unwrap_or_default();
 
         let mut packages = match (&self.exports, &self.imports) {
-            (Some(iface), _) => manager.search_packages_by_export(iface, 0, self.limit).await?,
-            (_, Some(iface)) => manager.search_packages_by_import(iface, 0, self.limit).await?,
+            (Some(iface), _) => {
+                manager
+                    .search_packages_by_export(iface, 0, self.limit)
+                    .await?
+            }
+            (_, Some(iface)) => {
+                manager
+                    .search_packages_by_import(iface, 0, self.limit)
+                    .await?
+            }
             _ => manager.search_packages(query, 0, self.limit).await?,
         };
 

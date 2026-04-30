@@ -69,7 +69,6 @@ pub(crate) async fn drop_updated_at_trigger(
         DatabaseBackend::Postgres => {
             format!("DROP TRIGGER IF EXISTS trg_{table}_updated_at ON {table};")
         }
-        DatabaseBackend::MySql => return Ok(()),
         _ => return Ok(()),
     };
     conn.execute_unprepared(&sql).await?;

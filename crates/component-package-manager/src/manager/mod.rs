@@ -177,12 +177,14 @@ impl Manager {
         let (result, digest, manifest, manifest_id) = self.store.insert(&reference, image).await?;
 
         // Add to known packages when pulling (with tag if present)
-        self.store.add_known_package(
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            None,
-        ).await?;
+        self.store
+            .add_known_package(
+                reference.registry(),
+                reference.repository(),
+                reference.tag(),
+                None,
+            )
+            .await?;
 
         self.store_related_tags(&reference).await?;
 
@@ -242,9 +244,10 @@ impl Manager {
             .sum();
 
         // Insert metadata into the database
-        let (result, image_id) =
-            self.store
-                .insert_metadata(&reference, Some(&digest), &manifest, size_on_disk).await?;
+        let (result, image_id) = self
+            .store
+            .insert_metadata(&reference, Some(&digest), &manifest, size_on_disk)
+            .await?;
 
         if result == InsertResult::Inserted {
             // Stream and store each layer individually with progress
@@ -335,12 +338,14 @@ impl Manager {
         }
 
         // Add to known packages when pulling (with tag if present)
-        self.store.add_known_package(
-            reference.registry(),
-            reference.repository(),
-            reference.tag(),
-            None,
-        ).await?;
+        self.store
+            .add_known_package(
+                reference.registry(),
+                reference.repository(),
+                reference.tag(),
+                None,
+            )
+            .await?;
 
         self.store_related_tags(&reference).await?;
 
@@ -535,7 +540,8 @@ impl Manager {
     pub async fn list_all(&self) -> anyhow::Result<Vec<ImageEntry>> {
         Ok(self
             .store
-            .list_all().await?
+            .list_all()
+            .await?
             .into_iter()
             .map(ImageEntry::from)
             .collect())
@@ -558,7 +564,8 @@ impl Manager {
         // 1. Exact DB lookup: WIT package → OCI reference
         if let Some((registry, repository)) = self
             .store
-            .find_oci_reference_by_wit_name(&dep.package, dep.version.as_deref()).await?
+            .find_oci_reference_by_wit_name(&dep.package, dep.version.as_deref())
+            .await?
         {
             let tag = self.resolve_tag_for_dep(dep, &registry, &repository).await;
             let ref_str = format!("{registry}/{repository}:{tag}");
@@ -566,7 +573,11 @@ impl Manager {
         }
 
         // 2. Fallback: search known packages by WIT name
-        if let Some(known) = self.store.search_known_package_by_wit_name(&dep.package).await? {
+        if let Some(known) = self
+            .store
+            .search_known_package_by_wit_name(&dep.package)
+            .await?
+        {
             let tag = if let Some(v) = dep.version.as_deref() {
                 v.to_string()
             } else {
@@ -622,7 +633,11 @@ impl Manager {
     /// manifests have been pulled).  The synthetic `0.0.0` shim used for
     /// unversioned packages is excluded.
     async fn pick_latest_wit_package_version(&self, package_name: &str) -> Option<String> {
-        let versions = self.store.list_wit_package_versions(package_name).await.ok()?;
+        let versions = self
+            .store
+            .list_wit_package_versions(package_name)
+            .await
+            .ok()?;
         let tags: Vec<String> = versions.into_iter().filter(|v| v != "0.0.0").collect();
         pick_latest_stable_tag(&tags)
     }
@@ -658,13 +673,16 @@ impl Manager {
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
         {
-            let raws = self.store
-            .search_known_packages(query, offset, limit).await?;
+            let raws = self
+                .store
+                .search_known_packages(query, offset, limit)
+                .await?;
             let mut out = Vec::with_capacity(raws.len());
             for mut pkg in raws {
                 pkg.dependencies = self
                     .store
-                    .get_package_dependencies(&pkg.registry, &pkg.repository).await?;
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)
+                    .await?;
                 out.push(pkg);
             }
             Ok(out)
@@ -680,13 +698,16 @@ impl Manager {
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
         {
-            let raws = self.store
-            .search_known_packages_by_import(interface, offset, limit).await?;
+            let raws = self
+                .store
+                .search_known_packages_by_import(interface, offset, limit)
+                .await?;
             let mut out = Vec::with_capacity(raws.len());
             for mut pkg in raws {
                 pkg.dependencies = self
                     .store
-                    .get_package_dependencies(&pkg.registry, &pkg.repository).await?;
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)
+                    .await?;
                 out.push(pkg);
             }
             Ok(out)
@@ -702,13 +723,16 @@ impl Manager {
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
         {
-            let raws = self.store
-            .search_known_packages_by_export(interface, offset, limit).await?;
+            let raws = self
+                .store
+                .search_known_packages_by_export(interface, offset, limit)
+                .await?;
             let mut out = Vec::with_capacity(raws.len());
             for mut pkg in raws {
                 pkg.dependencies = self
                     .store
-                    .get_package_dependencies(&pkg.registry, &pkg.repository).await?;
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)
+                    .await?;
                 out.push(pkg);
             }
             Ok(out)
@@ -732,13 +756,13 @@ impl Manager {
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
         {
-            let raws = self.store
-            .list_known_packages(offset, limit).await?;
+            let raws = self.store.list_known_packages(offset, limit).await?;
             let mut out = Vec::with_capacity(raws.len());
             for mut pkg in raws {
                 pkg.dependencies = self
                     .store
-                    .get_package_dependencies(&pkg.registry, &pkg.repository).await?;
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)
+                    .await?;
                 out.push(pkg);
             }
             Ok(out)
@@ -754,13 +778,13 @@ impl Manager {
         limit: u32,
     ) -> anyhow::Result<Vec<KnownPackage>> {
         {
-            let raws = self.store
-            .list_recent_known_packages(offset, limit).await?;
+            let raws = self.store.list_recent_known_packages(offset, limit).await?;
             let mut out = Vec::with_capacity(raws.len());
             for mut pkg in raws {
                 pkg.dependencies = self
                     .store
-                    .get_package_dependencies(&pkg.registry, &pkg.repository).await?;
+                    .get_package_dependencies(&pkg.registry, &pkg.repository)
+                    .await?;
                 out.push(pkg);
             }
             Ok(out)
@@ -776,7 +800,8 @@ impl Manager {
         description: Option<&str>,
     ) -> anyhow::Result<()> {
         self.store
-            .add_known_package(registry, repository, tag, description).await
+            .add_known_package(registry, repository, tag, description)
+            .await
     }
 
     /// Add or update a known package entry with WIT namespace mapping.
@@ -808,7 +833,8 @@ impl Manager {
         // Use efficient lookup by registry and repository
         match self
             .store
-            .get_known_package(reference.registry(), reference.repository()).await?
+            .get_known_package(reference.registry(), reference.repository())
+            .await?
         {
             Some(pkg) => {
                 // Combine all tag types: release, signature, and attestation
@@ -835,9 +861,11 @@ impl Manager {
     ) -> anyhow::Result<Option<KnownPackage>> {
         match self.store.get_known_package(registry, repository).await? {
             None => Ok(None),
-            Some(raw) => {
-                let mut pkg = KnownPackage::from(raw);
-                pkg.dependencies = self.store.get_package_dependencies(registry, repository).await?;
+            Some(mut pkg) => {
+                pkg.dependencies = self
+                    .store
+                    .get_package_dependencies(registry, repository)
+                    .await?;
                 Ok(Some(pkg))
             }
         }
@@ -871,7 +899,9 @@ impl Manager {
     }
 
     /// Return the current fetch queue status.
-    pub async fn get_queue_status(&self) -> anyhow::Result<component_meta_registry_types::QueueStatus> {
+    pub async fn get_queue_status(
+        &self,
+    ) -> anyhow::Result<component_meta_registry_types::QueueStatus> {
         self.store.get_queue_status().await
     }
 
@@ -899,7 +929,8 @@ impl Manager {
 
         if self
             .store
-            .is_tag_fresh(registry, repository, tag, PULL_COOLDOWN_SECS).await
+            .is_tag_fresh(registry, repository, tag, PULL_COOLDOWN_SECS)
+            .await
         {
             return Ok(NotifyOutcome::Skipped {
                 reason: "fresh".to_string(),
@@ -911,7 +942,9 @@ impl Manager {
         // previous "completed" or "failed" queue entry for this tag is reset
         // to "pending" instead of silently no-oping (which would happen with
         // `enqueue_pull`'s `ON CONFLICT DO NOTHING`).
-        self.store.enqueue_refetch(registry, repository, tag, -1).await?;
+        self.store
+            .enqueue_refetch(registry, repository, tag, -1)
+            .await?;
         Ok(NotifyOutcome::Enqueued)
     }
 
@@ -1018,7 +1051,8 @@ impl Manager {
                     wit_namespace,
                     wit_name,
                     kind,
-                }).await?;
+                })
+                .await?;
         }
 
         // Enqueue every semver-tagged version for pulling.  Tags that are
@@ -1054,29 +1088,38 @@ impl Manager {
 
         for (tag, _version) in &semver_tags {
             if skip_cooldown {
-                self.store.enqueue_refetch(
+                self.store
+                    .enqueue_refetch(
+                        reference.registry(),
+                        reference.repository(),
+                        tag,
+                        -1, // high priority for explicit refetch
+                    )
+                    .await?;
+            } else if !self
+                .store
+                .is_tag_fresh(
                     reference.registry(),
                     reference.repository(),
                     tag,
-                    -1, // high priority for explicit refetch
-                ).await?;
-            } else if !self.store.is_tag_fresh(
-                reference.registry(),
-                reference.repository(),
-                tag,
-                PULL_COOLDOWN_SECS,
-            ).await {
-                self.store.enqueue_pull(
-                    reference.registry(),
-                    reference.repository(),
-                    tag,
-                    0, // normal priority
-                ).await?;
+                    PULL_COOLDOWN_SECS,
+                )
+                .await
+            {
+                self.store
+                    .enqueue_pull(
+                        reference.registry(),
+                        reference.repository(),
+                        tag,
+                        0, // normal priority
+                    )
+                    .await?;
             } else {
                 // Tag is fresh — record it as completed so it appears
                 // in the queue history for visibility.
                 self.store
-                    .record_completed(reference.registry(), reference.repository(), tag).await?;
+                    .record_completed(reference.registry(), reference.repository(), tag)
+                    .await?;
             }
         }
 
@@ -1092,14 +1135,15 @@ impl Manager {
         }
 
         // Return the indexed package with its now-populated dependencies.
-        let raw = self
+        let mut pkg = self
             .store
-            .get_known_package(reference.registry(), reference.repository()).await?
+            .get_known_package(reference.registry(), reference.repository())
+            .await?
             .ok_or(ManagerError::IndexRetrievalFailed)?;
-        let mut pkg = KnownPackage::from(raw);
         pkg.dependencies = self
             .store
-            .get_package_dependencies(reference.registry(), reference.repository()).await?;
+            .get_package_dependencies(reference.registry(), reference.repository())
+            .await?;
         Ok(pkg)
     }
 
@@ -1165,10 +1209,13 @@ impl Manager {
     }
 
     /// Get all WIT interfaces with their associated component references.
-    pub async fn list_wit_packages_with_components(&self) -> anyhow::Result<Vec<(WitPackage, String)>> {
+    pub async fn list_wit_packages_with_components(
+        &self,
+    ) -> anyhow::Result<Vec<(WitPackage, String)>> {
         Ok(self
             .store
-            .list_wit_packages_with_components().await?
+            .list_wit_packages_with_components()
+            .await?
             .into_iter()
             .map(|(wt, s)| (WitPackage::from(wt), s))
             .collect())
@@ -1188,7 +1235,8 @@ impl Manager {
         version: Option<&str>,
     ) -> anyhow::Result<Vec<crate::storage::PackageDependencyRef>> {
         self.store
-            .get_package_dependencies_by_name(package_name, version).await
+            .get_package_dependencies_by_name(package_name, version)
+            .await
     }
 
     /// Resolve the complete transitive dependency graph for a root package and
@@ -1203,7 +1251,7 @@ impl Manager {
     /// conflict-free version assignment exists.
     /// Returns [`crate::resolver::ResolveError::Db`] when a database query
     /// fails.
-    pub async fn resolve_dependencies(
+    pub fn resolve_dependencies(
         &self,
         package: &str,
         version: crate::resolver::WitVersion,
@@ -1231,7 +1279,7 @@ impl Manager {
     /// conflict-free version assignment exists.
     /// Returns [`crate::resolver::ResolveError::Db`] when a database query
     /// fails.
-    pub async fn resolve_all_dependencies(
+    pub fn resolve_all_dependencies(
         &self,
         roots: &[(String, crate::resolver::WitVersion)],
     ) -> Result<
@@ -1266,7 +1314,8 @@ impl Manager {
         version_tag: &str,
     ) -> anyhow::Result<Option<component_meta_registry_types::PackageVersion>> {
         self.store
-            .get_package_version(registry, repository, version_tag).await
+            .get_package_version(registry, repository, version_tag)
+            .await
     }
 
     /// Return full package detail including all versions and metadata.
@@ -1304,7 +1353,8 @@ impl Manager {
         if policy == SyncPolicy::IfStale {
             let last_synced_epoch = self
                 .store
-                .get_sync_meta("last_synced_at").await?
+                .get_sync_meta("last_synced_at")
+                .await?
                 .and_then(|s| s.parse::<i64>().ok());
             let now = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -1330,7 +1380,9 @@ impl Manager {
                 self.update_last_synced_at().await?;
                 Ok(SyncResult::NotModified)
             }
-            Ok(FetchResult::Updated { packages, etag }) => self.handle_update(&packages, etag).await,
+            Ok(FetchResult::Updated { packages, etag }) => {
+                self.handle_update(&packages, etag).await
+            }
             Err(e) if has_cached_data => Ok(SyncResult::Degraded {
                 error: e.to_string(),
             }),
@@ -1399,7 +1451,8 @@ impl Manager {
                     wit_namespace: pkg.wit_namespace.as_deref(),
                     wit_name: pkg.wit_name.as_deref(),
                     kind: pkg.kind,
-                }).await?;
+                })
+                .await?;
             // Also add remaining tags.
             for tag in pkg.tags.iter().skip(1) {
                 self.store
@@ -1411,7 +1464,8 @@ impl Manager {
                         wit_namespace: pkg.wit_namespace.as_deref(),
                         wit_name: pkg.wit_name.as_deref(),
                         kind: pkg.kind,
-                    }).await?;
+                    })
+                    .await?;
             }
 
             // r[impl db.wit-package-dependency.populate-on-sync]
@@ -1432,11 +1486,15 @@ impl Manager {
                     || "0.0.0".to_string(),
                     |t| t.trim_start_matches('v').to_string(),
                 );
-                if let Err(e) = self.store.upsert_package_dependencies_from_sync(
-                    &package_name,
-                    Some(&version),
-                    &pkg.dependencies,
-                ).await {
+                if let Err(e) = self
+                    .store
+                    .upsert_package_dependencies_from_sync(
+                        &package_name,
+                        Some(&version),
+                        &pkg.dependencies,
+                    )
+                    .await
+                {
                     tracing::warn!(
                         package = %package_name,
                         error = %e,
@@ -1459,7 +1517,9 @@ impl Manager {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        self.store.set_sync_meta("last_synced_at", &now.to_string()).await
+        self.store
+            .set_sync_meta("last_synced_at", &now.to_string())
+            .await
     }
 
     /// Fetch all related tags for a reference and store them as known packages.
@@ -1470,12 +1530,14 @@ impl Manager {
             return Ok(());
         };
         for tag in tags {
-            self.store.add_known_package(
-                reference.registry(),
-                reference.repository(),
-                Some(&tag),
-                None,
-            ).await?;
+            self.store
+                .add_known_package(
+                    reference.registry(),
+                    reference.repository(),
+                    Some(&tag),
+                    None,
+                )
+                .await?;
         }
         Ok(())
     }
@@ -1524,13 +1586,17 @@ impl Manager {
         for entry in &index.manifests {
             // Use media_type as artifact_type — the oci-client ImageIndexEntry
             // does not expose a separate artifact_type field.
-            if let Err(e) = self.store.store_referrer(
-                manifest_id,
-                reference.registry(),
-                reference.repository(),
-                &entry.digest,
-                &entry.media_type,
-            ).await {
+            if let Err(e) = self
+                .store
+                .store_referrer(
+                    manifest_id,
+                    reference.registry(),
+                    reference.repository(),
+                    &entry.digest,
+                    &entry.media_type,
+                )
+                .await
+            {
                 tracing::warn!("Failed to store referrer {}: {}", entry.digest, e);
             }
         }

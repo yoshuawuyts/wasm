@@ -7,6 +7,15 @@
 //! The schema is defined in [`component_package_manager_migration`]; entities
 //! used here are re-imported from that crate.
 
+// SeaORM 2.0-rc deprecates `Insert::do_nothing` in favour of
+// `try_insert`/`on_conflict_do_nothing*`, but those have a different return
+// shape that doesn't compose cleanly with our existing helpers. Re-evaluate
+// when SeaORM 2.0 ships stable.
+#![allow(deprecated)]
+// `mod _foo {}` shims used as scratch space for bound traits get lifted out
+// of statement position by clippy in this file; the patterns are intentional.
+#![allow(clippy::items_after_statements)]
+
 use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
@@ -14,10 +23,12 @@ use anyhow::Context;
 use chrono::{DateTime, Utc};
 use futures_concurrency::prelude::*;
 use oci_client::{Reference, client::ImageData, manifest::OciImageManifest};
+#[cfg(test)]
+use sea_orm::ConnectOptions;
 use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectOptions, ConnectionTrait, Database, DatabaseConnection,
-    DbBackend, EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter, QueryOrder,
-    QuerySelect, Set, Statement, TransactionTrait,
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, Database, DatabaseConnection, DbBackend,
+    EntityTrait, FromQueryResult, PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, Set,
+    Statement, TransactionTrait,
     sea_query::{Expr, OnConflict, SimpleExpr},
 };
 use tracing::warn;
@@ -272,11 +283,8 @@ impl Store {
             JOIN wit_package wp ON wpd.dependent_id = wp.id \
             WHERE wp.oci_manifest_id = ? \
             ORDER BY wpd.declared_package";
-        let stmt = Statement::from_sql_and_values(
-            self.db.get_database_backend(),
-            sql,
-            [m.id.into()],
-        );
+        let stmt =
+            Statement::from_sql_and_values(self.db.get_database_backend(), sql, [m.id.into()]);
         #[derive(FromQueryResult)]
         struct DepRow {
             declared_package: String,
@@ -358,7 +366,7 @@ impl Store {
             referrers,
             layers,
             wit_text,
-            type_docs: std::collections::HashMap::new(),
+            type_docs: HashMap::new(),
         })
     }
 }
@@ -394,7 +402,11 @@ impl Store {
         let stmt = Statement::from_sql_and_values(
             backend,
             &sql,
-            [interface.into(), i64::from(limit).into(), i64::from(offset).into()],
+            [
+                interface.into(),
+                i64::from(limit).into(),
+                i64::from(offset).into(),
+            ],
         );
         let rows = oci_repository::Model::find_by_statement(stmt)
             .all(&self.db)
@@ -490,12 +502,9 @@ async fn insert_wit_world(
     };
     wit_world::Entity::insert(am)
         .on_conflict(
-            OnConflict::columns([
-                wit_world::Column::WitPackageId,
-                wit_world::Column::Name,
-            ])
-            .do_nothing()
-            .to_owned(),
+            OnConflict::columns([wit_world::Column::WitPackageId, wit_world::Column::Name])
+                .do_nothing()
+                .to_owned(),
         )
         .do_nothing()
         .exec(db)
@@ -762,9 +771,7 @@ async fn upsert_oci_manifest(
     am.oci_created = Set(well_known.get("oci_created").map(|s| (*s).to_owned()));
     am.oci_authors = Set(well_known.get("oci_authors").map(|s| (*s).to_owned()));
     am.oci_url = Set(well_known.get("oci_url").map(|s| (*s).to_owned()));
-    am.oci_documentation = Set(well_known
-        .get("oci_documentation")
-        .map(|s| (*s).to_owned()));
+    am.oci_documentation = Set(well_known.get("oci_documentation").map(|s| (*s).to_owned()));
     am.oci_source = Set(well_known.get("oci_source").map(|s| (*s).to_owned()));
     am.oci_version = Set(well_known.get("oci_version").map(|s| (*s).to_owned()));
     am.oci_revision = Set(well_known.get("oci_revision").map(|s| (*s).to_owned()));
@@ -805,7 +812,7 @@ async fn upsert_oci_manifest(
         oci_manifest::Column::OciRepositoryId,
         oci_manifest::Column::Digest,
     ])
-    .to_owned();
+    .clone();
     for col in coalesce_cols {
         let expr = format!("COALESCE(excluded.{col}, oci_manifest.{col})");
         on_conflict.value(sea_orm::sea_query::Alias::new(col), Expr::cust(expr));
@@ -861,12 +868,9 @@ async fn upsert_oci_tag(
     };
     oci_tag::Entity::insert(am)
         .on_conflict(
-            OnConflict::columns([
-                oci_tag::Column::OciRepositoryId,
-                oci_tag::Column::Tag,
-            ])
-            .update_column(oci_tag::Column::ManifestDigest)
-            .to_owned(),
+            OnConflict::columns([oci_tag::Column::OciRepositoryId, oci_tag::Column::Tag])
+                .update_column(oci_tag::Column::ManifestDigest)
+                .to_owned(),
         )
         .exec(db)
         .await?;
@@ -892,12 +896,9 @@ async fn insert_oci_layer(
     };
     oci_layer::Entity::insert(am)
         .on_conflict(
-            OnConflict::columns([
-                oci_layer::Column::OciManifestId,
-                oci_layer::Column::Digest,
-            ])
-            .do_nothing()
-            .to_owned(),
+            OnConflict::columns([oci_layer::Column::OciManifestId, oci_layer::Column::Digest])
+                .do_nothing()
+                .to_owned(),
         )
         .do_nothing()
         .exec(db)
@@ -1094,9 +1095,7 @@ impl Store {
         let cfg = super::db_config::DbConfig::from_env(&metadata_file)?;
         let db = Database::connect(cfg.to_connect_options())
             .await
-            .with_context(|| {
-                format!("failed to connect to database at {}", cfg.redacted_url())
-            })?;
+            .with_context(|| format!("failed to connect to database at {}", cfg.redacted_url()))?;
         apply_sqlite_pragmas(&db).await?;
 
         match cfg.backend {
@@ -1157,13 +1156,8 @@ impl Store {
 
         let tmp = tempfile::tempdir()?.keep();
         let migration_info = Migrations::snapshot(&db).await;
-        let state_info = StateInfo::new_at(
-            tmp.clone(),
-            tmp.join("config.toml"),
-            &migration_info,
-            0,
-            0,
-        );
+        let state_info =
+            StateInfo::new_at(tmp.clone(), tmp.join("config.toml"), &migration_info, 0, 0);
         Ok(Self { state_info, db })
     }
 
@@ -1354,9 +1348,7 @@ impl Store {
                 .await?
                 == 0;
 
-        if needs_layers
-            && let Some(ref manifest) = image.manifest
-        {
+        if needs_layers && let Some(ref manifest) = image.manifest {
             for (idx, layer) in image.layers.iter().enumerate() {
                 let cache = self.state_info.store_dir();
                 let fallback_key = reference.whole().clone();
@@ -1489,9 +1481,7 @@ impl Store {
 
         if let Some(annotations) = layer_annotations {
             for (key, value) in annotations {
-                if let Err(e) =
-                    insert_oci_layer_annotation(&self.db, layer_id, key, value).await
-                {
+                if let Err(e) = insert_oci_layer_annotation(&self.db, layer_id, key, value).await {
                     warn!("Failed to insert layer annotation '{}': {}", key, e);
                 }
             }
@@ -1510,15 +1500,8 @@ impl Store {
         referrer_digest: &str,
         artifact_type: &str,
     ) -> anyhow::Result<()> {
-        let repo_id = upsert_oci_repository_full(
-            &self.db,
-            registry,
-            repository,
-            None,
-            None,
-            None,
-        )
-        .await?;
+        let repo_id =
+            upsert_oci_repository_full(&self.db, registry, repository, None, None, None).await?;
         let (referrer_manifest_id, _) = upsert_oci_manifest(
             &self.db,
             repo_id,
@@ -1532,8 +1515,13 @@ impl Store {
             &HashMap::new(),
         )
         .await?;
-        insert_oci_referrer(&self.db, subject_manifest_id, referrer_manifest_id, artifact_type)
-            .await?;
+        insert_oci_referrer(
+            &self.db,
+            subject_manifest_id,
+            referrer_manifest_id,
+            artifact_type,
+        )
+        .await?;
         Ok(())
     }
 
@@ -1565,12 +1553,10 @@ impl Store {
             layer_id: i64,
             digest: String,
         }
-        let rows = Row::find_by_statement(Statement::from_string(
-            self.db.get_database_backend(),
-            sql,
-        ))
-        .all(&self.db)
-        .await?;
+        let rows =
+            Row::find_by_statement(Statement::from_string(self.db.get_database_backend(), sql))
+                .all(&self.db)
+                .await?;
 
         let store_dir = self.state_info.store_dir().to_path_buf();
         let mut reindexed = 0u64;
@@ -1587,10 +1573,7 @@ impl Store {
             };
             // Delete and re-extract under a transaction.
             let txn = self.db.begin().await?;
-            if let Err(e) = wit_package::Entity::delete_by_id(r.wit_id)
-                .exec(&txn)
-                .await
-            {
+            if let Err(e) = wit_package::Entity::delete_by_id(r.wit_id).exec(&txn).await {
                 warn!("reindex: failed to delete wit_package {}: {e}", r.wit_id);
                 let _ = txn.rollback().await;
                 continue;
@@ -1722,23 +1705,26 @@ impl Store {
                         Vec::new()
                     }
                 }
-                (None, Some(digest)) => oci_manifest::Entity::find()
-                    .filter(oci_manifest::Column::OciRepositoryId.eq(repo_id))
-                    .filter(oci_manifest::Column::Digest.eq(digest))
-                    .all(&self.db)
-                    .await?,
-                (None, None) => oci_manifest::Entity::find()
-                    .filter(oci_manifest::Column::OciRepositoryId.eq(repo_id))
-                    .all(&self.db)
-                    .await?,
+                (None, Some(digest)) => {
+                    oci_manifest::Entity::find()
+                        .filter(oci_manifest::Column::OciRepositoryId.eq(repo_id))
+                        .filter(oci_manifest::Column::Digest.eq(digest))
+                        .all(&self.db)
+                        .await?
+                }
+                (None, None) => {
+                    oci_manifest::Entity::find()
+                        .filter(oci_manifest::Column::OciRepositoryId.eq(repo_id))
+                        .all(&self.db)
+                        .await?
+                }
             };
 
         if manifests_to_delete.is_empty() {
             return Ok(false);
         }
 
-        let mut layer_digests: std::collections::HashSet<String> =
-            std::collections::HashSet::new();
+        let mut layer_digests: std::collections::HashSet<String> = std::collections::HashSet::new();
         let mut manifest_ids: Vec<i64> = Vec::new();
         for manifest in &manifests_to_delete {
             manifest_ids.push(manifest.id);
@@ -2117,10 +2103,7 @@ impl Store {
             ON CONFLICT(registry, repository, tag, task) DO NOTHING";
         let result = self
             .db
-            .execute_raw(Statement::from_string(
-                self.db.get_database_backend(),
-                sql,
-            ))
+            .execute_raw(Statement::from_string(self.db.get_database_backend(), sql))
             .await?;
         Ok(result.rows_affected())
     }
@@ -2145,10 +2128,7 @@ impl Store {
             ON CONFLICT(registry, repository, tag, task) DO NOTHING";
         let result = self
             .db
-            .execute_raw(Statement::from_string(
-                self.db.get_database_backend(),
-                sql,
-            ))
+            .execute_raw(Statement::from_string(self.db.get_database_backend(), sql))
             .await?;
         Ok(result.rows_affected())
     }
@@ -2303,12 +2283,10 @@ impl Store {
         }
 
         let active_rows = fetch_queue::Entity::find()
-            .filter(
-                fetch_queue::Column::Status.is_in([
-                    fetch_queue::FetchStatus::Pending,
-                    fetch_queue::FetchStatus::InProgress,
-                ]),
-            )
+            .filter(fetch_queue::Column::Status.is_in([
+                fetch_queue::FetchStatus::Pending,
+                fetch_queue::FetchStatus::InProgress,
+            ]))
             // ORDER BY: in_progress before pending, then priority asc, then
             // created_at asc. SeaORM doesn't have a built-in CASE order, so
             // emit it as a custom expr.
@@ -2322,12 +2300,10 @@ impl Store {
         let active: Vec<QueueTask> = active_rows.into_iter().map(into_queue_task).collect();
 
         let history_rows = fetch_queue::Entity::find()
-            .filter(
-                fetch_queue::Column::Status.is_in([
-                    fetch_queue::FetchStatus::Completed,
-                    fetch_queue::FetchStatus::Failed,
-                ]),
-            )
+            .filter(fetch_queue::Column::Status.is_in([
+                fetch_queue::FetchStatus::Completed,
+                fetch_queue::FetchStatus::Failed,
+            ]))
             .order_by_desc(fetch_queue::Column::UpdatedAt)
             .order_by_asc(fetch_queue::Column::Repository)
             .order_by_desc(fetch_queue::Column::Tag)
@@ -2682,23 +2658,22 @@ impl Store {
                 None => wit_package::Column::Version.is_null(),
             })
             // prefer a pulled row over a stub.
-            .order_by_desc(
-                Expr::cust("CASE WHEN oci_manifest_id IS NOT NULL THEN 1 ELSE 0 END"),
-            )
+            .order_by_desc(Expr::cust(
+                "CASE WHEN oci_manifest_id IS NOT NULL THEN 1 ELSE 0 END",
+            ))
             .order_by_desc(wit_package::Column::Id)
             .one(&self.db)
             .await?;
-        let pkg_id = match existing {
-            Some(row) => row.id,
-            None => {
-                let am = wit_package::ActiveModel {
-                    package_name: Set(package_name.to_owned()),
-                    version: Set(version.map(str::to_owned)),
-                    ..Default::default()
-                };
-                let res = wit_package::Entity::insert(am).exec(&self.db).await?;
-                res.last_insert_id
-            }
+        let pkg_id = if let Some(row) = existing {
+            row.id
+        } else {
+            let am = wit_package::ActiveModel {
+                package_name: Set(package_name.to_owned()),
+                version: Set(version.map(str::to_owned)),
+                ..Default::default()
+            };
+            let res = wit_package::Entity::insert(am).exec(&self.db).await?;
+            res.last_insert_id
         };
 
         for dep in dependencies {
@@ -2824,9 +2799,7 @@ mod smoke_tests {
 
     #[tokio::test]
     async fn open_in_memory_runs_migrations() {
-        let store = Store::open_in_memory()
-            .await
-            .expect("open in-memory store");
+        let store = Store::open_in_memory().await.expect("open in-memory store");
         assert!(store.state_info.migration_total() > 0);
         assert_eq!(
             store.state_info.migration_current(),

@@ -137,8 +137,10 @@ impl DependencyProvider for DbDependencyProvider<'_> {
         // bridge — this requires the resolver to be called from a
         // multi-thread tokio runtime (which is the default for `#[tokio::main]`).
         let raw_deps = tokio::task::block_in_place(|| {
-            tokio::runtime::Handle::current()
-                .block_on(self.store.get_package_dependencies_by_name(package, Some(&ver_str)))
+            tokio::runtime::Handle::current().block_on(
+                self.store
+                    .get_package_dependencies_by_name(package, Some(&ver_str)),
+            )
         })
         .map_err(|e: anyhow::Error| ResolveError::Db(e.to_string()))?;
 
@@ -387,7 +389,7 @@ pub(crate) fn resolve_all_from_db(
 // tests once `Store::insert_metadata`, `Store::insert_layer`, and
 // `Store::upsert_package_dependencies_from_sync` are implemented; rewrite
 // them as `#[tokio::test]` async tests using `Store::open_in_memory().await`.
-#[cfg(disabled_pending_phase4_impl)]
+#[cfg(any())]
 mod tests {
     use rusqlite::Connection;
 

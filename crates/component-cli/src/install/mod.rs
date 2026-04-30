@@ -200,7 +200,7 @@ impl Opts {
             }
 
             if !roots.is_empty() {
-                match manager.resolve_all_dependencies(&roots).await {
+                match manager.resolve_all_dependencies(&roots) {
                     Ok(deps) => {
                         resolved_transitive = deps;
                     }

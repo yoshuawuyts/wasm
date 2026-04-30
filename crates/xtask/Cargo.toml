@@ -10,6 +10,9 @@ anyhow = { workspace = true }
 ctrlc = "3"
 notify = "8"
 tempfile = { workspace = true }
+tokio = { workspace = true }
+sea-orm = { workspace = true }
+component-package-manager-migration = { workspace = true }
 
 [lints]
 workspace = true

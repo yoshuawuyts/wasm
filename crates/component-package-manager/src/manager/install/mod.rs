@@ -170,11 +170,11 @@ pub async fn resolve_install_inputs(
         // Preserve the user's input as the explicit name so it becomes the
         // manifest key — the embedded WIT metadata may use a placeholder.
         if looks_like_wit_name(input) {
-            let reference = resolve_wit_name(input, manager)
-                .await
-                .map_err(|e| InstallError::ResolveFailure {
+            let reference = resolve_wit_name(input, manager).await.map_err(|e| {
+                InstallError::ResolveFailure {
                     reason: e.to_string(),
-                })?;
+                }
+            })?;
             result.push((reference, true, Some(input.clone())));
             continue;
         }
