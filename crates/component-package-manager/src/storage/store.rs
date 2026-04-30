@@ -113,13 +113,6 @@ async fn dir_size(path: &Path) -> u64 {
     total
 }
 
-/// Build a SeaORM connection URL for a SQLite file at `path`.
-///
-/// Uses `?mode=rwc` so the file is created on first run.
-fn sqlite_url(path: &Path) -> String {
-    format!("sqlite://{}?mode=rwc", path.display())
-}
-
 /// Apply the SQLite-specific PRAGMAs that the legacy rusqlite path used.
 async fn apply_sqlite_pragmas(db: &DatabaseConnection) -> anyhow::Result<()> {
     if !matches!(db.get_database_backend(), DbBackend::Sqlite) {
@@ -1098,20 +1091,49 @@ impl Store {
             .await
             .context("Could not create config directories on disk")?;
 
-        let url = sqlite_url(&metadata_file);
-        let mut opts = ConnectOptions::new(url);
-        opts.sqlx_logging(false);
-        let db = Database::connect(opts).await?;
-        apply_sqlite_pragmas(&db).await?;
-        Migrator::up(&db, None)
+        let cfg = super::db_config::DbConfig::from_env(&metadata_file)?;
+        let db = Database::connect(cfg.to_connect_options())
             .await
-            .context("failed to run database migrations")?;
+            .with_context(|| {
+                format!("failed to connect to database at {}", cfg.redacted_url())
+            })?;
+        apply_sqlite_pragmas(&db).await?;
+
+        match cfg.backend {
+            super::db_config::Backend::Sqlite => {
+                // SQLite is single-user; auto-migrate matches the legacy
+                // rusqlite behaviour.
+                Migrator::up(&db, None)
+                    .await
+                    .context("failed to run database migrations")?;
+            }
+            super::db_config::Backend::Postgres => {
+                // Postgres deploys must run migrations explicitly via
+                // `wasm-cli admin migrate` to avoid races between replicas.
+                if Migrations::has_pending(&db).await {
+                    let snap = Migrations::snapshot(&db).await;
+                    anyhow::bail!(
+                        "database at {} has pending migrations \
+                         ({} of {} applied). Run `wasm-cli admin migrate` \
+                         (or apply via sea-orm-cli) before starting.",
+                        cfg.redacted_url(),
+                        snap.current,
+                        snap.total
+                    );
+                }
+            }
+        }
 
         let migration_info = Migrations::snapshot(&db).await;
         let store_size = dir_size(&store_dir).await;
-        let metadata_size = tokio::fs::metadata(&metadata_file)
-            .await
-            .map_or(0, |m| m.len());
+        // For SQLite we report the on-disk file size; for Postgres we have
+        // no such number locally, so leave it at 0.
+        let metadata_size = match cfg.backend {
+            super::db_config::Backend::Sqlite => tokio::fs::metadata(&metadata_file)
+                .await
+                .map_or(0, |m| m.len()),
+            super::db_config::Backend::Postgres => 0,
+        };
         let state_info = StateInfo::new_at(
             data_dir,
             config_file,
@@ -2877,5 +2899,14 @@ mod smoke_tests {
         let task = store.dequeue_next().await.unwrap().unwrap();
         store.fail_task(task.id, "oops").await.unwrap();
         assert_eq!(store.pending_count().await.unwrap(), 1);
+    }
+
+    #[tokio::test]
+    async fn db_config_redacts_password() {
+        use crate::storage::redact_url;
+        assert_eq!(
+            redact_url("postgres://alice:secret@db.example.com/wasm"),
+            "postgres://alice:[REDACTED]@db.example.com/wasm"
+        );
     }
 }

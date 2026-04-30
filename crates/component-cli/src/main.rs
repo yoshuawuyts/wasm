@@ -1,6 +1,7 @@
 //! Component CLI command
 //!
 
+mod admin;
 mod compose;
 mod init;
 mod install;
@@ -54,6 +55,7 @@ impl Cli {
             Some(Command::Init(opts)) => opts.run().await?,
             Some(Command::Install(opts)) => opts.run(self.offline).await?,
             Some(Command::Self_(opts)) => opts.run().await.map_err(into_miette)?,
+            Some(Command::Admin(opts)) => opts.run().await.map_err(into_miette)?,
             None => {
                 // Apply the parsed color choice when printing help
                 Cli::command()
@@ -86,6 +88,9 @@ enum Command {
     #[clap(name = "self")]
     #[command(subcommand)]
     Self_(self_::Opts),
+    /// Administrative commands (database migrations, etc.)
+    #[command(subcommand)]
+    Admin(admin::Opts),
 }
 
 /// Compute the log directory for the application.
