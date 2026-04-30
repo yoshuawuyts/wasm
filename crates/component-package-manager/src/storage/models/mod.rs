@@ -6,7 +6,7 @@
 //! [`component_package_manager_migration`] crate; known-package operations
 //! are private methods on [`super::store::Store`] backed by SeaORM entities.
 
-use sea_orm::{ConnectionTrait, DatabaseConnection, FromQueryResult, Statement};
+use sea_orm::{DatabaseConnection, FromQueryResult, Statement};
 
 use component_package_manager_migration::MigratorTrait;
 

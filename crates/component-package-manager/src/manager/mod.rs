@@ -51,7 +51,7 @@ const PULL_COOLDOWN_SECS: u64 = 3600;
 /// # #[tokio::main]
 /// # async fn main() -> anyhow::Result<()> {
 /// let manager = Manager::open().await?;
-/// let images = manager.list_all()?;
+/// let images = manager.list_all().await?;
 /// for image in &images {
 ///     println!("{}", image.reference());
 /// }

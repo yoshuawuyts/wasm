@@ -14,7 +14,7 @@ use serde::Deserialize;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-/// Shared application state wrapping a `Manager` in a `std::sync::Mutex`.
+/// Shared application state wrapping a `Manager` in a `tokio::sync::Mutex`.
 ///
 /// This is safe because all handler methods on `Manager` are synchronous
 /// (no `.await` while holding the lock).
@@ -28,7 +28,7 @@ use tower_http::trace::TraceLayer;
 ///
 /// # async fn example() -> anyhow::Result<()> {
 /// let manager = Manager::open().await?;
-/// let state: AppState = Arc::new(Mutex::new(manager));
+/// let state: AppState = Arc::new(tokio::sync::Mutex::new(manager));
 /// # Ok(())
 /// # }
 /// ```
@@ -100,7 +100,7 @@ fn default_limit() -> u32 {
 ///
 /// # async fn example() -> anyhow::Result<()> {
 /// let manager = Manager::open().await?;
-/// let state = Arc::new(Mutex::new(manager));
+/// let state = Arc::new(tokio::sync::Mutex::new(manager));
 /// let app = router(state);
 ///
 /// let listener = tokio::net::TcpListener::bind("0.0.0.0:8080").await?;
